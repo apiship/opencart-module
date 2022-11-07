@@ -1,0 +1,675 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <button type="submit" form="form-apiship" data-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary"><i class="fa fa-save"></i></button>
+        <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default"><i class="fa fa-reply"></i></a></div>
+      <h1>{{ heading_title }}</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+        <li><a href="{{ breadcrumb['href'] }}">{{ breadcrumb['text'] }}</a></li>
+        {% endfor %}
+       </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    {% if error_warning %}
+    <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    {% endif %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_edit }} </h3>
+      </div>
+      <div class="panel-body">
+
+      <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-apiship" class="form-horizontal">
+
+	<div>
+		<img style="border: 0px solid #EEEEEE;" title="apiship" alt="apiship" src="view/image/shipping/apiship.png">
+	</div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b>{{ entry_main_settings }}</b>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_rub_select">{{ entry_shipping_apiship_rub_select }}</label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_rub_select" id="shipping_apiship_rub_select" class="form-control">
+              {% for currency in currencies %}
+              {% if currency.code == shipping_apiship_rub_select %}
+              <option value={{ currency.code }} selected="selected">{{ currency.code }}</option>
+              {% else %}
+              <option value={{ currency.code }}>{{ currency.code}}</option>
+	        {% endif %}
+              {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_gr_select">{{ entry_shipping_apiship_gr_select }}</label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_gr_select" id="shipping_apiship_gr_select" class="form-control">
+                {% for weight_class in weight_classes %}
+                {% if weight_class.weight_class_id == shipping_apiship_gr_select %}
+                <option value="{{ weight_class.weight_class_id }}" selected="selected">{{ weight_class.title }}</option>
+                {% else %}
+                <option value="{{ weight_class.weight_class_id }}">{{ weight_class.title }}</option>
+     	          {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_cm_select">{{ entry_shipping_apiship_cm_select }}</label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_cm_select" id="shipping_apiship_cm_select" class="form-control">
+                {% for length_class in length_classes %}
+                {% if length_class.length_class_id == shipping_apiship_cm_select %}
+                <option value="{{ length_class.length_class_id }}" selected="selected">{{ length_class.title }}</option>
+                {% else %}
+                <option value="{{ length_class.length_class_id }}">{{ length_class.title }}</option>
+     	          {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_token">{{ entry_shipping_apiship_token }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_token" value="{{ shipping_apiship_token }}" placeholder="{{ entry_shipping_apiship_token }}" id="shipping_apiship_token" class="form-control" />
+			{% if error_shipping_apiship_token %}
+              		<div class="text-danger">{{ error_shipping_apiship_token }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_title">{{ entry_shipping_apiship_title }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_title" value="{{ shipping_apiship_title }}" placeholder="" id="shipping_apiship_title" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_template">{{ entry_shipping_apiship_template }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_template" value="{{ shipping_apiship_template }}" placeholder="{{ entry_shipping_apiship_template }}" id="shipping_apiship_template" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_custom_code">{{ entry_shipping_apiship_custom_code }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_custom_code" value="{{ shipping_apiship_custom_code }}" placeholder="" id="shipping_apiship_custom_code" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_include_fees">{{ entry_shipping_apiship_include_fees }}</label>
+            <div class="col-sm-8">
+			<div class="checkbox">
+				<label>
+		                  {% if shipping_apiship_include_fees %}
+		                  <input type="checkbox" name="shipping_apiship_include_fees" id="shipping_apiship_include_fees" value="1" checked="checked" />
+		                  {% else %}
+		                  <input type="checkbox" name="shipping_apiship_include_fees" id="shipping_apiship_include_fees" value="1" />
+		                  {% endif %}
+      		      </label>
+			</div>
+		</div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_group_points">{{ entry_shipping_apiship_group_points }}</label>
+            <div class="col-sm-8">
+			<div class="checkbox">
+				<label>
+		                  {% if shipping_apiship_group_points %}
+		                  <input type="checkbox" name="shipping_apiship_group_points" id="shipping_apiship_group_points" value="1" checked="checked" />
+		                  {% else %}
+		                  <input type="checkbox" name="shipping_apiship_group_points" id="shipping_apiship_group_points" value="1" />
+		                  {% endif %}
+      		      </label>
+			</div>
+		</div>
+          </div>
+
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b>{{ entry_sending_address }}</b>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sending_country_code">{{ entry_shipping_apiship_sending_country_code }}</label>
+            <div class="col-sm-8">
+		<select name="shipping_apiship_sending_country_code" class="form-control">
+              {% for mode in shipping_apiship_countries %}
+              {% if mode.code == shipping_apiship_sending_country_code %}
+              <option value="{{ mode.code }}" selected="selected">{{ mode.code_text }}</option>
+              {% else %}
+              <option value="{{ mode.code }}">{{ mode.code_text }}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sending_region">{{ entry_shipping_apiship_sending_region }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_sending_region" value="{{ shipping_apiship_sending_region }}" placeholder="{{ entry_shipping_apiship_sending_region }}" id="shipping_apiship_sending_region" class="form-control" />
+			{% if error_shipping_apiship_sending_region %}
+              		<div class="text-danger">{{ error_shipping_apiship_sending_region }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sending_city">{{ entry_shipping_apiship_sending_city }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_sending_city" value="{{ shipping_apiship_sending_city }}" placeholder="{{ entry_shipping_apiship_sending_city }}" id="shipping_apiship_sending_city" class="form-control" />
+			{% if error_shipping_apiship_sending_city %}
+              		<div class="text-danger">{{ error_shipping_apiship_sending_city }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sending_street">{{ entry_shipping_apiship_sending_street }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_sending_street" value="{{ shipping_apiship_sending_street }}" placeholder="{{ entry_shipping_apiship_sending_street }}" id="shipping_apiship_sending_street" class="form-control" />
+			{% if error_shipping_apiship_sending_street %}
+              		<div class="text-danger">{{ error_shipping_apiship_sending_street }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sending_house">{{ entry_shipping_apiship_sending_house }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_sending_house" value="{{ shipping_apiship_sending_house }}" placeholder="{{ entry_shipping_apiship_sending_house }}" id="shipping_apiship_sending_house" class="form-control" />
+			{% if error_shipping_apiship_sending_house %}
+              		<div class="text-danger">{{ error_shipping_apiship_sending_house }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sending_block">{{ entry_shipping_apiship_sending_block }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_sending_block" value="{{ shipping_apiship_sending_block }}" placeholder="{{ entry_shipping_apiship_sending_block }}" id="shipping_apiship_sending_block" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sending_office">{{ entry_shipping_apiship_sending_office }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_sending_office" value="{{ shipping_apiship_sending_office }}" placeholder="{{ entry_shipping_apiship_sending_office }}" id="shipping_apiship_sending_office" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b>{{ entry_contact_details }}</b>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_contact_organization">{{ entry_shipping_apiship_contact_organization }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_contact_organization" value="{{ shipping_apiship_contact_organization }}" placeholder="{{ entry_shipping_apiship_contact_organization }}" id="shipping_apiship_contact_organization" class="form-control" />
+			{% if error_shipping_apiship_contact_organization %}
+              		<div class="text-danger">{{ error_shipping_apiship_contact_organization }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_contact_name">{{ entry_shipping_apiship_contact_name }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_contact_name" value="{{ shipping_apiship_contact_name }}" placeholder="{{ entry_shipping_apiship_contact_name }}" id="shipping_apiship_contact_name" class="form-control" />
+			{% if error_shipping_apiship_contact_name %}
+              		<div class="text-danger">{{ error_shipping_apiship_contact_name }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_contact_phone">{{ entry_shipping_apiship_contact_phone }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_contact_phone" value="{{ shipping_apiship_contact_phone }}" placeholder="{{ entry_shipping_apiship_contact_phone }}" id="shipping_apiship_contact_phone" class="form-control" />
+			{% if error_shipping_apiship_contact_phone %}
+              		<div class="text-danger">{{ error_shipping_apiship_contact_phone }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_contact_email">{{ entry_shipping_apiship_contact_email }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_contact_email" value="{{ shipping_apiship_contact_email }}" placeholder="{{ entry_shipping_apiship_contact_email }}" id="shipping_apiship_contact_email" class="form-control" />
+			{% if error_shipping_apiship_contact_email %}
+              		<div class="text-danger">{{ error_shipping_apiship_contact_email }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b>{{ entry_parcel_defaults }}</b>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_parcel_length">{{ entry_shipping_apiship_parcel_length }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_parcel_length" value="{{ shipping_apiship_parcel_length }}" placeholder="{{ entry_shipping_apiship_parcel_length }}" id="shipping_apiship_parcel_length" class="form-control" />
+			{% if error_shipping_apiship_parcel_length %}
+              		<div class="text-danger">{{ error_shipping_apiship_parcel_length }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_parcel_width">{{ entry_shipping_apiship_parcel_width }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_parcel_width" value="{{ shipping_apiship_parcel_width }}" placeholder="{{ entry_shipping_apiship_parcel_width }}" id="shipping_apiship_parcel_width" class="form-control" />
+			{% if error_shipping_apiship_parcel_width %}
+              		<div class="text-danger">{{ error_shipping_apiship_parcel_width }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_parcel_height">{{ entry_shipping_apiship_parcel_height }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_parcel_height" value="{{ shipping_apiship_parcel_height }}" placeholder="{{ entry_shipping_apiship_parcel_height }}" id="shipping_apiship_parcel_height" class="form-control" />
+			{% if error_shipping_apiship_parcel_height %}
+              		<div class="text-danger">{{ error_shipping_apiship_parcel_height }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_parcel_weight">{{ entry_shipping_apiship_parcel_weight }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_parcel_weight" value="{{ shipping_apiship_parcel_weight }}" placeholder="{{ entry_shipping_apiship_parcel_weight }}" id="shipping_apiship_parcel_weight" class="form-control" />
+			{% if error_shipping_apiship_parcel_weight %}
+              		<div class="text-danger">{{ error_shipping_apiship_parcel_weight }}</div>
+              	{% endif %}
+            </div>
+          </div>
+
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b>{{ entry_providers_points }}</b>
+            </div>
+          </div>
+
+	    {% for provider in shipping_apiship_providers %}
+          <div class="form-group">
+		<div class="col-sm-12">    
+
+			<div class="row">
+
+				<label class="col-sm-4 control-label" for="shipping_apiship_provider[{{provider.key}}][pickup_type]">{{ entry_providers_point }} {{ provider.name }}</label>
+				<div class="checkbox col-sm-1">
+					<label>
+			                  {% if shipping_apiship_provider[provider.key]['pickup_type'] %}
+			                  <input class="shipping_apiship_provider_checkbox" data-id="{{provider.key}}" type="checkbox" name="shipping_apiship_provider[{{provider.key}}][pickup_type]" id="shipping_apiship_provider[{{provider.key}}][pickup_type]" value="1" checked="checked" />
+			                  {% else %}
+			                  <input class="shipping_apiship_provider_checkbox" data-id="{{provider.key}}" type="checkbox" name="shipping_apiship_provider[{{provider.key}}][pickup_type]" id="shipping_apiship_provider[{{provider.key}}][pickup_type]" value="1" />
+			                  {% endif %}
+	      		      </label>
+				</div>
+
+	            	<div class="col-sm-7">
+	              		<select class="shipping_apiship_provider" data-id="{{provider.key}}" name="shipping_apiship_provider[{{provider.key}}][id]" id="shipping_apiship_provider_{{provider.key}}" class="form-control">
+					<option value="{{shipping_apiship_providers_points[provider.key]['id']}}">{{shipping_apiship_providers_points[provider.key]['address']}}</option>
+					</select>
+	            	</div>
+			</div>
+            </div>
+	    </div>
+	    {% endfor %}
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b>{{ entry_events_mapping }}</b>
+            </div>
+          </div>
+
+	    {% for status in shipping_apiship_integrator_statuses %}
+          <div class="form-group">
+		<div class="col-sm-12">    
+
+			<div class="row">
+
+				<label class="col-sm-4 control-label" for="shipping_apiship_mapping_status[{{status.key}}][use]">{{ status.name }}</label>
+				<div class="checkbox col-sm-1">
+					<label>
+			                  {% if shipping_apiship_mapping_status[status.key]['use'] %}
+			                  <input class="shipping_apiship_mapping_checkbox_use" data-id="{{status.key}}" type="checkbox" name="shipping_apiship_mapping_status[{{status.key}}][use]" id="shipping_apiship_mapping_status[{{status.key}}][use]" value="1" checked="checked" />
+			                  {% else %}
+			                  <input class="shipping_apiship_mapping_checkbox_use" data-id="{{status.key}}" type="checkbox" name="shipping_apiship_mapping_status[{{status.key}}][use]" id="shipping_apiship_mapping_status[{{status.key}}][use]" value="1" />
+			                  {% endif %}
+	      		      </label>
+				</div>
+	            	<div class="col-sm-4">
+	              		<select name="shipping_apiship_mapping_status[{{status.key}}][order_status_id]" data-id="{{status.key}}" id="shipping_apiship_mapping_use_{{status.key}}" class="form-control">
+					{% for order_status in order_statuses %}
+		                  {% if order_status.order_status_id == shipping_apiship_mapping_status[status.key]['order_status_id'] %}
+		                  <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
+		                  {% else %}
+		                  <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+		                  {% endif %}
+		                  {% endfor %}
+					</select>
+	            	</div>
+
+				<div class="checkbox col-sm-2">
+					<label>{{entry_events_mapping_notify}}
+					</label>
+				</div>
+
+				<div class="checkbox col-sm-1">
+					<label>
+			                  {% if shipping_apiship_mapping_status[status.key]['notify'] %}
+			                  <input class="shipping_apiship_mapping_checkbox_notify" data-id="{{status.key}}" type="checkbox" name="shipping_apiship_mapping_status[{{status.key}}][notify]" id="shipping_apiship_mapping_notify_{{status.key}}" value="1" checked="checked" />
+			                  {% else %}
+			                  <input class="shipping_apiship_mapping_checkbox_notify" data-id="{{status.key}}" type="checkbox" name="shipping_apiship_mapping_status[{{status.key}}][notify]" id="shipping_apiship_mapping_notify_{{status.key}}" value="1" />
+			                  {% endif %}
+	      		      </label>
+				</div>
+
+			</div>
+            </div>
+	    </div>
+	    {% endfor %}
+
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b>{{ entry_extra_settings }}</b>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="input-tax-class">{{ entry_shipping_apiship_tax_class }}</label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_tax_class_id" id="input-tax-class" class="form-control">
+                <option value="0">{{ text_none }}</option>
+                {% for tax_class in tax_classes %}
+                {% if tax_class.tax_class_id == shipping_apiship_tax_class_id %}
+                <option value="{{ tax_class.tax_class_id }}" selected="selected">{{ tax_class.title }}</option>
+                {% else %}
+                <option value="{{ tax_class.tax_class_id }}">{{ tax_class.title }}</option>
+                {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship-geo-zone">{{ entry_shipping_apiship_geo_zone }}</label>
+            <div class="col-sm-8">
+            <select name="shipping_apiship_geo_zone_id" id="shipping_apiship-geo-zone" class="form-control">
+              <option value="0">{{ text_all_zones }}</option>
+		  {% for geo_zone in geo_zones %}
+		  {% if geo_zone.geo_zone_id == shipping_apiship_geo_zone_id %}
+              <option value="{{ geo_zone.geo_zone_id }}" selected="selected">{{ geo_zone.name }}</option>
+              {% else %}
+              <option value="{{ geo_zone.geo_zone_id }}">{{ geo_zone.name }}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_icon_show">{{ entry_shipping_apiship_icon_show }}</label>
+            <div class="col-sm-8">
+			<div class="checkbox">
+				<label>
+		                  {% if shipping_apiship_icon_show %}
+		                  <input type="checkbox" name="shipping_apiship_icon_show" id="shipping_apiship_icon_show" value="1" checked="checked" />
+		                  {% else %}
+		                  <input type="checkbox" name="shipping_apiship_icon_show" id="shipping_apiship_icon_show" value="1" />
+		                  {% endif %}
+      		      </label>
+			</div>
+		</div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_prefix">{{ entry_shipping_apiship_prefix }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_prefix" value="{{ shipping_apiship_prefix }}" placeholder="" id="shipping_apiship_prefix" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_export_status">{{ entry_shipping_apiship_export_status }}</label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_export_status" id="shipping_apiship_export_status" class="form-control">
+                  {% for order_status in order_statuses %}
+                  {% if order_status.order_status_id == shipping_apiship_export_status %}
+                  <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
+                  {% else %}
+                  <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                  {% endif %}
+                  {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_cancel_export_status">{{ entry_shipping_apiship_cancel_export_status }}</label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_cancel_export_status" id="shipping_apiship_cancel_export_status" class="form-control">
+                  {% for order_status in order_statuses %}
+                  {% if order_status.order_status_id == shipping_apiship_cancel_export_status %}
+                  <option value="{{ order_status.order_status_id }}" selected="selected">{{ order_status.name }}</option>
+                  {% else %}
+                  <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                  {% endif %}
+                  {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_paid_orders">{{ entry_shipping_apiship_paid_orders }}</label>
+            <div class="col-sm-8">
+			<div class="checkbox">
+			{% for order_status in order_statuses %}
+			<div class="form-control">
+			{% if order_status.order_status_id in shipping_apiship_paid_orders %}
+			<label><input type="checkbox" class="form-control" style="float:left" name="shipping_apiship_paid_orders[]" value="{{ order_status.order_status_id }}" checked="checked" />{{ order_status.name }}</label>
+			{% else %}
+			<label><input type="checkbox" class="form-control" style="float:left" name="shipping_apiship_paid_orders[]" value="{{ order_status.order_status_id }}" />{{ order_status.name }}</label>
+			{% endif %}
+			</div>	
+			{% endfor %}
+			</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sort_order">{{ entry_shipping_apiship_sort_order }}</label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_sort_order" value="{{ shipping_apiship_sort_order }}" placeholder="" id="shipping_apiship_sort_order" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_mode">{{ entry_shipping_apiship_mode }}</label>
+            <div class="col-sm-8">
+		<select name="shipping_apiship_mode" class="form-control">
+              {% for mode in shipping_apiship_modes %}
+              {% if mode.code == shipping_apiship_mode %}
+              <option value="{{ mode.code }}" selected="selected">{{ mode.code_text }}</option>
+              {% else %}
+              <option value="{{ mode.code }}">{{ mode.code_text }}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_cron_url">{{ entry_shipping_apiship_cron_url }}</label>
+            <div class="col-sm-8" style='display:flex;'>
+		  	<input type="text" id="shipping_apiship_cron_url" value="{{ shipping_apiship_cron_url }}" class="form-control" />
+			<button id="shipping_apiship_cron_url_copy_button" title="{{ text_shipping_apiship_cron_url_copy }}"><i class="fa fa-clipboard"></i></button>
+            </div>
+          </div>	
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_status">{{ entry_shipping_apiship_status }}</label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_status" id="shipping_apiship_status" class="form-control">
+                  {% if shipping_apiship_status %}
+                  <option value="1" selected="selected">{{ text_enabled }}</option>
+                  <option value="0">{{ text_disabled }}</option>
+                  {% else %}
+                  <option value="1">{{ text_enabled }}</option>
+                  <option value="0" selected="selected">{{ text_disabled }}</option>
+                  {% endif %}
+              </select>
+            </div>
+          </div>						
+
+      </form>
+
+
+      </div>
+    </div>
+  </div>
+
+		<div style="text-align:center; color:#555555;">{{ heading_title }} v{{ shipping_apiship_version }}</div>
+
+</div>
+
+
+<link href="view/javascript/select2.min.css" type="text/css" rel="stylesheet" media="screen" />
+<link href="view/javascript/select2-bootstrap.min.css" type="text/css" rel="stylesheet" media="screen" />
+<script src="view/javascript/select2.full.min.js" type="text/javascript"></script>
+<script src="view/javascript/i18n/ru.js" type="text/javascript"></script>
+<style>
+.select2-container { width: 100% !important; }
+</style>
+
+<script>
+
+$('#shipping_apiship_cron_url_copy_button').click(function() {
+	var copyText = document.getElementById("shipping_apiship_cron_url");
+	copyText.select();
+	document.execCommand("copy");
+	$('#shipping_apiship_cron_url_copy_button').tooltip('enable')
+	$('#shipping_apiship_cron_url_copy_button').tooltip('show');
+	$('#shipping_apiship_cron_url_copy_button').tooltip('disable')
+	return false;
+
+});
+
+
+$('.shipping_apiship_provider').select2({
+  	ajax: {
+    		url: '{{ shipping_apiship_search_point_url }}',
+	    	data: function (params) {
+	      	var query = {
+	        		search: params.term,
+	        		type: $(this).attr('data-id')
+	      	}
+	
+	      	return query;
+	    	},
+    		dataType: 'json',
+    		delay: 250, 
+
+		processResults: function(data) {
+	            var results = []; 
+	            $.each(data, function (index, item) {
+	                 results.push({
+	                     id: item.id,
+	                     text: item.code + ', ' + item.text
+	                 });
+	            });
+	
+	            return {
+	              	results:results
+	            };                            
+	      },
+
+  	},
+    	minimumInputLength: 3,
+	language: "ru"
+
+});
+
+function set_providers_checkbox(checked, provider) {
+	if (checked)
+		$("#shipping_apiship_provider_" + provider).prop("disabled", false);
+	else
+		$("#shipping_apiship_provider_" + provider).prop("disabled", true);
+
+}
+
+$(".shipping_apiship_provider_checkbox").on("click", function () {
+	provider = $(this).attr('data-id')
+	set_providers_checkbox(this.checked, provider)
+});
+
+jQuery('.shipping_apiship_provider_checkbox').each(function() {
+	provider = $(this).attr('data-id')
+	set_providers_checkbox(this.checked, provider)
+});
+
+function set_status_checkbox(checked, status) {
+	if (checked)
+		$("#shipping_apiship_mapping_use_" + status).prop("disabled", false);
+	else
+		$("#shipping_apiship_mapping_use_" + status).prop("disabled", true);
+
+	if (checked)
+		$("#shipping_apiship_mapping_notify_" + status).prop("disabled", false);
+	else
+		$("#shipping_apiship_mapping_notify_" + status).prop("disabled", true);
+
+}
+
+
+$(".shipping_apiship_mapping_checkbox_use").on("click", function () {
+	status = $(this).attr('data-id')
+	set_status_checkbox(this.checked, status)
+});
+
+jQuery('.shipping_apiship_mapping_checkbox_use').each(function() {
+	status = $(this).attr('data-id')
+	set_status_checkbox(this.checked, status)
+});
+
+</script>
+
+{{ footer }}

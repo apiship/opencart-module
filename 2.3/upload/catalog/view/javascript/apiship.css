@@ -1,0 +1,95 @@
+.apiship_points {
+	text-decoration: underline;
+}
+.apiship_img_providers {
+	vertical-align: middle;
+	width:60px;
+}
+
+#apiship-address-result {
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+#apiship-address-result a {
+    display: block;
+    padding-bottom: 5px;
+    border-bottom: 1px dotted;
+    margin-bottom: 5px;
+    text-decoration: none;
+}
+#apiship-order-block-loading {
+    
+}
+.map__addresses{
+    padding-left: 0px;
+    overflow: auto;
+    max-height: 356px;
+    margin-bottom: 10px;
+}
+
+.apiship_loading {
+	display: inline-block;
+   	background-image: url('/catalog/view/theme/default/image/shipping/apiship_loading.gif');
+	width: 16px;
+	height: 16px;
+	background-size: contain;
+}
+
+.modal-header h4 {
+	display: inline-block;
+}
+
+.apiship_yandex_map h4 {
+    margin: 15px 0;
+}
+
+#apiship_yandex_map_container {
+    width: 570px;
+    height: 400px;
+    border: 1px solid #ccc;
+    padding: 5px;
+}
+.map__address__active{
+    color: #007bff;
+}
+.map__address__list__li {
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    line-height: 1.1em;
+}
+.map__address__list__li .text-danger {
+    font-size: 0.8em;
+}
+.map__address__list__li .important-text{
+    color: #dc3545;
+    font-weight: bold;
+}
+.apiship-comment {
+    right: 0;
+    position: absolute;
+    top: 0;
+    margin: 3px;
+}
+.hidden {
+    display:none !important;
+}
+.btn-w-100{
+    width: 100%;
+}
+.btn:disabled{
+    cursor: not-allowed;
+}
+
+.apiship_cluster {
+	border: solid 2px #1e98ff;
+    	border-radius: 2em;
+	box-shadow: black 0.5em 0.5em 0.3em;
+	padding: 5px 20px 5px 20px;
+	background: #FFFFFF;
+	white-space: nowrap;
+	display: inline-block;
+
+ }

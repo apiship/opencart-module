@@ -1,0 +1,842 @@
+<modification>
+
+	<name>ApiShip</name>
+	<code>ApiShip</code>
+	<version>0.7.14 (OpenCart 3.x)</version>
+	<author>ApiShip</author>
+	<link>https://apiship.ru</link>
+
+	<file path="admin/controller/sale/order.php">
+		<operation>
+			<search error="skip" ><![CDATA[$this->response->setOutput($this->load->view('sale/order_info', $data));]]></search>
+			<add position="before"><![CDATA[  
+
+		// apiship start
+			$this->load->language('extension/shipping/apiship');
+
+	    	$data['shipping_apiship_export_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/export_order&id=".$order_id;
+    		$data['entry_shipping_apiship_export_title'] = $this->language->get('entry_shipping_apiship_export_title');
+	    	$data['shipping_apiship_export_cancel_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/cancel_order&id=".$order_id;
+    		$data['entry_shipping_apiship_export_cancel_title'] = $this->language->get('entry_shipping_apiship_cancel_export_title');
+            $data['entry_shipping_apiship_paid'] = $this->language->get('entry_shipping_apiship_paid');
+            $data['entry_shipping_apiship_place_dimensions'] = $this->language->get('entry_shipping_apiship_place_dimensions');
+            $data['entry_shipping_apiship_order_status'] = $this->language->get('entry_shipping_apiship_order_status');
+
+            $data['shipping_apiship_get_order_params_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_order_params&id=".$order_id;
+
+			$data['show_apiship_export_order'] = (strpos($order_info['shipping_code'], 'apiship')===false)?'none':'inline';
+
+            $data['entry_shipping_apiship_label_title'] = $this->language->get('entry_shipping_apiship_label_title');
+            $data['shipping_apiship_label_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_label";
+            $data['entry_shipping_apiship_waybill_title'] = $this->language->get('entry_shipping_apiship_waybill_title');
+            $data['shipping_apiship_waybill_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_waybill";
+        
+            $data['entry_shipping_apiship_pickup_type'] = $this->language->get('entry_shipping_apiship_pickup_type');
+    		$data['entry_shipping_apiship_pickup_type1'] = $this->language->get('entry_shipping_apiship_pickup_type1');
+    		$data['entry_shipping_apiship_pickup_type2'] = $this->language->get('entry_shipping_apiship_pickup_type2');
+
+		// apiship end
+
+			]]></add>
+		</operation>
+		<operation>
+			<search error="skip" ><![CDATA[$this->response->setOutput($this->load->view('sale/order_list', $data));]]></search>
+			<add position="before"><![CDATA[  
+
+		// apiship start
+			$this->load->language('extension/shipping/apiship');
+
+            $data['entry_shipping_apiship_label_title'] = $this->language->get('entry_shipping_apiship_label_title');
+            $data['shipping_apiship_label_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_label";
+            $data['entry_shipping_apiship_waybill_title'] = $this->language->get('entry_shipping_apiship_waybill_title');
+            $data['shipping_apiship_waybill_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_waybill";
+
+            $data['error_shipping_apiship_select_orders'] = $this->language->get('error_shipping_apiship_select_orders');
+
+
+		// apiship end
+
+			]]></add>
+		</operation>
+
+	</file>
+
+	<file path="admin/view/template/sale/order_info.twig">
+		<operation>
+			<search error="skip" ><![CDATA[<h1>{{ heading_title }}</h1>]]></search>
+			<add position="before"><![CDATA[  
+
+			<!-- apiship start -->
+			
+			    <div style='padding-right:5px; display:{{show_apiship_export_order}}' class="pull-right">
+				<a id="shipping_apiship_export" data-toggle="tooltip" title="{{ entry_shipping_apiship_export_title }}" class="btn btn-success" style="display:none;"><i class="fa fa-truck"></i>&nbsp;{{ entry_shipping_apiship_export_title }}</a>
+				<a id="shipping_apiship_export_cancel" data-toggle="tooltip" title="{{ entry_shipping_apiship_export_cancel_title }}" class="btn btn-danger" style="display:none;"><i class="fa fa-truck"></i>&nbsp;{{ entry_shipping_apiship_export_cancel_title }}</a>
+				</div>
+			
+				<script type="text/javascript"><!--
+				$('#shipping_apiship_export').on('click', function() {
+					$.ajax({
+						url: '{{ shipping_apiship_export_url }}',
+						dataType: 'json',
+						data: { 
+						    shipping_apiship_pickup_type: $('#shipping_apiship_pickup_type').val(),
+						    shipping_apiship_place_length: $('#shipping_apiship_place_length').val(),
+						    shipping_apiship_place_width: $('#shipping_apiship_place_width').val(),
+						    shipping_apiship_place_height: $('#shipping_apiship_place_height').val(),
+						},
+						beforeSend: function() {
+							$('#shipping_apiship_export').button('loading');
+						},
+						complete: function() {
+							$('#shipping_apiship_export').button('reset');
+						},
+						success: function(json) {
+							$('.alert-dismissible').remove();
+								
+	         				if (json['error']) {
+	                			$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                            }
+	                
+                            if (json['success']) {
+                                $('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                            }   
+	                			
+                            $('#history').load('index.php?route=sale/order/history&user_token={{ user_token }}&order_id={{ order_id }}');
+	                            
+                            init_apiship_export_button();
+
+						},
+						error: function(xhr, ajaxOptions, thrownError) {
+							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+						}
+					});
+				});
+
+				$('#shipping_apiship_export_cancel').on('click', function() {
+					$.ajax({
+						url: '{{ shipping_apiship_export_cancel_url }}',
+						dataType: 'json',
+						beforeSend: function() {
+							$('#shipping_apiship_export_cancel').button('loading');
+						},
+						complete: function() {
+							$('#shipping_apiship_export_cancel').button('reset');
+						},
+						success: function(json) {
+							$('.alert-dismissible').remove();
+								
+	                		if (json['error']) {
+	                			$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+	                		}
+	                
+	                		if (json['success']) {
+	                			$('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+	                		}  
+	                			
+                            $('#history').load('index.php?route=sale/order/history&user_token={{ user_token }}&order_id={{ order_id }}');
+	                            
+	                            
+                            init_apiship_export_button();
+
+						},
+						error: function(xhr, ajaxOptions, thrownError) {
+							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+						}
+					});
+				});
+
+                function init_apiship_export_button() {
+                    $.ajax({
+						url: '{{ shipping_apiship_get_order_params_url }}',
+						dataType: 'json',
+						success: function(json) {
+	
+	                        $('#shipping_apiship_place_length').val(json['place_length']);
+	                        $('#shipping_apiship_place_width').val(json['place_width']);
+	                        $('#shipping_apiship_place_height').val(json['place_height']);
+
+                            $('#shipping_apiship_pickup_type').val(json['pickup_type']);
+	                        $('#shipping_apiship_order_status').html(json['order_status']);
+	
+                            if (json['export'] == true) {
+                                $('#shipping_apiship_export').hide();
+                                $('#shipping_apiship_export_cancel').show();
+                                if (json['paid']) $('#shipping_apiship_export_cancel').text($('#shipping_apiship_export_cancel').text() + "{{ entry_shipping_apiship_paid }}");
+                                
+                                $('#shipping_apiship_label_span').show();
+                                $('#shipping_apiship_waybill_span').show();
+                                
+                                return false;
+                            } else {
+                                $('#shipping_apiship_export').show();
+                                $('#shipping_apiship_export_cancel').hide();
+                                if (json['paid']) $('#shipping_apiship_export').text($('#shipping_apiship_export').text() + "{{ entry_shipping_apiship_paid }}");
+                                
+                                $('#shipping_apiship_label_span').hide();
+                                $('#shipping_apiship_waybill_span').hide();
+                                return true;
+                            }
+
+	                           
+	                        
+						},
+						error: function(xhr, ajaxOptions, thrownError) {
+							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+						}
+					});
+                }
+                
+                $(document).ready(function(){
+                    is_export = init_apiship_export_button();
+                    $('#shipping_apiship_label').on('click', function() {
+                        $.ajax({
+    						url: '{{ shipping_apiship_label_url }}',
+    						dataType: 'json',
+                            type: 'POST',
+                            data: {'id': {{ order_id }} },
+                            beforeSend: function() {
+    							$('#shipping_apiship_label_span').html("<img style='width:16px;' src='view/image/shipping/apiship_loading.gif'>");
+    						},
+    						success: function(json) {
+    
+    							if (json['error'] && (is_export == true)) {
+                    				$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+    							}
+    								
+    							html = [];
+    							for (index = 0; index < json['labels'].length; ++index) {
+                                    html.push('<a target="_blank" href="' + json['labels'][index]['url'] + '">' + json['labels'][index]['name'] + '</a>')
+                                }
+    	                            
+    							$('#shipping_apiship_label_span').html('{{ entry_shipping_apiship_label_title }}: ' + html.join(', '));
+    							
+    				
+    						},
+    						error: function(xhr, ajaxOptions, thrownError) {
+    							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+    						}
+    					});
+                    });
+                    
+                    
+                    $('#shipping_apiship_waybill').on('click', function() {
+                        $.ajax({
+    						url: '{{ shipping_apiship_waybill_url }}',
+    						dataType: 'json',
+    						type: 'POST',
+                            data: {'id': {{ order_id }} },
+                            beforeSend: function() {
+    							$('#shipping_apiship_waybill_span').html("<img style='width:16px;' src='view/image/shipping/apiship_loading.gif'>");
+    						},
+    						success: function(json) {
+    
+    							if (json['error'] && (is_export == true)) {
+                    				$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+    							}
+    							
+    							html = [];
+    							for (index = 0; index < json['waybills'].length; ++index) {
+                                    html.push('<a target="_blank" href="' + json['waybills'][index]['url'] + '">' + json['waybills'][index]['name'] + '</a>')
+                                }
+                                
+    							$('#shipping_apiship_waybill_span').html('{{ entry_shipping_apiship_waybill_title }}: ' + html.join(', ') );
+    							
+                                
+    						},
+    						error: function(xhr, ajaxOptions, thrownError) {
+    							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+    						}
+    					});
+    
+                    });
+				});
+
+
+				//--></script> 
+			
+			<!-- apiship end -->
+
+
+			]]></add>
+		</operation>
+		<operation>
+			<search error="skip" index="0"><![CDATA[</tbody>]]></search>
+			<add position="before"><![CDATA[  
+
+			<!-- apiship start -->
+
+			 <tr>
+                <td><button data-toggle="tooltip" title="{{ entry_shipping_apiship_label_title }}" class="btn btn-info btn-xs"><i class="fa fa-tags fa-fw"></i></button></td>
+                <td><span id="shipping_apiship_label_span" style="display:none;">
+                <a id="shipping_apiship_label" data-toggle="tooltip" title="{{ entry_shipping_apiship_label_title }}" class="btn btn-success"><i class="fa fa-tags"></i>&nbsp;{{ entry_shipping_apiship_label_title }}</a>
+                </span></td>
+             </tr>
+
+			 <tr>
+                <td><button data-toggle="tooltip" title="{{ entry_shipping_apiship_waybill_title }}" class="btn btn-info btn-xs"><i class="fa fa-truck fa-fw"></i></button></td>
+                <td><span id="shipping_apiship_waybill_span" style="display:none;">
+                <a id="shipping_apiship_waybill" data-toggle="tooltip" title="{{ entry_shipping_apiship_waybill_title }}" class="btn btn-success"><i class="fa fa-truck"></i>&nbsp;{{ entry_shipping_apiship_waybill_title }}</a>
+                </span></td>
+             </tr>
+
+			 <tr>
+                <td colspan=2><label>{{ entry_shipping_apiship_pickup_type }}</label><br>
+                    <select id="shipping_apiship_pickup_type" class="form-control">
+                    <option value="1">{{entry_shipping_apiship_pickup_type1}}</option> 
+                    <option value="2">{{entry_shipping_apiship_pickup_type2}}</option>
+                    </select>
+                </td>
+             </tr>
+
+			 <tr>
+                <td colspan=2><label>{{ entry_shipping_apiship_place_dimensions }}</label><br>
+                <div style ='display: flex;flex-wrap: nowrap; align-items: center;'>
+                <input type='number' id='shipping_apiship_place_length' value='-' style='width:100%'>x
+                <input type='number' id='shipping_apiship_place_width' value='-' style='width:100%'>x
+                <input type='number' id='shipping_apiship_place_height' value='-' style='width:100%'>
+                </div>
+                </td>
+             </tr>
+
+			 <tr>
+                <td colspan=2><label>{{ entry_shipping_apiship_order_status }}</label><br>
+                <div id='shipping_apiship_order_status'>-</div>
+                </td>
+             </tr>
+
+			<!-- apiship end -->
+
+
+			]]></add>
+		</operation>
+	</file>
+  
+ 
+ 	<file path="admin/view/template/sale/order_list.twig">
+		<operation>
+			<search error="skip" ><![CDATA[<h1>{{ heading_title }}</h1>]]></search>
+			<add position="before"><![CDATA[  
+
+			<!-- apiship start -->
+			
+			    <div style='padding-right:5px; display:{{ show_apiship_export_order }}' class="pull-right">
+				<a id="shipping_apiship_label" data-toggle="tooltip" title="{{ entry_shipping_apiship_label_title }}" class="btn btn-success"><i class="fa fa-tags"></i>&nbsp;{{ entry_shipping_apiship_label_title }}</a>
+				<a id="shipping_apiship_waybill" data-toggle="tooltip" title="{{ entry_shipping_apiship_waybill_title }}" class="btn btn-success"><i class="fa fa-truck"></i>&nbsp;{{ entry_shipping_apiship_waybill_title }}</a>
+				</div>
+			
+				<script type="text/javascript"><!--
+				
+					function get_selected_id() {
+						var ids = [];
+                        var selected = $('input[name^=\'selected\']:checked');
+    
+                        for (i = 0; i < selected.length; i++) {
+                            ids.push($(selected[i]).val());
+                        }
+                	
+                    	return ids;
+					}
+				
+					$('#shipping_apiship_label').on('click', function() {
+				
+			            ids = get_selected_id();
+
+				        if (ids.length == 0) {
+                            $('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_shipping_apiship_select_orders }} <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                            return;
+                    	}
+
+						$.ajax({
+							url: '{{ shipping_apiship_label_url }}',
+							type: 'POST',
+							dataType: 'json',
+                            data: {'id': ids.join()},
+							success: function(json) {
+	
+								html = [];
+								for (index = 0; index < json['labels'].length; ++index) {
+                                    html.push('<a target="_blank" href="' + json['labels'][index]['url'] + '">' + json['labels'][index]['name'] + '</a>')
+                                }
+
+                                if (json['error']) {
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                                }
+		                
+                                if (html != '')
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + html.join(', ') + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+	                			   
+							},
+							error: function(xhr, ajaxOptions, thrownError) {
+								alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+							}
+						});
+					});
+
+
+					$('#shipping_apiship_waybill').on('click', function() {
+				
+                        ids = get_selected_id();
+
+				    	if (ids.length == 0) {
+                            $('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_shipping_apiship_select_orders }} <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                            return;    
+                    	}
+
+				
+						$.ajax({
+							url: '{{ shipping_apiship_waybill_url }}',
+							type: 'POST',
+							dataType: 'json',
+                            data: {'id': ids.join()},
+							success: function(json) {
+
+							    html = [];
+								for (index = 0; index < json['waybills'].length; ++index) {
+                                    html.push('<a target="_blank" href="' + json['waybills'][index]['url'] + '">' + json['waybills'][index]['name'] + '</a>')
+                                }
+                            
+
+                                if (json['error']) {
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                                }
+                
+                                if (html != '')
+                                    $('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + html.join(', ') + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                			   
+							},
+							error: function(xhr, ajaxOptions, thrownError) {
+								alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+							}
+						});
+					});
+
+				//--></script> 
+			
+			<!-- apiship end -->
+
+
+			]]></add>
+		</operation>
+
+	</file> 
+  
+  
+
+  	<file path="catalog/controller/checkout/shipping_method.php">
+		<operation>
+			<search error="skip" ><![CDATA[$this->load->language('checkout/checkout');]]></search>
+			<add position="after"><![CDATA[
+
+				// apiship start
+				$this->load->language('extension/shipping/apiship');
+				$data['shipping_apiship_set_point_url'] = $this->url->link('extension/shipping/apiship/set_point', '', 'SSL'); 
+				$data['shipping_apiship_get_points_url'] = $this->url->link('extension/shipping/apiship/get_points', '', 'SSL'); 
+				$data['shipping_apiship_change_point'] = $this->language->get('shipping_apiship_change_point');
+                $data['shipping_apiship_select_point'] = $this->language->get('shipping_apiship_select_point');
+                $data['shipping_apiship_title_from'] = $this->language->get('shipping_apiship_title_from');
+                $data['shipping_apiship_get_last_tracing_id_url'] = $this->url->link('extension/shipping/apiship/get_last_tracing_id', '', 'SSL');
+
+                $data['shipping_apiship_icon_show'] = $this->config->get('shipping_apiship_icon_show') ? 'true' : 'false'; 
+    			$this->load->model('extension/shipping/apiship');
+    			$providers = $this->model_extension_shipping_apiship->get_providers();
+			    $data['shipping_apiship_providers_keys'] = json_encode(array_keys($providers));
+                $data['shipping_apiship_group_points'] = $this->config->get('shipping_apiship_group_points') ? 'true' : 'false';
+				// apiship end
+
+			]]></add>
+		</operation>
+      	<operation>
+			<search error="skip" ><![CDATA[$this->response->addHeader('Content-Type: application/json');]]></search>
+			<add position="before"><![CDATA[  
+
+			// apiship start
+                $this->load->language('extension/shipping/apiship');
+                $code = '';
+                if (isset($this->request->post['shipping_method'])) $code = $this->request->post['shipping_method'];
+
+                if ((strpos($code, 'apiship')!==false) && (strpos($code, 'error')!==false))
+                {
+                    $json['error']['warning'] = $this->language->get('shipping_apiship_error_select_point');
+                }
+			// apiship end
+
+			]]></add>
+		</operation>
+	</file>
+  
+	<file path="catalog/view/theme/*/template/checkout/shipping_method.twig">
+		<operation>
+
+			<search error="skip" ><![CDATA[{% if error_warning %}]]></search>
+			<add position="before"><![CDATA[ 
+
+			<!-- apiship start -->
+				<script type="text/javascript" src="catalog/view/javascript/apiship.js?v=0.5"></script>
+				<link rel="stylesheet" href="catalog/view/javascript/apiship.css?v=0.5" type="text/css" />
+
+
+				<script type="text/javascript">
+
+	                function get_last_tracing_id() {
+	                    $.ajax({
+							url: '{{ shipping_apiship_get_last_tracing_id_url }}',
+							
+							success: function(id) {
+								console.log(id)	
+							},
+						});
+	                }
+
+ 				function apiship_prepare_ref(is_select) {
+					if (is_select)
+					    return '<a class="apiship_points" href="#" onclick="apiship_open($(this));return false;"> {{ shipping_apiship_select_point }}</a>';
+					else
+					    return '<a class="apiship_points" href="#" onclick="apiship_open($(this));return false;"> {{ shipping_apiship_change_point }}</a>';
+					
+				}
+ 
+	            function get_image_ref(provider) {
+	                return "<img class='apiship_img_providers' style='width:60px;' src='https://storage.apiship.ru/icons/providers/svg/"+ provider +".svg'> ";
+	            }
+                
+ 				function show_icons() {
+					const providers = {{ shipping_apiship_providers_keys }}
+
+		            providers.forEach(provider => {
+		                    
+		                var el = `input:not([type=hidden]):not([value*='error'])[value*="_${provider}_"]`;
+		                for(var i=0; i<document.querySelectorAll(el).length; i++) {
+		                    el2 = get_image_ref(provider);
+		    	            document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
+		                }
+		
+		                el = `input:not([type=hidden])[value*='error'][value*="_${provider}_"]`;
+		                for(var i=0; i<document.querySelectorAll(el).length; i++) {
+                            if ({{shipping_apiship_group_points}})
+                                el2 = "<img class='apiship_img_providers' style='width:60px;' src='catalog/view/theme/default/image/shipping/apiship_map.png'>";
+                            else    
+    	                        el2 = get_image_ref(provider);
+    	                    
+    	                    document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
+                        }
+		                    
+		            });	
+				}
+ 
+				$(document).ready(function(){
+
+					el_select = apiship_prepare_ref(true);
+				    el_change = apiship_prepare_ref(false);
+
+					el = 'input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]';
+					for(var i=0; i<document.querySelectorAll(el).length; i++) {
+	                    text = document.querySelectorAll(el)[i].nextSibling.textContent;
+                        text = text.replace('-', '{{shipping_apiship_title_from}}');
+                        document.querySelectorAll(el)[i].nextSibling.textContent = text;
+                    }
+                    
+					$('input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]').parent().append(el_select);
+					$('input:not([type=hidden])[value^="apiship"][value*="point"]:not([value*="error"])').parent().append(el_select);
+
+				    if ({{ shipping_apiship_icon_show }})					
+  					    show_icons();
+  					    
+  					 get_last_tracing_id();
+
+				});
+
+
+				function apiship_open(el) {
+                    code = el.siblings("input").val();
+					$.ajax({
+						url: '{{ shipping_apiship_get_points_url }}',
+						type: 'post',
+						dataType: 'json',
+						data: {'code':code},
+       					beforeSend: function() {
+                   		    		$('input:not([type=hidden])[value="'+ code +'"]').parent().append('<div class="apiship_loading"></div>');
+ 						},
+						complete: function() {
+                   				$(".apiship_loading").remove();
+ 						},
+						success: function(data_points) {
+						    if (data_points['error']=='no_error') {
+    							apiship.open(apiship_function, data_points['points'], code)	
+							    return
+    						}
+
+						    if (data_points['error']=='no_products') {
+							    window.location.reload();
+							    return
+						    }
+
+						    if (data_points['error']=='no_city') {
+							    window.location.reload();
+							    return
+						    }
+
+    						alert(data_points['error']);
+    						
+						},
+						error: function(xhr, ajaxOptions, thrownError) {
+							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+						}
+
+					});
+	
+				
+				}
+
+				function apiship_function(result, code){	
+			            $.ajax({
+							url: '{{ shipping_apiship_set_point_url }}',
+							type: 'post',
+							data: {shipping_apiship_point:result},
+							dataType: 'json',
+
+							success: function(data) {
+              					$(".apiship_loading").remove();
+								if (typeof data.error === 'undefined') 
+								{	
+								    	provider_items = data.code.split('_');
+                                    	provider = provider_items[1]
+                                    
+                                    	el_img = ({{ shipping_apiship_icon_show }})?get_image_ref(provider):'';
+									
+									    el = "<input type='radio' checked='checked' value='" + data.code + "' name='shipping_method'> "+ el_img + data.title + ' - ' + data.text + apiship_prepare_ref();
+
+	         							$('input[value="'+ code +'"]').parent().html(el);
+																			
+									}
+									else
+										alert(data.error);
+							}
+ 						});
+					
+                		}
+
+
+
+			</script>
+			<!-- apiship end -->
+
+			
+			]]></add>
+		</operation>
+	</file>
+
+	<file path="catalog/controller/checkout/simplecheckout_shipping.php">
+		<operation error="skip">
+			<search><![CDATA[$this->session->data['shipping_methods'] = $this->_templateData['shipping_methods'];]]></search>
+			<add position="before"><![CDATA[  
+
+				// apiship start
+				$this->load->language('extension/shipping/apiship');
+				$this->_templateData['shipping_apiship_set_point_url'] = $this->url->link('extension/shipping/apiship/set_point', '', 'SSL'); 
+				$this->_templateData['shipping_apiship_get_points_url'] = $this->url->link('extension/shipping/apiship/get_points', '', 'SSL'); 
+				$this->_templateData['shipping_apiship_change_point'] = $this->language->get('shipping_apiship_change_point');
+				$this->_templateData['shipping_apiship_select_point'] = $this->language->get('shipping_apiship_select_point');
+                $this->_templateData['shipping_apiship_title_from'] = $this->language->get('shipping_apiship_title_from');
+
+                $this->_templateData['shipping_apiship_get_last_tracing_id_url'] = $this->url->link('extension/shipping/apiship/get_last_tracing_id', '', 'SSL');
+
+                $this->_templateData['shipping_apiship_icon_show'] = $this->config->get('shipping_apiship_icon_show') ? 'true' : 'false'; 
+
+				$this->load->model('extension/shipping/apiship');
+				$providers = $this->model_extension_shipping_apiship->get_providers();
+			    $this->_templateData['shipping_apiship_providers_keys'] = json_encode(array_keys($providers));
+			    $this->_templateData['shipping_apiship_group_points'] = $this->config->get('shipping_apiship_group_points') ? 'true' : 'false';
+			
+				$shipping_method = $this->_templateData['shipping_method']['code'];
+
+				$code = '';
+				if (isset($this->request->post['shipping_method'])) $code = $this->request->post['shipping_method'];
+
+				if ((strpos($code, 'apiship')!==false) && (strpos($code, 'error')!==false))
+				{
+				        $this->_templateData['has_error_shipping'] = true;
+					 	$this->_templateData['error_shipping']     = $this->language->get('shipping_apiship_error_select_point');
+
+						$this->simplecheckout->addError('shipping');
+
+				       	$error = true;
+				}
+
+				// apiship end
+
+			]]></add>
+		</operation>
+	</file>
+
+	<file path="catalog/view/theme/*/template/checkout/simplecheckout_shipping.twig">
+
+		<operation>
+			<search><![CDATA[{% if display_header %}]]></search>
+			<add position="before" ><![CDATA[
+
+			<!-- apiship start -->
+				<script type="text/javascript" src="catalog/view/javascript/apiship.js?v=0.5"></script>
+				<link rel="stylesheet" href="catalog/view/javascript/apiship.css?v=0.5" type="text/css" />
+
+
+				<script type="text/javascript">
+
+                function get_last_tracing_id() {
+                    
+                    $.ajax({
+						url: '{{ shipping_apiship_get_last_tracing_id_url }}',
+						
+						success: function(id) {
+							console.log(id)	
+						},
+
+					});
+                }
+
+				function apiship_prepare_ref(is_select) {
+					if (is_select)
+					    return '<a class="apiship_points" href="#" onclick="apiship_open($(this));return false;"> {{ shipping_apiship_select_point }}</a>';
+					else
+					    return '<a class="apiship_points" href="#" onclick="apiship_open($(this));return false;"> {{ shipping_apiship_change_point }}</a>';
+					
+				}
+				
+				function get_image_ref(provider) {
+	                return "<img class='apiship_img_providers' style='width:60px;' src='https://storage.apiship.ru/icons/providers/svg/"+ provider +".svg'> ";
+	            }
+	            
+				function show_icons() {
+					const providers = {{ shipping_apiship_providers_keys }}
+
+                    providers.forEach(provider => {
+                        var el = `input:not([type=hidden]):not([value*='error'])[value*="_${provider}_"]`;
+                    
+                        for(var i=0; i<document.querySelectorAll(el).length; i++) {
+                            el2 = get_image_ref(provider);
+    	                    document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
+                        }
+                        
+                        el = `input:not([type=hidden])[value*='error'][value*="_${provider}_"]`;
+                    
+                        for(var i=0; i<document.querySelectorAll(el).length; i++) {
+                            if ({{shipping_apiship_group_points}})
+                                el2 = "<img class='apiship_img_providers' style='width:60px;' src='catalog/view/theme/default/image/shipping/apiship_map.png'>";
+                            else    
+    	                        el2 = get_image_ref(provider);
+    	                    
+    	                    document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
+                        }
+                    });	
+                    
+				}
+				
+				$(document).ready(function(){
+				    el_select = apiship_prepare_ref(true);
+				    el_change = apiship_prepare_ref(false);
+				    
+					el = 'input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]';
+					for(var i=0; i<document.querySelectorAll(el).length; i++) {
+	                    text = document.querySelectorAll(el)[i].nextSibling.textContent;
+                        text = text.replace('-', '{{shipping_apiship_title_from}}');
+                        document.querySelectorAll(el)[i].nextSibling.textContent = text;
+                    }
+					
+					
+					$('input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]').parent().append(el_select);
+                    $('input:not([type=hidden])[value^="apiship"][value*="point"]:not([value*="error"])').parent().append(el_change);
+
+					if ({{ shipping_apiship_icon_show }})					
+                        show_icons();
+					
+                    get_last_tracing_id();
+
+				});
+
+
+
+				function apiship_open(el) {
+                    code = el.siblings("input").val()
+
+					$.ajax({
+					    url: '{{ shipping_apiship_get_points_url }}',
+					    type: 'post',
+					    dataType: 'json',
+					    data: {'code':code},
+					    beforeSend: function() {
+                   			$('input:not([type=hidden])[value="'+ code +'"]').parent().append('<div class="apiship_loading"></div>');
+ 					    },
+					    complete: function() {
+                   			$(".apiship_loading").remove();
+ 					    },
+					    success: function(data_points) {
+					        if (data_points['error']=='no_error') {
+    						    apiship.open(apiship_function, data_points['points'], code)	
+						        return
+    					    }
+
+					        if (data_points['error']=='no_products') {
+						        window.location.reload();
+						        return
+					        }
+
+					        if (data_points['error']=='no_city') {
+						        window.location.reload();
+						        return
+					        }
+
+						    alert(data_points['error']);
+					    },
+					    error: function(xhr, ajaxOptions, thrownError) {
+						    alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+					    }
+
+					});
+	
+				}
+
+				function apiship_function(result, code){	
+			            $.ajax({
+							url: '{{ shipping_apiship_set_point_url }}',
+							type: 'post',
+							data: {shipping_apiship_point:result},
+							dataType: 'json',
+							success: function(data) {
+							    $(".apiship_loading").remove();
+								if (typeof data.error === 'undefined')
+								{	
+        
+									$("input[value='" + code + "']").val(data.code);
+
+									
+									if ($("input[value='" + data.code + "']").attr("checked") == "checked")
+									{
+		                                          	if (typeof simplecheckout_reload !== "undefined") {
+		                                            		simplecheckout_reload("shipping");
+		                                          	} else if (typeof reloadAll !== "undefined") {
+		                                            		reloadAll();
+		                                          	}
+									}
+									else
+										$("input[value='" + data.code + "']").click();
+									
+                            
+								}
+								else
+									alert(data.error);
+							}
+ 						});
+					
+                       }
+
+
+
+			</script>
+			<!-- apiship end -->
+
+			
+			]]></add>
+		</operation>
+	</file>
+  
+
+</modification>
