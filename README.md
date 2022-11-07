@@ -73,12 +73,17 @@
 
 # Документация
 
-Документация по модулю находится в справочном центре ApiShip
+Документация по модулю находится в [справочном центре ApiShip](https://docs.apiship.ru/docs/integrations-marketplaces/opencart/)
 
 * [Установка модуля](https://docs.apiship.ru/docs/integrations-marketplaces/opencart/install/)
 * [Настройка модуля](https://docs.apiship.ru/docs/integrations-marketplaces/opencart/settings/)
 * [Обновление модуля](https://docs.apiship.ru/docs/integrations-marketplaces/opencart/update/)
 * [Создание заказа](https://docs.apiship.ru/docs/integrations-marketplaces/opencart/create-order/)
+
+
+# Примеры интернет-магазинов, которые используют модуль
+
+* https://posudaideal.ru/
 
 # Техническая поддержка
 
