@@ -83,7 +83,7 @@
 
 # Примеры интернет-магазинов, которые используют модуль
 
-* https://posudaideal.ru/
+* https://posudaideal.ru
 * https://becherry.ru
 
 # Техническая поддержка
