@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title'] 					= 'Расчет доставки ApiShip';
+$_['heading_title']					= 'Расчет доставки ApiShip';
 
 // Text
 $_['text_extension']   					= 'Расширения';
@@ -48,6 +48,11 @@ $_['entry_shipping_apiship_parcel_width']   	= 'Ширина (см)';
 $_['entry_shipping_apiship_parcel_height']   	= 'Высота (см)';
 $_['entry_shipping_apiship_parcel_weight']   	= 'Вес (гр)';
 
+$_['entry_shipping_apiship_place_length']   	= 'Длина (см)';
+$_['entry_shipping_apiship_place_width']   	= 'Ширина (см)';
+$_['entry_shipping_apiship_place_height']   	= 'Высота (см)';
+$_['entry_shipping_apiship_place_weight']   	= 'Вес (гр)';
+
 $_['entry_shipping_apiship_sort_order']   	= 'Порядок сортировки';
 $_['entry_shipping_apiship_status']   		= 'Статус';
 $_['entry_shipping_apiship_export_status'] 	= 'Статус после экспорта';
@@ -61,7 +66,8 @@ $_['entry_shipping_apiship_pickup_type']		= 'Тип забора груза';
 $_['entry_shipping_apiship_pickup_type1']		= 'Курьер';
 $_['entry_shipping_apiship_pickup_type2']		= 'Привоз на склад СД';
 
-$_['entry_shipping_apiship_place_dimensions']	= 'Габариты места';
+$_['entry_shipping_apiship_place_dimensions']	= 'Габариты места (см)';
+$_['entry_shipping_apiship_place_weight']		= 'Вес места (гр)';
 $_['entry_shipping_apiship_order_status']		= 'Статус заказа';
 
 $_['entry_shipping_apiship_rub_select']   	= 'Рубль';
@@ -83,6 +89,7 @@ $_['entry_main_settings']				= 'Основные настройки';
 $_['entry_sending_address']				= 'Адрес отправления';
 $_['entry_contact_details']				= 'Контактные данные';
 $_['entry_parcel_defaults']				= 'Параметры товаров по умолчанию';
+$_['entry_place_defaults']				= 'Параметры грузоместа (используются, если заполнены)';
 $_['entry_extra_settings']				= 'Дополнительные параметры';
 $_['entry_providers_points']				= 'Параметры отгрузки в службы доставки';
 $_['entry_providers_point']				= 'Привоз на склад';

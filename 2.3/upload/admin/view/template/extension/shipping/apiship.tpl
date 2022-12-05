@@ -278,7 +278,7 @@
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_parcel_length"><?php echo $entry_shipping_apiship_parcel_length; ?></label>
             <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_parcel_length" value="<?php echo $shipping_apiship_parcel_length; ?>" placeholder="<?php echo $entry_shipping_apiship_parcel_length; ?>" id="shipping_apiship_parcel_length" class="form-control" />
+              <input type="number" name="shipping_apiship_parcel_length" value="<?php echo $shipping_apiship_parcel_length; ?>" placeholder="<?php echo $entry_shipping_apiship_parcel_length; ?>" id="shipping_apiship_parcel_length" class="form-control" />
 			<?php if ($error_shipping_apiship_parcel_length) { ?>
               		<div class="text-danger"><?php echo $error_shipping_apiship_parcel_length; ?></div>
               	<?php } ?>
@@ -288,7 +288,7 @@
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_parcel_width"><?php echo $entry_shipping_apiship_parcel_width; ?></label>
             <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_parcel_width" value="<?php echo $shipping_apiship_parcel_width; ?>" placeholder="<?php echo $entry_shipping_apiship_parcel_width; ?>" id="shipping_apiship_parcel_width" class="form-control" />
+              <input type="number" name="shipping_apiship_parcel_width" value="<?php echo $shipping_apiship_parcel_width; ?>" placeholder="<?php echo $entry_shipping_apiship_parcel_width; ?>" id="shipping_apiship_parcel_width" class="form-control" />
 			<?php if ($error_shipping_apiship_parcel_width) { ?>
               		<div class="text-danger"><?php echo $error_shipping_apiship_parcel_width; ?></div>
               	<?php } ?>
@@ -298,7 +298,7 @@
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_parcel_height"><?php echo $entry_shipping_apiship_parcel_height; ?></label>
             <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_parcel_height" value="<?php echo $shipping_apiship_parcel_height; ?>" placeholder="<?php echo $entry_shipping_apiship_parcel_height; ?>" id="shipping_apiship_parcel_height" class="form-control" />
+              <input type="number" name="shipping_apiship_parcel_height" value="<?php echo $shipping_apiship_parcel_height; ?>" placeholder="<?php echo $entry_shipping_apiship_parcel_height; ?>" id="shipping_apiship_parcel_height" class="form-control" />
 			<?php if ($error_shipping_apiship_parcel_height) { ?>
               		<div class="text-danger"><?php echo $error_shipping_apiship_parcel_height; ?></div>
               	<?php } ?>
@@ -308,15 +308,50 @@
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_parcel_weight"><?php echo $entry_shipping_apiship_parcel_weight; ?></label>
             <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_parcel_weight" value="<?php echo $shipping_apiship_parcel_weight; ?>" placeholder="<?php echo $entry_shipping_apiship_parcel_weight; ?>" id="shipping_apiship_parcel_weight" class="form-control" />
+              <input type="number" name="shipping_apiship_parcel_weight" value="<?php echo $shipping_apiship_parcel_weight; ?>" placeholder="<?php echo $entry_shipping_apiship_parcel_weight; ?>" id="shipping_apiship_parcel_weight" class="form-control" />
 			<?php if ($error_shipping_apiship_parcel_weight) { ?>
               		<div class="text-danger"><?php echo $error_shipping_apiship_parcel_weight; ?></div>
               	<?php } ?>
             </div>
           </div>
 
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b><?php echo $entry_place_defaults; ?></b>
+            </div>
+          </div>
 
           <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_place_length"><?php echo $entry_shipping_apiship_place_length; ?></label>
+            <div class="col-sm-8">
+              <input type="number" name="shipping_apiship_place_length" value="<?php echo $shipping_apiship_place_length; ?>" placeholder="<?php echo $entry_shipping_apiship_place_length; ?>" id="shipping_apiship_place_length" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_place_width"><?php echo $entry_shipping_apiship_place_width; ?></label>
+            <div class="col-sm-8">
+              <input type="number" name="shipping_apiship_place_width" value="<?php echo $shipping_apiship_place_width; ?>" placeholder="<?php echo $entry_shipping_apiship_place_width; ?>" id="shipping_apiship_place_width" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_place_height"><?php echo $entry_shipping_apiship_place_height; ?></label>
+            <div class="col-sm-8">
+              <input type="number" name="shipping_apiship_place_height" value="<?php echo $shipping_apiship_place_height; ?>" placeholder="<?php echo $entry_shipping_apiship_place_height; ?>" id="shipping_apiship_place_height" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_place_weight"><?php echo $entry_shipping_apiship_place_weight; ?></label>
+            <div class="col-sm-8">
+              <input type="number" name="shipping_apiship_place_weight" value="<?php echo $shipping_apiship_place_weight; ?>" placeholder="<?php echo $entry_shipping_apiship_place_weight; ?>" id="shipping_apiship_place_weight" class="form-control" />
+            </div>
+          </div>
+
+
+         <div class="form-group">
             <label class="col-sm-4 control-label" ></label>
             <div class="col-sm-8">
 			<b><?php echo $entry_providers_points; ?></b>
@@ -376,7 +411,7 @@
 	            	<div class="col-sm-4">
 	              		<select name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][order_status_id]" data-id="<?php echo $status['key']; ?>" id="shipping_apiship_mapping_use_<?php echo $status['key']; ?>" class="form-control">
 					<?php foreach($order_statuses as $order_status) { ?>
-		                  <?php if ($order_status['order_status_id'] == $shipping_apiship_mapping_status[$status['key']]['order_status_id']) { ?>
+		                  <?php if (isset($shipping_apiship_mapping_status[$status['key']]['order_status_id']) && $order_status['order_status_id'] == $shipping_apiship_mapping_status[$status['key']]['order_status_id']) { ?>
 		                  <option value="<?php echo $order_status['order_status_id']; ?>" selected="selected"><?php echo $order_status['name']; ?></option>
 		                  <?php } else { ?>
 		                  <option value="<?php echo $order_status['order_status_id']; ?>"><?php echo $order_status['name']; ?></option>

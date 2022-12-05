@@ -1,10 +1,10 @@
 <modification>
 
-	<name>ApiShip</name>
-	<code>ApiShip</code>
-	<version>0.7.14 (OpenCart 3.x)</version>
-	<author>ApiShip</author>
-	<link>https://apiship.ru</link>
+	<name>ApiShip by waterfall</name>
+	<code>ApiShip by waterfall</code>
+	<version>0.7.15 (OpenCart 3.x)</version>
+	<author>waterfall</author>
+	<link>http://waterfall-opencart.ru</link>
 
 	<file path="admin/controller/sale/order.php">
 		<operation>
@@ -12,6 +12,7 @@
 			<add position="before"><![CDATA[  
 
 		// apiship start
+		    $data['heading_title'] = $this->language->get('heading_title');
 			$this->load->language('extension/shipping/apiship');
 
 	    	$data['shipping_apiship_export_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/export_order&id=".$order_id;
@@ -35,6 +36,8 @@
     		$data['entry_shipping_apiship_pickup_type1'] = $this->language->get('entry_shipping_apiship_pickup_type1');
     		$data['entry_shipping_apiship_pickup_type2'] = $this->language->get('entry_shipping_apiship_pickup_type2');
 
+    		$data['entry_shipping_apiship_place_weight'] = $this->language->get('entry_shipping_apiship_place_weight');
+    		         
 		// apiship end
 
 			]]></add>
@@ -83,6 +86,7 @@
 						    shipping_apiship_place_length: $('#shipping_apiship_place_length').val(),
 						    shipping_apiship_place_width: $('#shipping_apiship_place_width').val(),
 						    shipping_apiship_place_height: $('#shipping_apiship_place_height').val(),
+						    shipping_apiship_place_weight: $('#shipping_apiship_place_weight').val(),
 						},
 						beforeSend: function() {
 							$('#shipping_apiship_export').button('loading');
@@ -154,7 +158,8 @@
 	                        $('#shipping_apiship_place_length').val(json['place_length']);
 	                        $('#shipping_apiship_place_width').val(json['place_width']);
 	                        $('#shipping_apiship_place_height').val(json['place_height']);
-
+	                        $('#shipping_apiship_place_weight').val(json['place_weight']);
+	                       
                             $('#shipping_apiship_pickup_type').val(json['pickup_type']);
 	                        $('#shipping_apiship_order_status').html(json['order_status']);
 	
@@ -165,7 +170,7 @@
                                 
                                 $('#shipping_apiship_label_span').show();
                                 $('#shipping_apiship_waybill_span').show();
-                                
+                               
                                 return false;
                             } else {
                                 $('#shipping_apiship_export').show();
@@ -299,6 +304,14 @@
              </tr>
 
 			 <tr>
+                <td colspan=2><label>{{ entry_shipping_apiship_place_weight }}</label><br>
+                <div style ='display: flex;flex-wrap: nowrap; align-items: center;'>
+                <input type='number' id='shipping_apiship_place_weight' value='-' style='width:100%'>
+                </div>
+                </td>
+             </tr>
+
+			 <tr>
                 <td colspan=2><label>{{ entry_shipping_apiship_order_status }}</label><br>
                 <div id='shipping_apiship_order_status'>-</div>
                 </td>
@@ -319,7 +332,7 @@
 
 			<!-- apiship start -->
 			
-			    <div style='padding-right:5px; display:{{ show_apiship_export_order }}' class="pull-right">
+			    <div style='padding-right:5px;' class="pull-right">
 				<a id="shipping_apiship_label" data-toggle="tooltip" title="{{ entry_shipping_apiship_label_title }}" class="btn btn-success"><i class="fa fa-tags"></i>&nbsp;{{ entry_shipping_apiship_label_title }}</a>
 				<a id="shipping_apiship_waybill" data-toggle="tooltip" title="{{ entry_shipping_apiship_waybill_title }}" class="btn btn-success"><i class="fa fa-truck"></i>&nbsp;{{ entry_shipping_apiship_waybill_title }}</a>
 				</div>

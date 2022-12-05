@@ -119,7 +119,7 @@ class Apiship {
 
 			if (!isset($data['rows'])) {
 				$this->toLog('shipping_apiship_data '.$cmd.' error2', ['url' => $url, 'output' => $output], true);
-				return [];
+				return ['message' => $data['message']];
 			}
 
 			$rows = array_merge($rows,$data['rows']);
@@ -269,7 +269,7 @@ class Apiship {
 		return $data;
 	}
 
- 	public function apiship_calculator($region, $city, $postcode, $providers, $products) {
+ 	public function apiship_calculator($region, $city, $postcode, $ext_address, $providers, $products, $place_params = []) {
 
 		if (trim($city) == '') {		
 			$output['message'] = $this->apiship_params['shipping_apiship_error_select_city']; 
@@ -282,10 +282,10 @@ class Apiship {
 
 		$calculate_data = $this->calculate_places($products);
 		$items = $calculate_data['items'];
-		$cart_length = $calculate_data['total_length'];
-		$cart_width = $calculate_data['total_width'];
-		$cart_height = $calculate_data['total_height'];
-		$cart_weight = $calculate_data['total_weight'];
+		$cart_length = (empty($place_params['length'])) ? $calculate_data['total_length'] : $place_params['length'];
+		$cart_width = (empty($place_params['width'])) ? $calculate_data['total_width'] : $place_params['width'];
+		$cart_height = (empty($place_params['height'])) ? $calculate_data['total_height'] : $place_params['height'];
+		$cart_weight = (empty($place_params['weight'])) ? $calculate_data['total_weight'] : $place_params['weight'];
 		$cart_cost = $calculate_data['total_cost'];
 		
 		$url = $this->apiship_params['shipping_apiship_url'] . 'calculator';
@@ -330,6 +330,8 @@ class Apiship {
 
 		if ($providers!=[]) $params['providerKeys'] = $providers;
 		if ($postcode!='') $params['to']['index'] = $postcode;
+		if ($ext_address!='') $params['to']['addressString'] = $ext_address;
+
 
 		$output = $this->curl_post($url, $params);
 		if (isset($output['headers']['x-tracing-id'][0])) $x_tracing_id = $output['headers']['x-tracing-id'][0]; else $x_tracing_id = '?';
@@ -420,32 +422,32 @@ class Apiship {
 			      	'width' => $order_params['placeWidth'],
 			      	'weight' => $order_params['placeWeight'],
 			    	]
-			],
-			'extraParams' => [
-				[
-			    		'key' => 'testParam', // Тип дополнительной услуги
-			    		'value' => 'testValue', // Значение дополнительной услуги
-				]
-			],
+			]
 		];
 
 		$pointInId = $this->get_pickup_id($order_params['orderProviderKey']);
 		if ($pointInId != '') $params['order']['pointInId'] = $pointInId;
 
 		$koef = $order_params['costAssessedCost']/$order_params['sub_total_cost'];
-
 		$total_cost = 0;
+
+		$koef_weight = $order_params['placeWeight']/$order_params['placeCalculateWeight'];
+		$total_weight = 0;
+
 		foreach($order_params['items'] as $item) {
 			
 			$cost = $this->format_cost(($order_params['costCodCost']==0)?0:$item['cost']*$koef);
 			$assessed_cost = $item['cost'];
 			$total_cost = $total_cost + $cost*$item['quantity'];
-
+			
+			$weight = $this->format_weight($item['weight']*$koef_weight);
+			$total_weight = $total_weight + $weight*$item['quantity'];
+			
 			$params['places'][0]['items'][] = [
 				'articul' => $item['articul'],
 				'description' => $item['description'],
 				'quantity' => $item['quantity'],
-				'weight' => $item['weight'],
+				'weight' => $weight,
 				'cost' => $cost,
 				'assessedCost' => $assessed_cost
 			];
@@ -453,6 +455,19 @@ class Apiship {
 		}
 
 		$cost_dif = $total_cost - $order_params['costCodCost'] + $order_params['costDeliveryCost']; 
+		$weight_dif = $total_weight - $order_params['placeWeight'];
+
+		$this->toLog('shipping_apiship_order', [
+			'cost_dif' => $cost_dif,
+			'total_cost' => $total_cost,
+			'koef' => $koef,
+
+			'weight_dif' => $weight_dif,
+			'total_weight' => $total_weight,
+			'koef_weight' => $koef_weight
+		]);
+
+
 		if ($cost_dif != 0) {
 			if ($params['places'][0]['items'][0]['quantity'] == 1) {
 				$params['places'][0]['items'][0]['cost'] -= $cost_dif;
@@ -470,6 +485,10 @@ class Apiship {
 
 
 			}
+		}
+
+		if ($weight_dif != 0) {
+			$params['places'][0]['items'][0]['weight'] -= $weight_dif;
 		}
 
 		$output = $this->curl_post($url, $params);
@@ -606,8 +625,10 @@ class Apiship {
 		}
 
 		$data = $this->apiship_point_by_params(['id=['.implode(',',$points).']']);
-		
+
 		$points_data = [];
+		if (isset($data['message'])) return $points_data;
+
 		foreach($data as $point) {
 			$points_data[$point['providerKey']] = ['id' => $point['id'], 'address' => $point['code']. ', ' . $this->get_address($point)];
 		}
@@ -618,6 +639,8 @@ class Apiship {
 
 		$data = $this->apiship_statuses();		
 		$statuses_data = [];
+		if (isset($data['message'])) return $statuses_data;
+
 		foreach($data as $status) {
 			$statuses_data[] = ['key' => $status['key'], 'name' => $status['name']];
 		}
@@ -718,6 +741,11 @@ class Apiship {
 	}
 
 	public function format_cost($cost) {	
-		return round($cost);
+		return round($cost, 2);
 	}
+
+	public function format_weight($weight) {	
+		return round($weight);
+	}
+
 }
