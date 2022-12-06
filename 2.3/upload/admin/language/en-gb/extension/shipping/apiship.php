@@ -48,6 +48,11 @@ $_['entry_shipping_apiship_parcel_width']   	= 'Width (cm)';
 $_['entry_shipping_apiship_parcel_height']   	= 'Height (cm)';
 $_['entry_shipping_apiship_parcel_weight']   	= 'Weight (gr)';
 
+$_['entry_shipping_apiship_place_length']   	= 'Length (cm)';
+$_['entry_shipping_apiship_place_width']   	= 'Width (cm)';
+$_['entry_shipping_apiship_place_height']   	= 'Height (cm)';
+$_['entry_shipping_apiship_place_weight']   	= 'Weight (gr)';
+
 $_['entry_shipping_apiship_sort_order']   	= 'Sort order';
 $_['entry_shipping_apiship_status']   		= 'Status';
 $_['entry_shipping_apiship_export_status'] 	= 'Status after export';
@@ -62,7 +67,8 @@ $_['entry_shipping_apiship_pickup_type']		= 'Pickup type';
 $_['entry_shipping_apiship_pickup_type1']		= 'Courier';
 $_['entry_shipping_apiship_pickup_type2']		= 'Delivery to the warehouse';
 
-$_['entry_shipping_apiship_place_dimensions']	= 'Place dimensions';
+$_['entry_shipping_apiship_place_dimensions']	= 'Place dimensions (cm)';
+$_['entry_shipping_apiship_place_weight']		= 'Place weight (gr)';
 $_['entry_shipping_apiship_order_status']		= 'Order status';
 
 $_['entry_shipping_apiship_rub_select'] 		= 'Ruble';
@@ -85,6 +91,7 @@ $_['entry_main_settings']				= 'Main settings';
 $_['entry_sending_address']				= 'Sending address';
 $_['entry_contact_details']				= 'Contact details';
 $_['entry_parcel_defaults']				= 'Parcel defaults';
+$_['entry_place_defaults']				= 'Package parameters (used if filled out)';
 $_['entry_extra_settings']				= 'Extra settings';
 $_['entry_providers_points']				= 'DC points';
 $_['entry_providers_point']				= 'DC point';

@@ -278,7 +278,7 @@
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_parcel_length">{{ entry_shipping_apiship_parcel_length }}</label>
             <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_parcel_length" value="{{ shipping_apiship_parcel_length }}" placeholder="{{ entry_shipping_apiship_parcel_length }}" id="shipping_apiship_parcel_length" class="form-control" />
+              <input type="number" name="shipping_apiship_parcel_length" value="{{ shipping_apiship_parcel_length }}" placeholder="{{ entry_shipping_apiship_parcel_length }}" id="shipping_apiship_parcel_length" class="form-control" />
 			{% if error_shipping_apiship_parcel_length %}
               		<div class="text-danger">{{ error_shipping_apiship_parcel_length }}</div>
               	{% endif %}
@@ -288,7 +288,7 @@
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_parcel_width">{{ entry_shipping_apiship_parcel_width }}</label>
             <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_parcel_width" value="{{ shipping_apiship_parcel_width }}" placeholder="{{ entry_shipping_apiship_parcel_width }}" id="shipping_apiship_parcel_width" class="form-control" />
+              <input type="number" name="shipping_apiship_parcel_width" value="{{ shipping_apiship_parcel_width }}" placeholder="{{ entry_shipping_apiship_parcel_width }}" id="shipping_apiship_parcel_width" class="form-control" />
 			{% if error_shipping_apiship_parcel_width %}
               		<div class="text-danger">{{ error_shipping_apiship_parcel_width }}</div>
               	{% endif %}
@@ -298,7 +298,7 @@
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_parcel_height">{{ entry_shipping_apiship_parcel_height }}</label>
             <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_parcel_height" value="{{ shipping_apiship_parcel_height }}" placeholder="{{ entry_shipping_apiship_parcel_height }}" id="shipping_apiship_parcel_height" class="form-control" />
+              <input type="number" name="shipping_apiship_parcel_height" value="{{ shipping_apiship_parcel_height }}" placeholder="{{ entry_shipping_apiship_parcel_height }}" id="shipping_apiship_parcel_height" class="form-control" />
 			{% if error_shipping_apiship_parcel_height %}
               		<div class="text-danger">{{ error_shipping_apiship_parcel_height }}</div>
               	{% endif %}
@@ -308,10 +308,45 @@
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_parcel_weight">{{ entry_shipping_apiship_parcel_weight }}</label>
             <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_parcel_weight" value="{{ shipping_apiship_parcel_weight }}" placeholder="{{ entry_shipping_apiship_parcel_weight }}" id="shipping_apiship_parcel_weight" class="form-control" />
+              <input type="number" name="shipping_apiship_parcel_weight" value="{{ shipping_apiship_parcel_weight }}" placeholder="{{ entry_shipping_apiship_parcel_weight }}" id="shipping_apiship_parcel_weight" class="form-control" />
 			{% if error_shipping_apiship_parcel_weight %}
               		<div class="text-danger">{{ error_shipping_apiship_parcel_weight }}</div>
               	{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" ></label>
+            <div class="col-sm-8">
+			<b>{{ entry_place_defaults }}</b>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_place_length">{{ entry_shipping_apiship_place_length }}</label>
+            <div class="col-sm-8">
+              <input type="number" name="shipping_apiship_place_length" value="{{ shipping_apiship_place_length }}" placeholder="{{ entry_shipping_apiship_place_length }}" id="shipping_apiship_place_length" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_place_width">{{ entry_shipping_apiship_place_width }}</label>
+            <div class="col-sm-8">
+              <input type="number" name="shipping_apiship_place_width" value="{{ shipping_apiship_place_width }}" placeholder="{{ entry_shipping_apiship_place_width }}" id="shipping_apiship_place_width" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_place_height">{{ entry_shipping_apiship_place_height }}</label>
+            <div class="col-sm-8">
+              <input type="number" name="shipping_apiship_place_height" value="{{ shipping_apiship_place_height }}" placeholder="{{ entry_shipping_apiship_place_height }}" id="shipping_apiship_place_height" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_place_weight">{{ entry_shipping_apiship_place_weight }}</label>
+            <div class="col-sm-8">
+              <input type="number" name="shipping_apiship_place_weight" value="{{ shipping_apiship_place_weight }}" placeholder="{{ entry_shipping_apiship_place_weight }}" id="shipping_apiship_place_weight" class="form-control" />
             </div>
           </div>
 
