@@ -1,9 +1,14 @@
 <?php
 
 $_['shipping_apiship_title']  			= 'Apiship delivery';
-$_['shipping_apiship_terminal']			= 'terminat'; 
+$_['shipping_apiship_point']				= 'Pickup ';
+$_['shipping_apiship_point_1']			= 'from the pickup point';
+$_['shipping_apiship_point_2']			= 'from Postamat';
+$_['shipping_apiship_point_3']			= 'from Russian Post Office';
+$_['shipping_apiship_point_4']			= 'from terminal';
+ 
 $_['shipping_apiship_door']				= 'courier'; 
-$_['shipping_apiship_change_terminal']		= 'change terminal';
+$_['shipping_apiship_change_point']			= 'change terminal';
 $_['shipping_apiship_select_point']			= 'select terminal'; 
 $_['shipping_apiship_error_select_point']		= 'Need to select terminal!';
 $_['shipping_apiship_error_select_city']		= 'Need to select city';

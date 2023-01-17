@@ -1,6 +1,7 @@
 <?php
 // Heading
 $_['heading_title']					= 'Расчет доставки ApiShip';
+$_['text_apiship']					= 'ApiShip';
 
 // Text
 $_['text_extension']   					= 'Расширения';
@@ -70,6 +71,9 @@ $_['entry_shipping_apiship_place_dimensions']	= 'Габариты места (с
 $_['entry_shipping_apiship_place_weight']		= 'Вес места (гр)';
 $_['entry_shipping_apiship_order_status']		= 'Статус заказа';
 
+$_['entry_shipping_apiship_comment']		= 'Комментарий экспорта';
+$_['entry_shipping_apiship_control']		= 'Управление экспортом в ApiShip';
+
 $_['entry_shipping_apiship_rub_select']   	= 'Рубль';
 $_['entry_shipping_apiship_gr_select']    	= 'Грамм';
 $_['entry_shipping_apiship_cm_select']    	= 'Сантиметр';
@@ -101,6 +105,8 @@ $_['entry_events_mapping_notify']			= 'Оповестить';
 $_['entry_shipping_apiship_paid_orders']		= 'Статусы оплаченных заказов';
 $_['entry_shipping_apiship_cron_url']   		= 'cron url:';
 $_['entry_shipping_apiship_paid']			= ' (Оплачен) ';
+
+$_['entry_shipping_apiship_cancel_confirm']	= 'Отменить экспортированный заказ?';
 
 // Error
 $_['error_permission']  				= 'У Вас нет прав для управления этим модулем!';

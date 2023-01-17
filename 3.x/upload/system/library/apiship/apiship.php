@@ -119,7 +119,8 @@ class Apiship {
 
 			if (!isset($data['rows'])) {
 				$this->toLog('shipping_apiship_data '.$cmd.' error2', ['url' => $url, 'output' => $output], true);
-				return ['message' => $data['message']];
+				if (isset($data['message'])) return ['message' => $data['message']];
+				return [];
 			}
 
 			$rows = array_merge($rows,$data['rows']);
@@ -488,8 +489,24 @@ class Apiship {
 		}
 
 		if ($weight_dif != 0) {
-			$params['places'][0]['items'][0]['weight'] -= $weight_dif;
+			if ($params['places'][0]['items'][0]['quantity'] == 1) {
+				$params['places'][0]['items'][0]['weight'] -= $weight_dif;
+			} else {
+
+				$params['places'][0]['items'][0]['quantity']--;
+				$params['places'][0]['items'][] = [
+					'articul' => $params['places'][0]['items'][0]['articul'],
+					'description' => $params['places'][0]['items'][0]['description'],
+					'quantity' => 1,
+					'weight' => $params['places'][0]['items'][0]['weight'] - $weight_dif,
+					'cost' => $params['places'][0]['items'][0]['cost'],
+					'assessedCost' => $params['places'][0]['items'][0]['assessedCost']
+				];
+
+
+			}
 		}
+
 
 		$output = $this->curl_post($url, $params);
 
@@ -699,9 +716,12 @@ class Apiship {
 			if ($height==0) $height = 1;
 			if ($weight==0) $weight = 1;
 
+			$articul = $product['model'];
+			if (!empty($product['sku'])) $articul = $product['sku']; 
+			$articul = mb_strimwidth($articul,0,50);			
 
 			$items[] = [
-				'articul' => $product['model'],
+				'articul' => $articul,
 				'description' => $product['name'],
 				'quantity' => intval($product['quantity']),
 				'weight' => $weight,
