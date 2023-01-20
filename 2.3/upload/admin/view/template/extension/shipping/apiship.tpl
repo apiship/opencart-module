@@ -376,7 +376,7 @@
 				</div>
 
 	            	<div class="col-sm-7">
-	              		<select class="shipping_apiship_provider" data-id="<?php echo $provider['key']; ?>" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][id]" id="shipping_apiship_provider_<?php echo $provider['key']; ?>" value="<?php if (isset($shipping_apiship_provider[$provider['key']]['id'])) echo $shipping_apiship_provider[$provider['key']]['id']; else echo ''; ?>" placeholder="" class="form-control">
+	              		<select class="shipping_apiship_provider" data-id="<?php echo $provider['key']; ?>" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][id]" id="shipping_apiship_provider_<?php echo $provider['key']; ?>" class="form-control">
 					<option value="<?php if (isset($shipping_apiship_providers_points[$provider['key']]['id'])) echo $shipping_apiship_providers_points[$provider['key']]['id']; else echo ''; ?>"><?php if (isset($shipping_apiship_providers_points[$provider['key']]['address'])) echo $shipping_apiship_providers_points[$provider['key']]['address']; else echo ''; ?></option>
 					</select>
 	            	</div>

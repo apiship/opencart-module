@@ -1,6 +1,7 @@
 <?php
 // Heading
 $_['heading_title'] 					= 'ApiShip shipping';
+$_['text_apiship']					= 'ApiShip';
 
 // Text
 $_['text_extension']   					= 'Extensions';
@@ -62,7 +63,6 @@ $_['entry_shipping_apiship_cancel_export_title']= 'Cancellation of an order in A
 $_['entry_shipping_apiship_label_title']		= 'Label';
 $_['entry_shipping_apiship_waybill_title']	= 'Waybill';
 
-
 $_['entry_shipping_apiship_pickup_type']		= 'Pickup type';
 $_['entry_shipping_apiship_pickup_type1']		= 'Courier';
 $_['entry_shipping_apiship_pickup_type2']		= 'Delivery to the warehouse';
@@ -71,10 +71,12 @@ $_['entry_shipping_apiship_place_dimensions']	= 'Place dimensions (cm)';
 $_['entry_shipping_apiship_place_weight']		= 'Place weight (gr)';
 $_['entry_shipping_apiship_order_status']		= 'Order status';
 
+$_['entry_shipping_apiship_comment']		= 'Export comment';
+$_['entry_shipping_apiship_control']		= 'Export management in ApiShip';
+
 $_['entry_shipping_apiship_rub_select'] 		= 'Ruble';
 $_['entry_shipping_apiship_gr_select'] 		= 'Gr';
 $_['entry_shipping_apiship_cm_select']    	= 'Cm';
-
 
 $_['entry_shipping_apiship_tax_class'] 		= 'Tax class';
 $_['entry_shipping_apiship_geo_zone'] 		= 'Geo Zone';
@@ -103,6 +105,8 @@ $_['entry_events_mapping_notify']			= 'Notify';
 $_['entry_shipping_apiship_paid_orders']		= 'Statuses of paid orders';
 $_['entry_shipping_apiship_cron_url']   		= 'cron url:';
 $_['entry_shipping_apiship_paid']			= ' (Paid) ';
+
+$_['entry_shipping_apiship_cancel_confirm']	= 'Cancel an exported order?';
 
 // Error
 $_['error_permission'] 					= 'You are not allowed to control this unit';
