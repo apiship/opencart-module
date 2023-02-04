@@ -164,13 +164,9 @@ class ModelExtensionShippingApiship extends Model {
 		$city = trim($address['city']);
 		$postcode = trim($address['postcode']);
 		$ext_address = trim($address['address_1']);
+		$country = trim($address['iso_code_2']);
 
-		$place_params['length'] = $this->apiship_params['shipping_apiship_place_length'];
-		$place_params['width'] = $this->apiship_params['shipping_apiship_place_width'];
-		$place_params['height'] = $this->apiship_params['shipping_apiship_place_height'];
-		$place_params['weight'] = $this->apiship_params['shipping_apiship_place_weight'];
-
-		$apiship_calculator_data = $this->apiship->apiship_calculator($region,$city,$postcode,$ext_address,[],$this->cart->getProducts(), $place_params);
+		$apiship_calculator_data = $this->apiship->apiship_calculator($country,$region,$city,$postcode,$ext_address,[],$this->cart->getProducts());
 		$data = $apiship_calculator_data['body'];
 
 		$this->setData('shipping_apiship_last_tracing_id',$apiship_calculator_data['x-tracing-id']);
@@ -178,6 +174,7 @@ class ModelExtensionShippingApiship extends Model {
 		$this->setData('shipping_apiship_city',$city);
 		$this->setData('shipping_apiship_postcode',$postcode);
 		$this->setData('shipping_apiship_ext_address',$ext_address);
+		$this->setData('shipping_apiship_country',$country);
 
 		if ($full_list == false)
 		{
@@ -210,6 +207,7 @@ class ModelExtensionShippingApiship extends Model {
 
 
 			$this->apiship->toLog('get_quote_list debug', [
+				'address' => $address,
 				'start_points' => $start_points,
 				'session' => $this->session->data,
 				'select_point' => $select_point
@@ -288,7 +286,7 @@ class ModelExtensionShippingApiship extends Model {
 						$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax']);
 					}
 					else
-						$title = $this->language->get('shipping_apiship_point');
+						$title = $this->language->get('shipping_apiship_point') . $this->get_provider_name($provider_key);
 								
 					$quote_data[$element['key']] = [
 						'code'         => 'apiship.' . $element['key'],
@@ -419,10 +417,11 @@ class ModelExtensionShippingApiship extends Model {
 
 	}
 
-	private function get_points_array($region, $city, $postcode, $ext_address, $provider = []) {
+	private function get_points_array($country, $region, $city, $postcode, $ext_address, $provider = []) {
 		$this->load->language('extension/shipping/apiship');
 
 		$this->apiship->toLog('get_points_array', [ 
+				'country' => $country,
 				'region' => $region,
 				'city' => $city,
 				'postcode' => $postcode,
@@ -446,7 +445,7 @@ class ModelExtensionShippingApiship extends Model {
 
 		$apiship_point_types = ['Пункт выдачи заказа', 'Постамат', 'Отделение Почты России', 'Терминал'];
 
-		$apiship_calculator_data = $this->apiship->apiship_calculator($region,$city,$postcode,$ext_address,$provider,$products);
+		$apiship_calculator_data = $this->apiship->apiship_calculator($country,$region,$city,$postcode,$ext_address,$provider,$products);
 			$data = $apiship_calculator_data['body'];
 			$points_ids = [];
 			if (isset($data['deliveryToPoint'])) $providers = $data['deliveryToPoint']; else $providers = [];
@@ -596,8 +595,10 @@ class ModelExtensionShippingApiship extends Model {
 		$city = $this->getData('shipping_apiship_city');
 		$postcode = $this->getData('shipping_apiship_postcode');
 		$ext_address = $this->getData('shipping_apiship_ext_address');
+		$country = $this->getData('shipping_apiship_country');
 
 		$this->apiship->toLog('get_points', [
+				'country' => $country,
 				'code' => $code,
 				'region' => $region,
 				'city' => $city,
@@ -610,7 +611,7 @@ class ModelExtensionShippingApiship extends Model {
 		$provider = [$parce_code['provider']];
 		if ($this->apiship_params['shipping_apiship_group_points']) $provider = [];
 		
-		$points = $this->get_points_array($region, $city, $postcode, $ext_address, $provider);
+		$points = $this->get_points_array($country, $region, $city, $postcode, $ext_address, $provider);
 
 		echo json_encode($points);
 
@@ -630,13 +631,14 @@ class ModelExtensionShippingApiship extends Model {
 		$region = $this->getData('shipping_apiship_region');
 		$city = $this->getData('shipping_apiship_city');
 		$postcode = $this->getData('shipping_apiship_postcode');
-		$ext_address = $this->getData('shipping_apiship_ext_address');;
+		$ext_address = $this->getData('shipping_apiship_ext_address');
+		$country = $this->getData('shipping_apiship_country');
 
 		$cost = -1;  
 		$postcode = ''; 
   		$address1 = '';
 
-		$apiship_calculator_data = $this->apiship->apiship_calculator($region,$city,$postcode,$ext_address,[],$this->cart->getProducts());
+		$apiship_calculator_data = $this->apiship->apiship_calculator($country,$region,$city,$postcode,$ext_address,[],$this->cart->getProducts());
 		$data = $apiship_calculator_data['body'];
 
 		if (isset($data['deliveryToPoint'])) $providers = $data['deliveryToPoint']; else $providers = [];
@@ -813,8 +815,23 @@ class ModelExtensionShippingApiship extends Model {
 		{
 			$point = $this->apiship_point($point_id);
 			$recipientAddressString = $this->apiship->get_address($point);
-		} else
-			$recipientAddressString = implode(', ', [$order['shipping_postcode'],$order['shipping_country'],$order['shipping_zone'],$order['shipping_city'],$order['shipping_address_1']]);
+		} else {
+
+			$recipientAddressString = $this->apiship->get_address([
+					'postIndex' => $order['shipping_postcode'],
+					'area' => '',
+	
+					'region' => $order['shipping_zone'],
+					'regionType' => '',
+					
+					'city' => $order['shipping_city'],
+					'cityType' => '',
+
+					'street' => $order['shipping_address_1'],
+					'streetType' => ''
+
+			], true);
+		}
 
 		$order_params['orderId'] = $this->apiship_params['shipping_apiship_prefix']. $order['order_id'];
 		$order_params['orderWeight'] = $total_weight;
@@ -840,7 +857,7 @@ class ModelExtensionShippingApiship extends Model {
 
 		$order_params['recipientPhone'] =  $order['telephone'];  
 		$order_params['recipientContactName'] = $order['firstname'] . ' ' . $order['lastname'];
-		//$order_params['recipientCountryCode'] = $order['shipping_iso_code_2'];
+		$order_params['recipientCountryCode'] = $order['shipping_iso_code_2'];
 		$order_params['recipientAddressString'] = $recipientAddressString;
 		$order_params['recipientComment'] = $shipping_apiship_comment;//$order['comment'];
 

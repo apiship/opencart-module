@@ -14,8 +14,6 @@ class ControllerExtensionShippingApiship extends Controller {
 			$this->model_setting_setting->editSetting('shipping_apiship', $this->request->post);	
 
 			$this->session->data['success'] = $this->language->get('text_success');
-
-		    	$this->model_extension_shipping_apiship->install();
 									
 			$this->response->redirect($this->url->link('extension/shipping/apiship', 'user_token=' . $this->session->data['user_token'] . '&type=shipping', true));
 
@@ -30,7 +28,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.7.16 (OpenCart 3.x)';
+		$data['shipping_apiship_version'] = '0.7.17 (OpenCart 3.x)';
 
 		$data['button_save'] = $this->language->get('button_save');
 		$data['button_cancel'] = $this->language->get('button_cancel');
@@ -99,8 +97,7 @@ class ControllerExtensionShippingApiship extends Controller {
 
 		$data['shipping_apiship_modes'] = [
 			['code'=>'shipping_apiship_mode_normal', 'code_text'=>$this->language->get('entry_shipping_apiship_mode_normal')],
-			['code'=>'shipping_apiship_mode_debug', 'code_text'=>$this->language->get('entry_shipping_apiship_mode_debug')],
-			['code'=>'shipping_apiship_mode_test', 'code_text'=>$this->language->get('entry_shipping_apiship_mode_test')]
+			['code'=>'shipping_apiship_mode_debug', 'code_text'=>$this->language->get('entry_shipping_apiship_mode_debug')]
 		];
 
 		$data['shipping_apiship_countries'] = [
@@ -112,14 +109,6 @@ class ControllerExtensionShippingApiship extends Controller {
 			['code'=>1, 'code_text'=>$this->language->get('entry_shipping_apiship_pickup_type1')],
 			['code'=>2, 'code_text'=>$this->language->get('entry_shipping_apiship_pickup_type2')],
 		];                
-
-		
-
-		$apiship_providers = $this->model_extension_shipping_apiship->get_providers();
-		if (!empty($apiship_providers['message'])) $this->error['warning'] = $apiship_providers['message'];
-		$data['shipping_apiship_providers'] = $apiship_providers['providers'];
-		$data['shipping_apiship_providers_points'] = $this->model_extension_shipping_apiship->get_providers_points();
-		$data['shipping_apiship_integrator_statuses'] = $this->model_extension_shipping_apiship->get_integrator_statuses();
 
             $this->load->model('localisation/currency');
 		$data['currencies'] = $this->model_localisation_currency->getCurrencies();
@@ -164,6 +153,18 @@ class ControllerExtensionShippingApiship extends Controller {
 		} else {
 			$data['shipping_apiship_token'] = $this->config->get('shipping_apiship_token');
 		} 
+
+		$data['shipping_apiship_providers'] = [];
+		$data['shipping_apiship_providers_points'] = [];
+		$data['shipping_apiship_integrator_statuses'] = [];
+
+		if ($data['shipping_apiship_token'] != '') {
+			$apiship_providers = $this->model_extension_shipping_apiship->get_providers();
+			if (!empty($apiship_providers['message'])) $this->error['warning'] = $apiship_providers['message'];		
+			$data['shipping_apiship_providers'] = $apiship_providers['providers'];
+			$data['shipping_apiship_providers_points'] = $this->model_extension_shipping_apiship->get_providers_points();
+			$data['shipping_apiship_integrator_statuses'] = $this->model_extension_shipping_apiship->get_integrator_statuses();
+		}
 
 		if (isset($this->request->post['shipping_apiship_title'])) {
 			$data['shipping_apiship_title'] = $this->request->post['shipping_apiship_title'];
