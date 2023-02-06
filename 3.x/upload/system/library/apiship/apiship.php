@@ -10,11 +10,9 @@ class Apiship {
 		$this->apiship_params = $apiship_params;
 		$this->log = $log;
 
-		if ($apiship_params['shipping_apiship_mode']=='shipping_apiship_mode_test') 
-			$this->apiship_params['shipping_apiship_url'] = "http://api.dev.apiship.ru/v1/";
-		else
-			$this->apiship_params['shipping_apiship_url'] = "https://api.apiship.ru/v1/";
+		$this->apiship_params['shipping_apiship_url'] = "https://api.apiship.ru/v1/";
 
+		if (defined('APISHIP_TEST_MOD')) $this->apiship_params['shipping_apiship_url'] = "http://api.dev.apiship.ru/v1/";
 	}
 
 	public function __get($name) {
@@ -30,7 +28,7 @@ class Apiship {
 
 	private function isDebug() {
 		//return false;
-		return $this->apiship_params['shipping_apiship_mode']=='shipping_apiship_mode_debug' || $this->apiship_params['shipping_apiship_mode']=='shipping_apiship_mode_test';
+		return $this->apiship_params['shipping_apiship_mode']=='shipping_apiship_mode_debug';
 	}
 
 	private function curl_get($url) {
@@ -270,7 +268,7 @@ class Apiship {
 		return $data;
 	}
 
- 	public function apiship_calculator($region, $city, $postcode, $ext_address, $providers, $products, $place_params = []) {
+ 	public function apiship_calculator($country, $region, $city, $postcode, $ext_address, $providers, $products) {
 
 		if (trim($city) == '') {		
 			$output['message'] = $this->apiship_params['shipping_apiship_error_select_city']; 
@@ -282,45 +280,63 @@ class Apiship {
 		}
 
 		$calculate_data = $this->calculate_places($products);
+
 		$items = $calculate_data['items'];
-		$cart_length = (empty($place_params['length'])) ? $calculate_data['total_length'] : $place_params['length'];
-		$cart_width = (empty($place_params['width'])) ? $calculate_data['total_width'] : $place_params['width'];
-		$cart_height = (empty($place_params['height'])) ? $calculate_data['total_height'] : $place_params['height'];
-		$cart_weight = (empty($place_params['weight'])) ? $calculate_data['total_weight'] : $place_params['weight'];
+
+		$cart_length = $calculate_data['total_length'];
+		$cart_width = $calculate_data['total_width'];
+		$cart_height = $calculate_data['total_height'];
+		$cart_weight = $calculate_data['total_weight'];
+
 		$cart_cost = $calculate_data['total_cost'];
 		
 		$url = $this->apiship_params['shipping_apiship_url'] . 'calculator';
 
-		$places = [];
-
-		if (false) {
-			foreach($items as $item) {
-				$places[] = [
-				      'height' => $item['height'],
-				      'length' => $item['length'],
-				      'width' => $item['width'],
-				      'weight' => $item['weight']
-				];
-			}
-		} else {
-		 	$places[] = [
-		      	'height' => $cart_height,
-		      	'length' => $cart_length,
-		      	'width' => $cart_width,
-		      	'weight' => $cart_weight
-			];
-		}
-
+	 	$places[] = [
+	      	'height' => $cart_height,
+	      	'length' => $cart_length,
+	      	'width' => $cart_width,
+	      	'weight' => $cart_weight
+		];
 
 		$params = [		
 			'from' => [
 			   	'countryCode' => $this->apiship_params['shipping_apiship_sending_country_code'],
-			    	'region' => $this->apiship_params['shipping_apiship_sending_region'],
-			    	'city' => $this->apiship_params['shipping_apiship_sending_city'],
+				'addressString' => $this->get_address([
+					'area' => '',
+	
+					'region' => $this->apiship_params['shipping_apiship_sending_region'],
+					'regionType' => '',
+					
+					'city' => $this->apiship_params['shipping_apiship_sending_city'],
+					'cityType' => '',
+
+					'street' => $this->apiship_params['shipping_apiship_sending_street'],
+					'streetType' => '',
+
+					'house' => $this->apiship_params['shipping_apiship_sending_house'],
+					'block' => $this->apiship_params['shipping_apiship_sending_block'],
+					'office' => $this->apiship_params['shipping_apiship_sending_office']
+
+				])
+
 			],
 			'to' => [
-			   	'region' => $region,
-			    	'city' => $city,
+				'countryCode' => $country,
+				'addressString' => $this->get_address([
+					'postIndex' => $postcode,
+					'area' => '',
+	
+					'region' => $region,
+					'regionType' => '',
+					
+					'city' => $city,
+					'cityType' => '',
+
+					'street' => $ext_address,
+					'streetType' => ''
+				], true)
+
 			],
 			'places' => $places,
 			'customCode' => $this->apiship_params['shipping_apiship_custom_code'],
@@ -330,9 +346,6 @@ class Apiship {
 		];
 
 		if ($providers!=[]) $params['providerKeys'] = $providers;
-		if ($postcode!='') $params['to']['index'] = $postcode;
-		if ($ext_address!='') $params['to']['addressString'] = $ext_address;
-
 
 		$output = $this->curl_post($url, $params);
 		if (isset($output['headers']['x-tracing-id'][0])) $x_tracing_id = $output['headers']['x-tracing-id'][0]; else $x_tracing_id = '?';
@@ -393,14 +406,8 @@ class Apiship {
 			'recipient' => [
 			  	'phone' => $order_params['recipientPhone'], // Контактный телефон 
 			    	'contactName' => $order_params['recipientContactName'], // ФИО контактного лица
-				'addressString' => $order_params['recipientAddressString'], // Адрес одной строкой
-				/*
 				'countryCode' => $order_params['recipientCountryCode'], // Код страны в соответствии с ISO 3166-1 alpha-2 
-			    	'region' => $order_params['recipientRegion'], // Область или республика или край
-			    	'city' => $order_params['recipientCity'], // Город или населенный пункт
-				'street' => $order_params['recipientStreet'], // Улица
-				'house' => $order_params['recipientHouse'], // Дом
-				*/
+				'addressString' => $order_params['recipientAddressString'], // Адрес одной строкой
 				'comment' => $order_params['recipientComment'] // Комментарий
 			],
 			'returnAddress' => [
@@ -432,8 +439,8 @@ class Apiship {
 		$koef = $order_params['costAssessedCost']/$order_params['sub_total_cost'];
 		$total_cost = 0;
 
-		$koef_weight = $order_params['placeWeight']/$order_params['placeCalculateWeight'];
 		$total_weight = 0;
+		$total_count = 0;
 
 		foreach($order_params['items'] as $item) {
 			
@@ -441,9 +448,10 @@ class Apiship {
 			$assessed_cost = $item['cost'];
 			$total_cost = $total_cost + $cost*$item['quantity'];
 			
-			$weight = $this->format_weight($item['weight']*$koef_weight);
+			$weight = $this->format_weight($item['weight']);
 			$total_weight = $total_weight + $weight*$item['quantity'];
-			
+			$total_count = $total_count + $item['quantity'];
+
 			$params['places'][0]['items'][] = [
 				'articul' => $item['articul'],
 				'description' => $item['description'],
@@ -456,18 +464,17 @@ class Apiship {
 		}
 
 		$cost_dif = $total_cost - $order_params['costCodCost'] + $order_params['costDeliveryCost']; 
-		$weight_dif = $total_weight - $order_params['placeWeight'];
 
 		$this->toLog('shipping_apiship_order', [
 			'cost_dif' => $cost_dif,
 			'total_cost' => $total_cost,
 			'koef' => $koef,
 
-			'weight_dif' => $weight_dif,
 			'total_weight' => $total_weight,
-			'koef_weight' => $koef_weight
+			'placeWeight' => $order_params['placeWeight'],			
+			'placeCalculateWeight' => $order_params['placeCalculateWeight'],
+			'total_count' => $total_count
 		]);
-
 
 		if ($cost_dif != 0) {
 			if ($params['places'][0]['items'][0]['quantity'] == 1) {
@@ -480,7 +487,7 @@ class Apiship {
 					'description' => $params['places'][0]['items'][0]['description'],
 					'quantity' => 1,
 					'weight' => $params['places'][0]['items'][0]['weight'],
-					'cost' => $params['places'][0]['items'][0]['cost'] - $cost_dif,
+					'cost' => $this->format_cost($params['places'][0]['items'][0]['cost'] - $cost_dif),
 					'assessedCost' => $params['places'][0]['items'][0]['assessedCost']
 				];
 
@@ -488,25 +495,23 @@ class Apiship {
 			}
 		}
 
-		if ($weight_dif != 0) {
-			if ($params['places'][0]['items'][0]['quantity'] == 1) {
-				$params['places'][0]['items'][0]['weight'] -= $weight_dif;
-			} else {
-
-				$params['places'][0]['items'][0]['quantity']--;
-				$params['places'][0]['items'][] = [
-					'articul' => $params['places'][0]['items'][0]['articul'],
-					'description' => $params['places'][0]['items'][0]['description'],
-					'quantity' => 1,
-					'weight' => $params['places'][0]['items'][0]['weight'] - $weight_dif,
-					'cost' => $params['places'][0]['items'][0]['cost'],
-					'assessedCost' => $params['places'][0]['items'][0]['assessedCost']
-				];
-
-
+		if ($order_params['placeCalculateWeight'] != $total_weight) {
+			$one_item_weight = $this->format_weight($order_params['placeCalculateWeight'] / $total_count);
+			
+			$total_calculation_weight = $order_params['placeCalculateWeight'];
+			$i = 0;
+			foreach($order_params['items'] as $item) {
+				
+				if ($i<$total_count) {
+					$weight_left = $total_calculation_weight - $one_item_weight * $params['places'][0]['items'][$i]['quantity'];
+					$params['places'][0]['items'][$i]['weight'] = $one_item_weight;
+				} else {
+					$params['places'][0]['items'][$i]['weight'] = $weight_left;
+				}
+		
+				$i++;
 			}
 		}
-
 
 		$output = $this->curl_post($url, $params);
 
@@ -577,7 +582,7 @@ class Apiship {
 	}
 
 
-	public function get_address($params) {
+	public function get_address($params, $show_post_index = false) {
 
 		if ($params['regionType'] == 'г') {
 			$address = $params['region'];
@@ -588,6 +593,10 @@ class Apiship {
 			$address = $params['region'] . ' '. $params['regionType'];
 			if (!empty($params['area'])) $address = $address. ', ' . $params['area'] . ' р-н';
 			$address = $address. ', ' . $params['cityType'] . ' ' . $params['city'];
+		}
+
+		if ($show_post_index == true) {
+			if (!empty($params['postIndex'])) $address = $params['postIndex'] . ', ' . $address;
 		}
 
 		if (!empty($params['street'])) $full_street = $params['streetType'] . ' ' . $params['street']; else $full_street = '';
@@ -706,10 +715,10 @@ class Apiship {
 
 			$cost = round($this->currency->convert($product['price'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), 2); 
 
-			if ($length==0) $length = round($this->apiship_params['shipping_apiship_parcel_length']);
-			if ($width==0) $width = round($this->apiship_params['shipping_apiship_parcel_width']);
-			if ($height==0) $height = round($this->apiship_params['shipping_apiship_parcel_height']);
-			if ($weight==0) $weight = round($this->apiship_params['shipping_apiship_parcel_weight']);
+			if ($length==0) $length = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_length']);
+			if ($width==0) $width = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_width']);
+			if ($height==0) $height = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_height']);
+			if ($weight==0) $weight = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_weight']);
 			
 			if ($length==0) $length = 1;
 			if ($width==0) $width = 1;
@@ -717,7 +726,7 @@ class Apiship {
 			if ($weight==0) $weight = 1;
 
 			$articul = $product['model'];
-			if (!empty($product['sku'])) $articul = $product['sku']; 
+			if (!empty($product_info['sku'])) $articul = $product_info['sku']; 
 			$articul = mb_strimwidth($articul,0,50);			
 
 			$items[] = [
@@ -745,6 +754,17 @@ class Apiship {
 			}
 		}
 
+
+		$place_params_length = $this->apiship_params['shipping_apiship_place_length'];
+		$place_params_width = $this->apiship_params['shipping_apiship_place_width'];
+		$place_params_height = $this->apiship_params['shipping_apiship_place_height'];
+		$place_params_weight = $this->apiship_params['shipping_apiship_place_weight'];
+
+		if (!empty($place_params_length)) $total_length = $place_params_length;
+		if (!empty($place_params_width)) $total_width = $place_params_width;
+		if (!empty($place_params_height)) $total_height = $place_params_height;
+		if (!empty($place_params_weight)) $total_weight = $place_params_weight;
+
 		return [
 			'items' => $items,
 			'total_length' => $total_length,
@@ -765,7 +785,11 @@ class Apiship {
 	}
 
 	public function format_weight($weight) {	
-		return round($weight);
+		return floor($weight);
+	}
+
+	public function format_dimension($dimension) {	
+		return round($dimension);
 	}
 
 }

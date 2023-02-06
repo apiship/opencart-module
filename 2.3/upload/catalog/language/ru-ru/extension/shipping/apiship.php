@@ -6,6 +6,7 @@ $_['shipping_apiship_point_1']			= 'из ПВЗ';
 $_['shipping_apiship_point_2']			= 'из Постамата';
 $_['shipping_apiship_point_3']			= 'из Отделения Почты России';
 $_['shipping_apiship_point_4']			= 'из Терминала';
+ 
 $_['shipping_apiship_door']				= 'Курьер'; 
 $_['shipping_apiship_change_point']			= 'сменить ПВЗ';
 $_['shipping_apiship_select_point']			= 'выбрать ПВЗ';
