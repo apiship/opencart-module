@@ -1,7 +1,7 @@
 <?php 
 require_once DIR_SYSTEM . 'library/apiship/apiship.php';
 
-class ModelExtensionShippingApiship extends Model {    
+class ModelShippingApiship extends Model {    
 
 	private $apiship;
 	private $apiship_params;
@@ -9,7 +9,7 @@ class ModelExtensionShippingApiship extends Model {
 
 	public function __construct($params) {
 		parent::__construct($params);
-		$this->load->language('extension/shipping/apiship');
+		$this->load->language('shipping/apiship');
 
 		$this->apiship_params = [
 			'shipping_apiship_rub_select' => $this->config->get('shipping_apiship_rub_select'),
@@ -145,7 +145,7 @@ class ModelExtensionShippingApiship extends Model {
 
   	public function get_quote_list($address, $full_list = false) {
 
-		$this->load->language('extension/shipping/apiship');
+		$this->load->language('shipping/apiship');
 		if ($this->apiship_params['shipping_apiship_status'] == 1) {
 			$status = true;
 		} else {
@@ -418,7 +418,7 @@ class ModelExtensionShippingApiship extends Model {
 	}
 
 	private function get_points_array($country, $region, $city, $postcode, $ext_address, $provider = []) {
-		$this->load->language('extension/shipping/apiship');
+		$this->load->language('shipping/apiship');
 
 		$this->apiship->toLog('get_points_array', [ 
 				'country' => $country,
@@ -855,7 +855,7 @@ class ModelExtensionShippingApiship extends Model {
 		$order_params['sub_total_cost'] = $total_cost;
 
 
-		$order_params['recipientPhone'] =  $order['telephone'];  
+		$order_params['recipientPhone'] =  $order['telephone'];
 		$order_params['recipientEmail'] =  $order['email'];  
 		$order_params['recipientContactName'] = $order['firstname'] . ' ' . $order['lastname'];
 		$order_params['recipientCountryCode'] = $order['shipping_iso_code_2'];

@@ -1,25 +1,27 @@
 <?php
-class ControllerExtensionShippingApiship extends Controller { 
+class ControllerShippingApiship extends Controller { 
 	private $error = array();
 	
 	public function index() {  
-		$this->load->language('extension/shipping/apiship');
+		$this->load->language('shipping/apiship');
 
 		$this->document->setTitle($this->language->get('heading_title'));
 		
 		$this->load->model('setting/setting');
-		$this->load->model('extension/shipping/apiship');
+		$this->load->model('shipping/apiship');
 
-		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
-			$this->model_setting_setting->editSetting('shipping_apiship', $this->request->post);
-
-        		$this->model_setting_setting->editSetting('apiship', ['apiship_status' => $this->request->post['shipping_apiship_status']]);
-    
-			$this->session->data['success'] = $this->language->get('text_success');
-									
-			$this->response->redirect($this->url->link('extension/shipping/apiship', 'token=' . $this->session->data['token'] . '&type=shipping', true));
-
+		if ($this->request->server['REQUEST_METHOD'] == 'POST') {
+			if ($this->validate() == true) {
+				$this->model_setting_setting->editSetting('shipping_apiship', $this->request->post);
+	
+	        		$this->model_setting_setting->editSetting('apiship', ['apiship_status' => $this->request->post['shipping_apiship_status']]);
+	    
+				$this->session->data['success'] = $this->language->get('text_success');
+										
+				$this->response->redirect($this->url->link('shipping/apiship', 'token=' . $this->session->data['token'], 'SSL'));
+			} else $this->error['warning'] = $this->language->get('error_shipping_apiship_fields_filled');
 		}
+
 
 		$data['heading_title'] = $this->language->get('heading_title');
 
@@ -30,7 +32,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.8 (OpenCart 2.3)';
+		$data['shipping_apiship_version'] = '0.8 (OpenCart 2.0 - 2.2)';
 
 		$data['button_save'] = $this->language->get('button_save');
 		$data['button_cancel'] = $this->language->get('button_cancel');
@@ -94,8 +96,8 @@ class ControllerExtensionShippingApiship extends Controller {
 
 		$data['text_url_callback'] = $this->language->get('text_url_callback');
 		$server = isset($this->request->server['HTTPS']) && (($this->request->server['HTTPS'] == 'on') || ($this->request->server['HTTPS'] == '1')) ? HTTPS_CATALOG : HTTP_CATALOG;
-		$data['url_callback'] = $server . 'index.php?route=extension/shipping/apiship/callback';
-		$data['shipping_apiship_search_point_url'] = $server . 'index.php?route=extension/shipping/apiship/get_point';
+		$data['url_callback'] = $server . 'index.php?route=shipping/apiship/callback';
+		$data['shipping_apiship_search_point_url'] = $server . 'index.php?route=shipping/apiship/get_point';
 		
 		$data['shipping_apiship_modes'] = [
 			['code'=>'shipping_apiship_mode_normal', 'code_text'=>$this->language->get('entry_shipping_apiship_mode_normal')],
@@ -161,11 +163,11 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['shipping_apiship_integrator_statuses'] = [];
 
 		if ($data['shipping_apiship_token'] != '') {
-			$apiship_providers = $this->model_extension_shipping_apiship->get_providers();
+			$apiship_providers = $this->model_shipping_apiship->get_providers();
 			if (!empty($apiship_providers['message'])) $this->error['warning'] = $apiship_providers['message'];		
 			$data['shipping_apiship_providers'] = $apiship_providers['providers'];
-			$data['shipping_apiship_providers_points'] = $this->model_extension_shipping_apiship->get_providers_points();
-			$data['shipping_apiship_integrator_statuses'] = $this->model_extension_shipping_apiship->get_integrator_statuses();
+			$data['shipping_apiship_providers_points'] = $this->model_shipping_apiship->get_providers_points();
+			$data['shipping_apiship_integrator_statuses'] = $this->model_shipping_apiship->get_integrator_statuses();
 		}
 
 		if (isset($this->request->post['shipping_apiship_title'])) {
@@ -495,24 +497,25 @@ class ControllerExtensionShippingApiship extends Controller {
 
    		$data['breadcrumbs'][] = array(
        		'text'      => $this->language->get('text_home'),
-			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], true)
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
    		);
 
 		$data['breadcrumbs'][] = array(
 			'text' => $this->language->get('text_extension'),
-			'href' => $this->url->link('extension/extension', 'token=' . $this->session->data['token'] . '&type=shipping', true)
+			'href' => $this->url->link('extension/shipping', 'token=' . $this->session->data['token'], 'SSL')
 		);
 
 		$data['breadcrumbs'][] = array(
 			'text' => $this->language->get('heading_title'),
-			'href' => $this->url->link('extension/shipping/apiship', 'token=' . $this->session->data['token'], true)
+			'href' => $this->url->link('shipping/apiship', 'token=' . $this->session->data['token'], 'SSL')
 		);
 
 		
-		$data['action'] = $this->url->link('extension/shipping/apiship', 'token=' . $this->session->data['token'], true);
+		$data['action'] = $this->url->link('shipping/apiship', 'token=' . $this->session->data['token'], 'SSL');
 		
-		$data['cancel'] = $this->url->link('extension/extension', 'token=' . $this->session->data['token'] . '&type=shipping', true);
-		$data['shipping_apiship_cron_url'] = (($this->request->server['HTTPS'])?HTTPS_CATALOG:HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/import_orders";
+		$data['cancel'] = $this->url->link('extension/shipping', 'token=' . $this->session->data['token'], 'SSL');
+
+		$data['shipping_apiship_cron_url'] = (($this->request->server['HTTPS'])?HTTPS_CATALOG:HTTP_CATALOG) . "index.php?route=shipping/apiship/import_orders";
 
 
 
@@ -520,12 +523,12 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['column_left'] = $this->load->controller('common/column_left');
 		$data['footer'] = $this->load->controller('common/footer');
 
-		$this->response->setOutput($this->load->view('extension/shipping/apiship', $data));
+		$this->response->setOutput($this->load->view('shipping/apiship.tpl', $data));
 
 	}
 		
 	private function validate() {
-		if (!$this->user->hasPermission('modify', 'extension/shipping/apiship')) {
+		if (!$this->user->hasPermission('modify', 'shipping/apiship')) {
 			$this->error['warning'] = $this->language->get('error_permission');
 		}
 		
@@ -589,14 +592,10 @@ class ControllerExtensionShippingApiship extends Controller {
 	}
 
 	public function install() {
-		$this->load->model('extension/shipping/apiship');
-		$this->model_extension_shipping_apiship->install();
+		$this->load->model('shipping/apiship');
+		$this->model_shipping_apiship->install();
 	}
 
-	public function uninstall() {
-		$this->load->model('setting/setting');
-		$this->model_setting_setting->deleteSetting('shipping_apiship');
-	}
 
 
 }

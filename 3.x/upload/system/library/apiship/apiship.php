@@ -404,6 +404,7 @@ class Apiship {
 				'office' => $this->apiship_params['shipping_apiship_sending_office'] // Офис/Квартира
 			],
 			'recipient' => [
+				'email' => $order_params['recipientEmail'],
 			  	'phone' => $order_params['recipientPhone'], // Контактный телефон 
 			    	'contactName' => $order_params['recipientContactName'], // ФИО контактного лица
 				'countryCode' => $order_params['recipientCountryCode'], // Код страны в соответствии с ISO 3166-1 alpha-2 
