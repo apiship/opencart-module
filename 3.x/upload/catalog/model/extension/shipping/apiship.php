@@ -304,7 +304,7 @@ class ModelExtensionShippingApiship extends Model {
 		else
 		{
 			// список ПВЗ в админку
-			$points_data = $this->get_points_array($region,$city,$postcode,$ext_address);
+			$points_data = $this->get_points_array($country,$region,$city,$postcode,$ext_address);
 			if ($points_data['error'] == 'no_error') {
 				usort($points_data['points'], function($a, $b) {
 				    return $a['title'] > $b['title'];
@@ -856,6 +856,7 @@ class ModelExtensionShippingApiship extends Model {
 
 
 		$order_params['recipientPhone'] =  $order['telephone'];  
+		$order_params['recipientEmail'] =  $order['email'];  
 		$order_params['recipientContactName'] = $order['firstname'] . ' ' . $order['lastname'];
 		$order_params['recipientCountryCode'] = $order['shipping_iso_code_2'];
 		$order_params['recipientAddressString'] = $recipientAddressString;

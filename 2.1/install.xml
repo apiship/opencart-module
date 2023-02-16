@@ -2,35 +2,35 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>0.8.0 (OpenCart 2.3)</version>
+	<version>0.8.0 (OpenCart 2.0 - 2.2)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
 	<file path="admin/controller/sale/order.php">
 		<operation>
-			<search error="skip" ><![CDATA[$this->response->setOutput($this->load->view('sale/order_info', $data));]]></search>
+			<search error="skip" ><![CDATA[$this->response->setOutput($this->load->view('sale/order_info.tpl', $data));]]></search>
 			<add position="before"><![CDATA[  
 
 		// apiship start
 		    $data['heading_title'] = $this->language->get('heading_title');
-			$this->load->language('extension/shipping/apiship');
+			$this->load->language('shipping/apiship');
 
-	    	$data['shipping_apiship_export_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/export_order&id=".$order_id;
+	    	$data['shipping_apiship_export_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=shipping/apiship/export_order&id=".$order_id;
     		$data['entry_shipping_apiship_export_title'] = $this->language->get('entry_shipping_apiship_export_title');
-	    	$data['shipping_apiship_export_cancel_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/cancel_order&id=".$order_id;
+	    	$data['shipping_apiship_export_cancel_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=shipping/apiship/cancel_order&id=".$order_id;
     		$data['entry_shipping_apiship_export_cancel_title'] = $this->language->get('entry_shipping_apiship_cancel_export_title');
             $data['entry_shipping_apiship_paid'] = $this->language->get('entry_shipping_apiship_paid');
             $data['entry_shipping_apiship_place_dimensions'] = $this->language->get('entry_shipping_apiship_place_dimensions');
             $data['entry_shipping_apiship_order_status'] = $this->language->get('entry_shipping_apiship_order_status');
 
-            $data['shipping_apiship_get_order_params_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_order_params&id=".$order_id;
+            $data['shipping_apiship_get_order_params_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=shipping/apiship/get_order_params&id=".$order_id;
 
 			$data['show_apiship_export_order'] = (strpos($order_info['shipping_code'], 'apiship')===false)?'style="display:none;"':'';
 
             $data['entry_shipping_apiship_label_title'] = $this->language->get('entry_shipping_apiship_label_title');
-            $data['shipping_apiship_label_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_label";
+            $data['shipping_apiship_label_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=shipping/apiship/get_label";
             $data['entry_shipping_apiship_waybill_title'] = $this->language->get('entry_shipping_apiship_waybill_title');
-            $data['shipping_apiship_waybill_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_waybill";
+            $data['shipping_apiship_waybill_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=shipping/apiship/get_waybill";
 
             $data['entry_shipping_apiship_pickup_type'] = $this->language->get('entry_shipping_apiship_pickup_type');
     		$data['entry_shipping_apiship_pickup_type1'] = $this->language->get('entry_shipping_apiship_pickup_type1');
@@ -48,16 +48,16 @@
 			]]></add>
 		</operation>
 		<operation>
-			<search error="skip" ><![CDATA[$this->response->setOutput($this->load->view('sale/order_list', $data));]]></search>
+			<search error="skip" ><![CDATA[$this->response->setOutput($this->load->view('sale/order_list.tpl', $data));]]></search>
 			<add position="before"><![CDATA[  
 
 		// apiship start
-			$this->load->language('extension/shipping/apiship');
+			$this->load->language('shipping/apiship');
 
             $data['entry_shipping_apiship_label_title'] = $this->language->get('entry_shipping_apiship_label_title');
-            $data['shipping_apiship_label_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_label";
+            $data['shipping_apiship_label_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=shipping/apiship/get_label";
             $data['entry_shipping_apiship_waybill_title'] = $this->language->get('entry_shipping_apiship_waybill_title');
-            $data['shipping_apiship_waybill_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_waybill";
+            $data['shipping_apiship_waybill_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=shipping/apiship/get_waybill";
 
             $data['error_shipping_apiship_select_orders'] = $this->language->get('error_shipping_apiship_select_orders');
             $data['text_apiship'] = $this->language->get('text_apiship');
@@ -507,17 +507,17 @@
 			<add position="after"><![CDATA[
 
 				// apiship start
-				$this->load->language('extension/shipping/apiship');
-				$data['shipping_apiship_set_point_url'] = $this->url->link('extension/shipping/apiship/set_point', '', 'SSL'); 
-				$data['shipping_apiship_get_points_url'] = $this->url->link('extension/shipping/apiship/get_points', '', 'SSL'); 
+				$this->load->language('shipping/apiship');
+				$data['shipping_apiship_set_point_url'] = $this->url->link('shipping/apiship/set_point', '', 'SSL'); 
+				$data['shipping_apiship_get_points_url'] = $this->url->link('shipping/apiship/get_points', '', 'SSL'); 
 				$data['shipping_apiship_change_point'] = $this->language->get('shipping_apiship_change_point');
                 $data['shipping_apiship_select_point'] = $this->language->get('shipping_apiship_select_point');
                 $data['shipping_apiship_title_from'] = $this->language->get('shipping_apiship_title_from');
-                $data['shipping_apiship_get_last_tracing_id_url'] = $this->url->link('extension/shipping/apiship/get_last_tracing_id', '', 'SSL');
+                $data['shipping_apiship_get_last_tracing_id_url'] = $this->url->link('shipping/apiship/get_last_tracing_id', '', 'SSL');
 
                 $data['shipping_apiship_icon_show'] = $this->config->get('shipping_apiship_icon_show') ? 'true' : 'false'; 
-    			$this->load->model('extension/shipping/apiship');
-    			$providers = $this->model_extension_shipping_apiship->get_providers();
+    			$this->load->model('shipping/apiship');
+    			$providers = $this->model_shipping_apiship->get_providers();
 			    $data['shipping_apiship_providers_keys'] = json_encode(array_keys($providers));
                 $data['shipping_apiship_group_points'] = $this->config->get('shipping_apiship_group_points') ? 'true' : 'false';
 				// apiship end
@@ -529,7 +529,7 @@
 			<add position="before"><![CDATA[  
 
 			// apiship start
-                $this->load->language('extension/shipping/apiship');
+                $this->load->language('shipping/apiship');
                 $code = '';
                 if (isset($this->request->post['shipping_method'])) $code = $this->request->post['shipping_method'];
 
@@ -711,19 +711,19 @@
 			<add position="before"><![CDATA[  
 
 				// apiship start
-				$this->load->language('extension/shipping/apiship');
-				$this->_templateData['shipping_apiship_set_point_url'] = $this->url->link('extension/shipping/apiship/set_point', '', 'SSL'); 
-				$this->_templateData['shipping_apiship_get_points_url'] = $this->url->link('extension/shipping/apiship/get_points', '', 'SSL'); 
+				$this->load->language('shipping/apiship');
+				$this->_templateData['shipping_apiship_set_point_url'] = $this->url->link('shipping/apiship/set_point', '', 'SSL'); 
+				$this->_templateData['shipping_apiship_get_points_url'] = $this->url->link('shipping/apiship/get_points', '', 'SSL'); 
 				$this->_templateData['shipping_apiship_change_point'] = $this->language->get('shipping_apiship_change_point');
 				$this->_templateData['shipping_apiship_select_point'] = $this->language->get('shipping_apiship_select_point');
                 $this->_templateData['shipping_apiship_title_from'] = $this->language->get('shipping_apiship_title_from');
 
-                $this->_templateData['shipping_apiship_get_last_tracing_id_url'] = $this->url->link('extension/shipping/apiship/get_last_tracing_id', '', 'SSL');
+                $this->_templateData['shipping_apiship_get_last_tracing_id_url'] = $this->url->link('shipping/apiship/get_last_tracing_id', '', 'SSL');
 
                 $this->_templateData['shipping_apiship_icon_show'] = $this->config->get('shipping_apiship_icon_show') ? 'true' : 'false'; 
 
-				$this->load->model('extension/shipping/apiship');
-				$providers = $this->model_extension_shipping_apiship->get_providers();
+				$this->load->model('shipping/apiship');
+				$providers = $this->model_shipping_apiship->get_providers();
 			    $this->_templateData['shipping_apiship_providers_keys'] = json_encode(array_keys($providers));
 			    $this->_templateData['shipping_apiship_group_points'] = $this->config->get('shipping_apiship_group_points') ? 'true' : 'false';
 			

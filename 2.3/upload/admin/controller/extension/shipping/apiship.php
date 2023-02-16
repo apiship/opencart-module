@@ -30,7 +30,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.7.17 (OpenCart 2.3)';
+		$data['shipping_apiship_version'] = '0.8.0 (OpenCart 2.3)';
 
 		$data['button_save'] = $this->language->get('button_save');
 		$data['button_cancel'] = $this->language->get('button_cancel');

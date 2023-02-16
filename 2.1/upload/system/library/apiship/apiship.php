@@ -37,7 +37,7 @@ class Apiship {
 	    	curl_setopt($ch, CURLOPT_URL, $url);
 	    	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 	    	curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Platform: opencart_v2.3', 'Content-Type: application/json', 'Authorization: '.$this->apiship_params['shipping_apiship_token'] , 'Accept: application/json'));
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Platform: opencart_v2.1', 'Content-Type: application/json', 'Authorization: '.$this->apiship_params['shipping_apiship_token'] , 'Accept: application/json'));
 		curl_setopt($ch, CURLOPT_HEADERFUNCTION,
 			function($curl, $header) use (&$headers)
 			{
@@ -69,7 +69,7 @@ class Apiship {
 	    	curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 	    	curl_setopt($ch, CURLOPT_POST, 1);
 	    	curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Platform: opencart_v2.3', 'Content-Type: application/json', 'Authorization: '.$this->apiship_params['shipping_apiship_token'] , 'Accept: application/json'));
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Platform: opencart_v2.1', 'Content-Type: application/json', 'Authorization: '.$this->apiship_params['shipping_apiship_token'] , 'Accept: application/json'));
 		curl_setopt($ch, CURLOPT_HEADERFUNCTION,
 			function($curl, $header) use (&$headers)
 			{
