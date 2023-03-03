@@ -53,6 +53,7 @@ $_['entry_shipping_apiship_place_length']   	= 'Длина (см)';
 $_['entry_shipping_apiship_place_width']   	= 'Ширина (см)';
 $_['entry_shipping_apiship_place_height']   	= 'Высота (см)';
 $_['entry_shipping_apiship_place_weight']   	= 'Вес (гр)';
+$_['entry_shipping_apiship_package_weight']   	= 'Вес упаковки (гр)';
 
 $_['entry_shipping_apiship_sort_order']   	= 'Порядок сортировки';
 $_['entry_shipping_apiship_status']   		= 'Статус';

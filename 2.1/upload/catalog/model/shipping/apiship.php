@@ -39,6 +39,7 @@ class ModelShippingApiship extends Model {
 			'shipping_apiship_place_width' => $this->config->get('shipping_apiship_place_width'),
 			'shipping_apiship_place_height' => $this->config->get('shipping_apiship_place_height'),
 			'shipping_apiship_place_weight' => $this->config->get('shipping_apiship_place_weight'),
+			'shipping_apiship_package_weight' => $this->config->get('shipping_apiship_package_weight'),
 	
 			'shipping_apiship_provider' => $this->config->get('shipping_apiship_provider'),
 			'shipping_apiship_mapping_status' => $this->config->get('shipping_apiship_mapping_status'),
@@ -791,10 +792,10 @@ class ModelShippingApiship extends Model {
 
 		$calculate_data = $this->apiship->calculate_places($order_products);
 		$items = $calculate_data['items']; 
-		$total_length = $shipping_apiship_place_length; //$calculate_data['total_length'];
-		$total_width = $shipping_apiship_place_width; 	//$calculate_data['total_width'];
-		$total_height = $shipping_apiship_place_height; //$calculate_data['total_height'];
-		$total_weight = $shipping_apiship_place_weight; //$calculate_data['total_weight'];
+		$total_length = $shipping_apiship_place_length; 
+		$total_width = $shipping_apiship_place_width; 	
+		$total_height = $shipping_apiship_place_height; 
+		$total_weight = $shipping_apiship_place_weight; 
 		$total_cost = $calculate_data['total_cost'];
 
 		$order = $this->model_checkout_order->getOrder($order_id);
@@ -1127,11 +1128,6 @@ class ModelShippingApiship extends Model {
 		$apiship_place_width = $calculate_data['total_width'];
 		$apiship_place_height = $calculate_data['total_height'];
 		$apiship_place_weight = $calculate_data['total_weight'];
-
-		if (!empty($this->apiship_params['shipping_apiship_place_length'])) $apiship_place_length = $this->apiship_params['shipping_apiship_place_length'];
-		if (!empty($this->apiship_params['shipping_apiship_place_width'])) $apiship_place_width = $this->apiship_params['shipping_apiship_place_width'];
-		if (!empty($this->apiship_params['shipping_apiship_place_height'])) $apiship_place_height = $this->apiship_params['shipping_apiship_place_height'];
-		if (!empty($this->apiship_params['shipping_apiship_place_weight'])) $apiship_place_weight = $this->apiship_params['shipping_apiship_place_weight'];
 
 		$apiship_order_status = '';
 		$apiship_comment = $order_info['comment'];
