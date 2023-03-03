@@ -28,7 +28,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.8.0 (OpenCart 3.x)';
+		$data['shipping_apiship_version'] = '0.8.2 (OpenCart 3.x)';
 
 		$data['button_save'] = $this->language->get('button_save');
 		$data['button_cancel'] = $this->language->get('button_cancel');
@@ -59,6 +59,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['entry_shipping_apiship_place_width'] = $this->language->get('entry_shipping_apiship_place_width');
 		$data['entry_shipping_apiship_place_height'] = $this->language->get('entry_shipping_apiship_place_height');
 		$data['entry_shipping_apiship_place_weight'] = $this->language->get('entry_shipping_apiship_place_weight');
+		$data['entry_shipping_apiship_package_weight'] = $this->language->get('entry_shipping_apiship_package_weight');
 
 		$data['entry_shipping_apiship_sort_order'] = $this->language->get('entry_shipping_apiship_sort_order');
 		$data['entry_shipping_apiship_status'] = $this->language->get('entry_shipping_apiship_status');
@@ -322,6 +323,12 @@ class ControllerExtensionShippingApiship extends Controller {
 			$data['shipping_apiship_place_weight'] = $this->request->post['shipping_apiship_place_weight'];
 		} else { 
 			$data['shipping_apiship_place_weight'] = $this->config->get('shipping_apiship_place_weight');
+		} 
+
+		if (isset($this->request->post['shipping_apiship_package_weight'])) {
+			$data['shipping_apiship_package_weight'] = $this->request->post['shipping_apiship_package_weight'];
+		} else { 
+			$data['shipping_apiship_package_weight'] = $this->config->get('shipping_apiship_package_weight');
 		} 
 
 		if (isset($this->request->post['shipping_apiship_provider'])) {

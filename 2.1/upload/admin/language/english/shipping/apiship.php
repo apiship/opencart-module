@@ -53,6 +53,7 @@ $_['entry_shipping_apiship_place_length']   	= 'Length (cm)';
 $_['entry_shipping_apiship_place_width']   	= 'Width (cm)';
 $_['entry_shipping_apiship_place_height']   	= 'Height (cm)';
 $_['entry_shipping_apiship_place_weight']   	= 'Weight (gr)';
+$_['entry_shipping_apiship_package_weight']   	= 'Package Weight (gr)';
 
 $_['entry_shipping_apiship_sort_order']   	= 'Sort order';
 $_['entry_shipping_apiship_status']   		= 'Status';

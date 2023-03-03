@@ -760,11 +760,13 @@ class Apiship {
 		$place_params_width = $this->apiship_params['shipping_apiship_place_width'];
 		$place_params_height = $this->apiship_params['shipping_apiship_place_height'];
 		$place_params_weight = $this->apiship_params['shipping_apiship_place_weight'];
+		$package_params_weight = $this->apiship_params['shipping_apiship_package_weight'];
 
 		if (!empty($place_params_length)) $total_length = $place_params_length;
 		if (!empty($place_params_width)) $total_width = $place_params_width;
 		if (!empty($place_params_height)) $total_height = $place_params_height;
 		if (!empty($place_params_weight)) $total_weight = $place_params_weight;
+		if (!empty($package_params_weight)) $total_weight = $total_weight + $package_params_weight;
 
 		return [
 			'items' => $items,
