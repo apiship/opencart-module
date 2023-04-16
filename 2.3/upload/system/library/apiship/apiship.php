@@ -268,7 +268,7 @@ class Apiship {
 		return $data;
 	}
 
- 	public function apiship_calculator($country, $region, $city, $postcode, $ext_address, $providers, $products) {
+ 	public function apiship_calculator($country, $region, $city, $postcode, $ext_address, $providers, $products, $total) {
 
 		if (trim($city) == '') {		
 			$output['message'] = $this->apiship_params['shipping_apiship_error_select_city']; 
@@ -279,7 +279,7 @@ class Apiship {
 			];
 		}
 
-		$calculate_data = $this->calculate_places($products);
+		$calculate_data = $this->calculate_places($products, $total);
 
 		$items = $calculate_data['items'];
 
@@ -464,7 +464,7 @@ class Apiship {
 
 		}
 
-		$cost_dif = $total_cost - $order_params['costCodCost'] + $order_params['costDeliveryCost']; 
+		$cost_dif = bcadd(bcsub($total_cost,$order_params['costCodCost'],2) , $order_params['costDeliveryCost'], 2);
 
 		$this->toLog('shipping_apiship_order', [
 			'cost_dif' => $cost_dif,
@@ -477,7 +477,7 @@ class Apiship {
 			'total_count' => $total_count
 		]);
 
-		if ($cost_dif != 0) {
+		if (($cost_dif != 0)||($order_params['placeWeight'] != $total_weight)) {
 			if ($params['places'][0]['items'][0]['quantity'] == 1) {
 				$params['places'][0]['items'][0]['cost'] -= $cost_dif;
 			} else {
@@ -496,22 +496,19 @@ class Apiship {
 			}
 		}
 
-		if ($order_params['placeCalculateWeight'] != $total_weight) {
-			$one_item_weight = $this->format_weight($order_params['placeCalculateWeight'] / $total_count);
+
+		if ($order_params['placeWeight'] != $total_weight) {
+			$one_item_weight = $this->format_weight($order_params['placeWeight'] / $total_count);
 			
-			$total_calculation_weight = $order_params['placeCalculateWeight'];
-			$i = 0;
-			foreach($order_params['items'] as $item) {
-				
-				if ($i<$total_count) {
-					$weight_left = $total_calculation_weight - $one_item_weight * $params['places'][0]['items'][$i]['quantity'];
-					$params['places'][0]['items'][$i]['weight'] = $one_item_weight;
-				} else {
-					$params['places'][0]['items'][$i]['weight'] = $weight_left;
-				}
-		
-				$i++;
+			$total_calculation_weight = $order_params['placeWeight'];
+
+			foreach($params['places'][0]['items'] as &$item) {
+				$total_calculation_weight = $total_calculation_weight - $one_item_weight * $item['quantity'];
+				$item['weight'] = $one_item_weight;
 			}
+
+			if ($total_calculation_weight!=0) $item['weight'] = $item['weight'] + $total_calculation_weight;
+
 		}
 
 		$output = $this->curl_post($url, $params);
@@ -693,7 +690,7 @@ class Apiship {
 		];
 	}
 
-	public function calculate_places($products) {
+	public function calculate_places($products, $total_sum) {
 
 		$total_weight = 0;
 		$total_length = 0;
@@ -705,6 +702,7 @@ class Apiship {
 
 		$this->load->model('catalog/product'); 
 
+		$total_quantity = 0;
 		foreach ($products as $product) {
 
 			$product_info = $this->model_catalog_product->getProduct($product['product_id']);
@@ -741,6 +739,8 @@ class Apiship {
 				'cost' => $cost				
 			];
 
+			$total_quantity = $total_quantity + intval($product['quantity']);
+
 			for($i=0;$i<$product['quantity'];$i++) {
 				$total_weight = $total_weight + $weight;
 				$total_cost = $total_cost + $cost;
@@ -755,6 +755,16 @@ class Apiship {
 			}
 		}
 
+		$delta_total_summ = $total_cost - $total_sum;
+		$delta_per_item = $delta_total_summ / $total_quantity;
+				
+		$total_cost = $total_sum;
+		foreach($items as &$item) {
+			$item['cost'] = $item['cost'] - $delta_per_item;	
+			$total_cost = $total_cost - $item['cost']*$item['quantity'];
+		}
+
+		if ($total_cost != 0) $item['cost'] = $total_cost;
 
 		$place_params_length = $this->apiship_params['shipping_apiship_place_length'];
 		$place_params_width = $this->apiship_params['shipping_apiship_place_width'];
@@ -774,7 +784,7 @@ class Apiship {
 			'total_width' => $total_width,
 			'total_height' => $total_height,
 			'total_weight' => $total_weight,
-			'total_cost' => $total_cost
+			'total_cost' => $total_sum //$total_cost
 		];
 	}
 
