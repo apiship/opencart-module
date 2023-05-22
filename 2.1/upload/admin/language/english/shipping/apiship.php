@@ -71,6 +71,7 @@ $_['entry_shipping_apiship_pickup_type2']		= 'Delivery to the warehouse';
 $_['entry_shipping_apiship_place_dimensions']	= 'Place dimensions (cm)';
 $_['entry_shipping_apiship_place_weight']		= 'Place weight (gr)';
 $_['entry_shipping_apiship_order_status']		= 'Order status';
+$_['entry_shipping_apiship_delivery_cost_original']	= 'Shipping cost without rules';
 
 $_['entry_shipping_apiship_comment']		= 'Export comment';
 $_['entry_shipping_apiship_control']		= 'Export management in ApiShip';
@@ -104,6 +105,8 @@ $_['entry_events_mapping_notify']			= 'Notify';
 
 
 $_['entry_shipping_apiship_paid_orders']		= 'Statuses of paid orders';
+$_['entry_shipping_apiship_cash_on_delivery_payment_methods']	= 'Cash on delivery payment methods';
+
 $_['entry_shipping_apiship_cron_url']   		= 'cron url:';
 $_['entry_shipping_apiship_paid']			= ' (Paid) ';
 
@@ -129,6 +132,4 @@ $_['error_shipping_apiship_parcel_width'] 	= 'Fill the field!';
 $_['error_shipping_apiship_parcel_height'] 	= 'Fill the field!';
 $_['error_shipping_apiship_parcel_weight'] 	= 'Fill the field!';
 $_['error_shipping_apiship_select_orders'] 	= 'Select orders!';
-
-$_['error_shipping_apiship_fields_filled'] 	= 'Not all required fields are filled!';
 

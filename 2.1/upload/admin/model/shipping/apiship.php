@@ -55,4 +55,21 @@ class ModelShippingApiship extends Model {
 	}
 
 
+	public function get_payment_methods() {
+
+		$payment_methods = [];
+		$this->load->model('extension/extension');
+		$results = $this->model_extension_extension->getInstalled('payment');
+
+		foreach ($results as $result_code) {
+			$this->load->language('payment/' . $result_code);
+			$payment_methods[] = ['code' => $result_code, 'name' => $this->language->get('heading_title')];
+		}
+
+		return $payment_methods;
+
+	}
+
+
+
 }

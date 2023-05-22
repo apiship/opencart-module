@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>0.8.3 (OpenCart 2.3)</version>
+	<version>0.8.4 (OpenCart 2.3)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -24,6 +24,7 @@
             $data['entry_shipping_apiship_order_status'] = $this->language->get('entry_shipping_apiship_order_status');
 
             $data['shipping_apiship_get_order_params_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_order_params&id=".$order_id;
+            $data['shipping_apiship_get_delivery_cost_original_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_delivery_cost_original&id=".$order_id;
 
 			$data['show_apiship_export_order'] = (strpos($order_info['shipping_code'], 'apiship')===false)?'style="display:none;"':'';
 
@@ -37,6 +38,7 @@
     		$data['entry_shipping_apiship_pickup_type2'] = $this->language->get('entry_shipping_apiship_pickup_type2');
 
     		$data['entry_shipping_apiship_place_weight'] = $this->language->get('entry_shipping_apiship_place_weight');
+    		$data['entry_shipping_apiship_delivery_cost_original'] = $this->language->get('entry_shipping_apiship_delivery_cost_original');
     		         
     		$data['entry_shipping_apiship_control'] = $this->language->get('entry_shipping_apiship_control');
             $data['entry_shipping_apiship_comment'] = $this->language->get('entry_shipping_apiship_comment');
@@ -114,6 +116,11 @@
                 </td>
             </tr>
 
+			<tr>
+                <td><label><?php echo $entry_shipping_apiship_delivery_cost_original; ?></label><br>
+                <div id='shipping_apiship_delivery_cost_original'></div>
+                </td>
+            </tr>
             </table>
             
         </div>
@@ -250,6 +257,20 @@
     				}
 				});
 
+
+                function get_delivery_cost_original() {
+                    $.ajax({
+						url: '<?php echo $shipping_apiship_get_delivery_cost_original_url; ?>',
+						dataType: 'json',
+						success: function(json) {
+	                        $('#shipping_apiship_delivery_cost_original').html(json['delivery_cost_original']);
+						},
+						error: function(xhr, ajaxOptions, thrownError) {
+							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+						}
+					});
+                }
+
                 function init_apiship_export_button() {
                 	$.ajax({
 						url: '<?php echo $shipping_apiship_get_order_params_url; ?>',
@@ -272,7 +293,7 @@
                                 $('#shipping_apiship_export').hide();
                                 $('#shipping_apiship_export_cancel').show();
 
-                                if (json['paid']) $('#shipping_apiship_export_cancel').text($('#shipping_apiship_export_cancel').text() + "<?php echo $entry_shipping_apiship_paid;?>");
+                                if (json['paid']) $('#shipping_apiship_export_cancel').text("<?php echo $entry_shipping_apiship_export_cancel_title;?>" + "<?php echo $entry_shipping_apiship_paid;?>");
                                 
                                 $('#shipping_apiship_label_span').show();
                                 $('#shipping_apiship_waybill_span').show();
@@ -281,7 +302,7 @@
                             } else {
                                 $('#shipping_apiship_export').show();
                                 $('#shipping_apiship_export_cancel').hide();
-                                if (json['paid']) $('#shipping_apiship_export').text($('#shipping_apiship_export').text() + "<?php echo $entry_shipping_apiship_paid;?>");
+                                if (json['paid']) $('#shipping_apiship_export').text("<?php echo $entry_shipping_apiship_export_title;?>" + "<?php echo $entry_shipping_apiship_paid;?>");
                                 
                                 $('#shipping_apiship_label_span').hide();
                                 $('#shipping_apiship_waybill_span').hide();
@@ -299,6 +320,7 @@
                 
                 $(document).ready(function(){
                     is_export = init_apiship_export_button();
+                    get_delivery_cost_original();
                     $('#shipping_apiship_label').on('click', function() {
                 	$.ajax({
 						url: '<?php echo $shipping_apiship_label_url; ?>',
