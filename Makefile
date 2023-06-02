@@ -8,6 +8,5 @@ VERSION ?= dev
 .PHONY: build
 build:
 	@for folder in $(FOLDERS); do \
-		zip -r "apiship-$(VERSION)_$$folder.ocmod.zip" $$folder -x "*.DS_Store" -x "*.git*" -x "*/.git/*"; \
+		pushd $$folder && zip -r "../apiship-$(VERSION)_$$folder.ocmod.zip" . -x "*.DS_Store" -x "*.git*" -x "*/.git/*" && popd; \
 	done
-
