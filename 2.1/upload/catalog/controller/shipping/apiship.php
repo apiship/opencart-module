@@ -63,6 +63,14 @@ class ControllerShippingApiship extends Controller {
 
 	}
 
+	public function get_delivery_cost_original() {
+		$this->load->model('shipping/apiship');
+		$results = $this->model_shipping_apiship->get_delivery_cost_original(); 
+		$this->response->addHeader('Content-Type: application/json');		
+		$this->response->setOutput(json_encode($results)); 
+
+	}
+
 	public function get_last_tracing_id() {
 		$this->load->model('shipping/apiship');
 		$results = $this->model_shipping_apiship->get_last_tracing_id(); 

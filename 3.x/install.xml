@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>0.8.3 (OpenCart 3.x)</version>
+	<version>0.8.4.1 (OpenCart 3.x)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -37,7 +37,8 @@
     		$data['entry_shipping_apiship_pickup_type2'] = $this->language->get('entry_shipping_apiship_pickup_type2');
 
     		$data['entry_shipping_apiship_place_weight'] = $this->language->get('entry_shipping_apiship_place_weight');
-    		    
+
+   
     		$data['entry_shipping_apiship_control'] = $this->language->get('entry_shipping_apiship_control');
             $data['entry_shipping_apiship_comment'] = $this->language->get('entry_shipping_apiship_comment');
 
@@ -113,7 +114,7 @@
                 </div>
                 </td>
             </tr>
-
+            
             </table>
             
         </div>
@@ -250,6 +251,7 @@
     				}
 				});
 
+
                 function init_apiship_export_button() {
                     $.ajax({
 						url: '{{ shipping_apiship_get_order_params_url }}',
@@ -272,7 +274,7 @@
                                 $('#shipping_apiship_export').hide();
                                 $('#shipping_apiship_export_cancel').show();
                                 
-                                if (json['paid']) $('#shipping_apiship_export_cancel').text($('#shipping_apiship_export_cancel').text() + "{{ entry_shipping_apiship_paid }}");
+                                if (json['paid']) $('#shipping_apiship_export_cancel').text("{{ entry_shipping_apiship_export_cancel_title }}" + "{{ entry_shipping_apiship_paid }}");
                                 
                                 $('#shipping_apiship_label_span').show();
                                 $('#shipping_apiship_waybill_span').show();
@@ -281,7 +283,7 @@
                             } else {
                                 $('#shipping_apiship_export').show();
                                 $('#shipping_apiship_export_cancel').hide();
-                                if (json['paid']) $('#shipping_apiship_export').text($('#shipping_apiship_export').text() + "{{ entry_shipping_apiship_paid }}");
+                                if (json['paid']) $('#shipping_apiship_export').text("{{ entry_shipping_apiship_export_title }}" + "{{ entry_shipping_apiship_paid }}");
                                 
                                 $('#shipping_apiship_label_span').hide();
                                 $('#shipping_apiship_waybill_span').hide();
@@ -299,6 +301,7 @@
                 
                 $(document).ready(function(){
                     is_export = init_apiship_export_button();
+
                     $('#shipping_apiship_label').on('click', function() {
                         $.ajax({
     						url: '{{ shipping_apiship_label_url }}',

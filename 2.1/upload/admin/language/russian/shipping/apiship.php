@@ -71,6 +71,7 @@ $_['entry_shipping_apiship_pickup_type2']		= 'Привоз на склад СД'
 $_['entry_shipping_apiship_place_dimensions']	= 'Габариты места (см)';
 $_['entry_shipping_apiship_place_weight']		= 'Вес места (гр)';
 $_['entry_shipping_apiship_order_status']		= 'Статус заказа';
+$_['entry_shipping_apiship_delivery_cost_original']	= 'Стоимость доставки без учета правил';
 
 $_['entry_shipping_apiship_comment']		= 'Комментарий экспорта';
 $_['entry_shipping_apiship_control']		= 'Управление экспортом в ApiShip';
@@ -104,6 +105,7 @@ $_['entry_events_mapping_notify']			= 'Оповестить';
 
 
 $_['entry_shipping_apiship_paid_orders']		= 'Статусы оплаченных заказов';
+$_['entry_shipping_apiship_cash_on_delivery_payment_methods']	= 'Методы оплаты наложенным платежом';
 $_['entry_shipping_apiship_cron_url']   		= 'cron url:';
 $_['entry_shipping_apiship_paid']			= ' (Оплачен) ';
 
@@ -129,6 +131,4 @@ $_['error_shipping_apiship_parcel_width'] 	= 'Необходимо заполн�
 $_['error_shipping_apiship_parcel_height'] 	= 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_parcel_weight'] 	= 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_select_orders'] 	= 'Необходимо выбрать заказы!';
-
-$_['error_shipping_apiship_fields_filled'] 	= 'Не все обязательные поля заполнены!';
 

@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>0.8.3 (OpenCart 2.3)</version>
+	<version>0.8.4.1 (OpenCart 2.3)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -113,6 +113,7 @@
                 </div>
                 </td>
             </tr>
+
 
             </table>
             
@@ -250,6 +251,7 @@
     				}
 				});
 
+
                 function init_apiship_export_button() {
                 	$.ajax({
 						url: '<?php echo $shipping_apiship_get_order_params_url; ?>',
@@ -272,7 +274,7 @@
                                 $('#shipping_apiship_export').hide();
                                 $('#shipping_apiship_export_cancel').show();
 
-                                if (json['paid']) $('#shipping_apiship_export_cancel').text($('#shipping_apiship_export_cancel').text() + "<?php echo $entry_shipping_apiship_paid;?>");
+                                if (json['paid']) $('#shipping_apiship_export_cancel').text("<?php echo $entry_shipping_apiship_export_cancel_title;?>" + "<?php echo $entry_shipping_apiship_paid;?>");
                                 
                                 $('#shipping_apiship_label_span').show();
                                 $('#shipping_apiship_waybill_span').show();
@@ -281,7 +283,7 @@
                             } else {
                                 $('#shipping_apiship_export').show();
                                 $('#shipping_apiship_export_cancel').hide();
-                                if (json['paid']) $('#shipping_apiship_export').text($('#shipping_apiship_export').text() + "<?php echo $entry_shipping_apiship_paid;?>");
+                                if (json['paid']) $('#shipping_apiship_export').text("<?php echo $entry_shipping_apiship_export_title;?>" + "<?php echo $entry_shipping_apiship_paid;?>");
                                 
                                 $('#shipping_apiship_label_span').hide();
                                 $('#shipping_apiship_waybill_span').hide();
@@ -299,6 +301,7 @@
                 
                 $(document).ready(function(){
                     is_export = init_apiship_export_button();
+
                     $('#shipping_apiship_label').on('click', function() {
                 	$.ajax({
 						url: '<?php echo $shipping_apiship_label_url; ?>',

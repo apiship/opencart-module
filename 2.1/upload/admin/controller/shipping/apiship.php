@@ -22,6 +22,22 @@ class ControllerShippingApiship extends Controller {
 			} else $this->error['warning'] = $this->language->get('error_shipping_apiship_fields_filled');
 		}
 
+  		$data['breadcrumbs'] = array();
+
+   		$data['breadcrumbs'][] = array(
+       		'text'      => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
+   		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_extension'),
+			'href' => $this->url->link('extension/shipping', 'token=' . $this->session->data['token'], 'SSL')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title'),
+			'href' => $this->url->link('shipping/apiship', 'token=' . $this->session->data['token'], 'SSL')
+		);
 
 		$data['heading_title'] = $this->language->get('heading_title');
 
@@ -32,7 +48,7 @@ class ControllerShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.8.3 (OpenCart 2.0 - 2.2)';
+		$data['shipping_apiship_version'] = '0.8.4.1 (OpenCart 2.0 - 2.2)';
 
 		$data['button_save'] = $this->language->get('button_save');
 		$data['button_cancel'] = $this->language->get('button_cancel');
@@ -81,6 +97,8 @@ class ControllerShippingApiship extends Controller {
 		$data['entry_shipping_apiship_include_fees'] = $this->language->get('entry_shipping_apiship_include_fees');
 
 		$data['entry_shipping_apiship_paid_orders'] = $this->language->get('entry_shipping_apiship_paid_orders');
+		$data['entry_shipping_apiship_cash_on_delivery_payment_methods'] = $this->language->get('entry_shipping_apiship_cash_on_delivery_payment_methods');
+
 		$data['entry_shipping_apiship_cron_url'] = $this->language->get('entry_shipping_apiship_cron_url');
 
 		$data['entry_main_settings'] = $this->language->get('entry_main_settings');
@@ -132,6 +150,8 @@ class ControllerShippingApiship extends Controller {
 
 		$this->load->model('localisation/order_status');	
 		$data['order_statuses'] = $this->model_localisation_order_status->getOrderStatuses();
+
+		$data['payment_methods'] = $this->model_shipping_apiship->get_payment_methods();
 
 		if (isset($this->request->post['shipping_apiship_rub_select'])) {
 			$data['shipping_apiship_rub_select'] = $this->request->post['shipping_apiship_rub_select'];
@@ -414,6 +434,13 @@ class ControllerShippingApiship extends Controller {
 		} else
 			$data['shipping_apiship_paid_orders'] = [];
 
+		if (isset($this->request->post['shipping_apiship_cash_on_delivery_payment_methods'])) {
+			$data['shipping_apiship_cash_on_delivery_payment_methods'] = $this->request->post['shipping_apiship_cash_on_delivery_payment_methods'];
+		} elseif ($this->config->get('shipping_apiship_cash_on_delivery_payment_methods')) {
+			$data['shipping_apiship_cash_on_delivery_payment_methods'] = $this->config->get('shipping_apiship_cash_on_delivery_payment_methods');
+		} else
+			$data['shipping_apiship_cash_on_delivery_payment_methods'] = [];
+
 
             // errors
 		if (isset($this->error['warning'])) {
@@ -499,24 +526,6 @@ class ControllerShippingApiship extends Controller {
 		} else {
 			$data['error_shipping_apiship_parcel_weight'] = '';
 		}
-
-  		$data['breadcrumbs'] = array();
-
-   		$data['breadcrumbs'][] = array(
-       		'text'      => $this->language->get('text_home'),
-			'href' => $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
-   		);
-
-		$data['breadcrumbs'][] = array(
-			'text' => $this->language->get('text_extension'),
-			'href' => $this->url->link('extension/shipping', 'token=' . $this->session->data['token'], 'SSL')
-		);
-
-		$data['breadcrumbs'][] = array(
-			'text' => $this->language->get('heading_title'),
-			'href' => $this->url->link('shipping/apiship', 'token=' . $this->session->data['token'], 'SSL')
-		);
-
 		
 		$data['action'] = $this->url->link('shipping/apiship', 'token=' . $this->session->data['token'], 'SSL');
 		
