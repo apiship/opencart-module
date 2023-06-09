@@ -30,7 +30,7 @@ $_['entry_shipping_apiship_custom_code']    	= 'customCode для калькул
 $_['entry_shipping_apiship_include_fees']    	= 'Добавить в доставку комиссию ТК';
 
 $_['entry_shipping_apiship_sending_country_code']    = 'Страна';
-$_['entry_shipping_apiship_sending_region']    	= 'Регион';
+$_['entry_shipping_apiship_sending_region']    	= 'Область';
 $_['entry_shipping_apiship_sending_city']    	= 'Город';
 $_['entry_shipping_apiship_sending_street']    	= 'Улица';
 $_['entry_shipping_apiship_sending_house']    	= 'Дом';

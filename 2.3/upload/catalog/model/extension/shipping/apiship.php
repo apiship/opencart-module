@@ -44,6 +44,7 @@ class ModelExtensionShippingApiship extends Model {
 			'shipping_apiship_provider' => $this->config->get('shipping_apiship_provider'),
 			'shipping_apiship_mapping_status' => $this->config->get('shipping_apiship_mapping_status'),
 	
+			'shipping_apiship_paid_orders' => $this->config->get('shipping_apiship_paid_orders'),
 			'shipping_apiship_cash_on_delivery_payment_methods' => $this->config->get('shipping_apiship_cash_on_delivery_payment_methods'),
 
 			'shipping_apiship_sort_order' => $this->config->get('shipping_apiship_sort_order'),
@@ -75,12 +76,14 @@ class ModelExtensionShippingApiship extends Model {
 			'shipping_apiship_error_select_city' => $this->language->get('shipping_apiship_error_select_city'),		
 			'shipping_apiship_status' => $this->config->get('shipping_apiship_status'),
 			
+			'shipping_apiship_geo_zone_id' => $this->config->get('shipping_apiship_geo_zone_id'),
+
 			'shipping_apiship_data' => [],
 			'shipping_apiship_comment' => [],
 			'shipping_apiship_providers' => []
 		];
 
-
+		if (!isset($this->apiship_params['shipping_apiship_paid_orders'])) $this->apiship_params['shipping_apiship_paid_orders'] = [];
 		if (!isset($this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods'])) $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods'] = [];
 
 		$this->apiship = new Apiship($this->registry, $this->apiship_params, $this->log);
@@ -205,14 +208,22 @@ class ModelExtensionShippingApiship extends Model {
 		return $end_total;
 	}
 
+	private function check_geo_zone($address) {
+		if (empty($this->apiship_params['shipping_apiship_geo_zone_id'])) return true;
+		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "zone_to_geo_zone WHERE geo_zone_id = '" . (int)$this->apiship_params['shipping_apiship_geo_zone_id'] . "' AND country_id = '" . (int)$address['country_id'] . "' AND (zone_id = '" . (int)$address['zone_id'] . "' OR zone_id = '0')");
+		return $query->num_rows>0;
+	}
+
 
   	public function get_quote_list($address, $full_list = false) {
 
 		$this->load->language('extension/shipping/apiship');
-		if ($this->apiship_params['shipping_apiship_status'] == 1) {
-			$status = true;
-		} else {
-			$status = false;
+		if ($this->apiship_params['shipping_apiship_status'] != 1) {
+			return [];
+		}
+
+		if ($this->check_geo_zone($address)==false) {
+			return [];
 		}
 
 		$quote_data = [];
@@ -223,11 +234,11 @@ class ModelExtensionShippingApiship extends Model {
 		$select_point = [];
 		if (isset($this->session->data['shipping_apiship'])) $select_point = $this->session->data['shipping_apiship'];
 
-		$region = $address['zone'];
-		$city = trim($address['city']);
-		$postcode = trim($address['postcode']);
-		$ext_address = trim($address['address_1']);
-		$country = trim($address['iso_code_2']);
+		$region = (isset($address['zone']))?$address['zone']:'';
+		$city = (isset($address['city']))?trim($address['city']):'';
+		$postcode = (isset($address['postcode']))?trim($address['postcode']):'';
+		$ext_address = (isset($address['address_1']))?trim($address['address_1']):'';
+		$country = (isset($address['iso_code_2']))?trim($address['iso_code_2']):'';
 		$payment_method_code = (isset($this->session->data['payment_method']['code']))?$this->session->data['payment_method']['code']:'';
 		$cash_on_delivery = in_array($payment_method_code, $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
 		$apiship_calculator_data = $this->apiship->apiship_calculator($country,$region,$city,$postcode,$ext_address,[],$this->cart->getProducts(),$this->getCartTotal(),$cash_on_delivery);
@@ -918,9 +929,11 @@ class ModelExtensionShippingApiship extends Model {
 
 
 		$order_params['costAssessedCost'] = $this->apiship->format_cost($order_totals['total'] - $order_totals['shipping']);
-		$cash_on_delivery = in_array($order['payment_code'], $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
-		$order_params['costCodCost'] = ($cash_on_delivery==true) ? $this->apiship->format_cost($order_totals['total']) : 0;
-		$order_params['costDeliveryCost'] =  ($cash_on_delivery==true) ? $this->apiship->format_cost($order_totals['shipping']) : 0;
+		//$cash_on_delivery = in_array($order['payment_code'], $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
+		$paid_orders = in_array($order['order_status_id'], $this->apiship_params['shipping_apiship_paid_orders']);
+
+		$order_params['costCodCost'] = ($paid_orders==false) ? $this->apiship->format_cost($order_totals['total']) : 0;
+		$order_params['costDeliveryCost'] =  ($paid_orders==false) ? $this->apiship->format_cost($order_totals['shipping']) : 0;
 		$order_params['sub_total_cost'] = $total_cost;
 
 
@@ -1178,8 +1191,8 @@ class ModelExtensionShippingApiship extends Model {
 
 		$this->load->model('checkout/order');
 		$order_info = $this->model_checkout_order->getOrder($order_id);
-
-		$cash_on_delivery = in_array($order_info['payment_code'], $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
+		$apiship_paid = in_array($order_info['order_status_id'], $this->apiship_params['shipping_apiship_paid_orders']);
+		//$cash_on_delivery = in_array($order_info['payment_code'], $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
 
 		$apiship_export = $this->is_order_export($order_id);
 		
@@ -1226,7 +1239,7 @@ class ModelExtensionShippingApiship extends Model {
 
 		return [
 			'export' => $apiship_export,
-			'paid' => !$cash_on_delivery, 
+			'paid' => $apiship_paid,//!$cash_on_delivery, 
 			'pickup_type' => $apiship_pickup_type,
 			'place_length' => $apiship_place_length,
 			'place_width' => $apiship_place_width,

@@ -715,7 +715,7 @@ class Apiship {
 			$height = (isset($product_info['height'])) ? intval($this->length->convert($product_info['height'], $product_info['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
 			$weight = (isset($product_info['weight'])) ? intval($this->weight->convert($product_info['weight'], $product_info['weight_class_id'], $this->apiship_params['shipping_apiship_gr_select'])) : 0;
 
-			$cost = round($this->currency->convert($product['price'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), 2); 
+			$cost = $this->format_cost($this->currency->convert($product['price'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency'))); 
 
 			if ($length==0) $length = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_length']);
 			if ($width==0) $width = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_width']);
