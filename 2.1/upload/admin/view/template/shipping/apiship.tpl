@@ -541,6 +541,23 @@
           </div>
 
           <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_paid_orders"><?php echo $entry_shipping_apiship_paid_orders; ?></label>
+            <div class="col-sm-8">
+			<div class="checkbox">
+			<?php foreach($order_statuses as $order_status) { ?>
+			<div class="form-control">
+			<?php if (in_array($order_status['order_status_id'],$shipping_apiship_paid_orders)) { ?>
+			<label><input type="checkbox" class="form-control" style="float:left" name="shipping_apiship_paid_orders[]" value="<?php echo $order_status['order_status_id']; ?>" checked="checked" /><?php echo $order_status['name']; ?></label>
+			<?php } else { ?>
+			<label><input type="checkbox" class="form-control" style="float:left" name="shipping_apiship_paid_orders[]" value="<?php echo $order_status['order_status_id']; ?>" /><?php echo $order_status['name']; ?></label>
+			<?php } ?>
+			</div>	
+			<?php } ?>
+			</div>
+            </div>
+          </div>
+
+          <div class="form-group">
             <label class="col-sm-4 control-label" for="shipping_apiship_cash_on_delivery_payment_methods"><?php echo $entry_shipping_apiship_cash_on_delivery_payment_methods; ?></label>
             <div class="col-sm-8">
 			<div class="checkbox">
