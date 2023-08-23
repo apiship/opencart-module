@@ -510,7 +510,7 @@ class Apiship {
 				$item['weight'] = $one_item_weight;
 			}
 
-			if ($total_calculation_weight!=0) $item['weight'] = $item['weight'] + $total_calculation_weight;
+			if ($total_calculation_weight<0) $item['weight'] = $item['weight'] + format_weight($total_calculation_weight / $item['quantity']);
 
 		}
 
@@ -695,6 +695,8 @@ class Apiship {
 
 	public function calculate_places($products, $total_sum) {
 
+		$this->toLog('calculate_places', ['products' => $products]); 
+
 		$total_weight = 0;
 		$total_length = 0;
 		$total_width = 0;
@@ -710,10 +712,10 @@ class Apiship {
 
 			$product_info = $this->model_catalog_product->getProduct($product['product_id']);
 
-			$length = (isset($product_info['length'])) ? intval($this->length->convert($product_info['length'], $product_info['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
-			$width = (isset($product_info['width'])) ? intval($this->length->convert($product_info['width'], $product_info['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
-			$height = (isset($product_info['height'])) ? intval($this->length->convert($product_info['height'], $product_info['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
-			$weight = (isset($product_info['weight'])) ? intval($this->weight->convert($product_info['weight'], $product_info['weight_class_id'], $this->apiship_params['shipping_apiship_gr_select'])) : 0;
+			$length = (isset($product['length'])) ? intval($this->length->convert($product['length'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
+			$width = (isset($product['width'])) ? intval($this->length->convert($product['width'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
+			$height = (isset($product['height'])) ? intval($this->length->convert($product['height'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
+			$weight = (isset($product['weight'])) ? intval($this->weight->convert($product['weight'] / $product['quantity'], $product['weight_class_id'], $this->apiship_params['shipping_apiship_gr_select'])) : 0;
 
 			$cost = $this->format_cost($this->currency->convert($product['price'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency'))); 
 

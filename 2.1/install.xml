@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>0.8.4.3 (OpenCart 2.0 - 2.2)</version>
+	<version>0.8.4.4 (OpenCart 2.0 - 2.2)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -517,6 +517,7 @@
                 $data['shipping_apiship_select_point'] = $this->language->get('shipping_apiship_select_point');
                 $data['shipping_apiship_title_from'] = $this->language->get('shipping_apiship_title_from');
                 $data['shipping_apiship_get_last_tracing_id_url'] = $this->url->link('shipping/apiship/get_last_tracing_id', '', 'SSL');
+				$data['shipping_apiship_version_js_mod'] = ($this->config->get('shipping_apiship_version_js_mod') !== null)?$this->config->get('shipping_apiship_version_js_mod'):'0.5';
 
                 $data['shipping_apiship_icon_show'] = $this->config->get('shipping_apiship_icon_show') ? 'true' : 'false'; 
     			$this->load->model('shipping/apiship');
@@ -553,8 +554,8 @@
 			<add position="before"><![CDATA[ 
 
 			<!-- apiship start -->
-				<script type="text/javascript" src="catalog/view/javascript/apiship.js?v=0.5"></script>
-				<link rel="stylesheet" href="catalog/view/javascript/apiship.css?v=0.5" type="text/css" />
+				<script type="text/javascript" src="catalog/view/javascript/apiship.js?v=<?php echo $shipping_apiship_version_js_mod; ?>"></script>
+				<link rel="stylesheet" href="catalog/view/javascript/apiship.css?v=<?php echo $shipping_apiship_version_js_mod; ?>" type="text/css" />
 
 
 				<script type="text/javascript">
@@ -587,7 +588,6 @@
                     providers.forEach(provider => {
                     
 		                var el = `input:not([type=hidden]):not([value*='error'])[value*="_${provider}_"]`;
-                   
                         for(var i=0; i<document.querySelectorAll(el).length; i++) {
                             el2 = get_image_ref(provider);
     	                    document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
@@ -722,6 +722,7 @@
                 $this->_templateData['shipping_apiship_title_from'] = $this->language->get('shipping_apiship_title_from');
 
                 $this->_templateData['shipping_apiship_get_last_tracing_id_url'] = $this->url->link('shipping/apiship/get_last_tracing_id', '', 'SSL');
+				$this->_templateData['shipping_apiship_version_js_mod'] = ($this->config->get('shipping_apiship_version_js_mod') !== null)?$this->config->get('shipping_apiship_version_js_mod'):'0.5';
 
                 $this->_templateData['shipping_apiship_icon_show'] = $this->config->get('shipping_apiship_icon_show') ? 'true' : 'false'; 
 
@@ -755,8 +756,8 @@
 			<add position="before" ><![CDATA[
 
 			<!-- apiship start -->
-				<script type="text/javascript" src="catalog/view/javascript/apiship.js?v=0.5"></script>
-				<link rel="stylesheet" href="catalog/view/javascript/apiship.css?v=0.5" type="text/css" />
+				<script type="text/javascript" src="catalog/view/javascript/apiship.js?v=<?php echo $shipping_apiship_version_js_mod; ?>"></script>
+				<link rel="stylesheet" href="catalog/view/javascript/apiship.css?v=<?php echo $shipping_apiship_version_js_mod; ?>" type="text/css" />
 
 
 				<script type="text/javascript">
@@ -792,8 +793,8 @@
                         var el = `input:not([type=hidden]):not([value*='error'])[value*="_${provider}_"]`;
                     
                         for(var i=0; i<document.querySelectorAll(el).length; i++) {
-                            el2 = get_image_ref(provider);
-    	                    document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
+                            el2 = get_image_ref(provider)
+    	                    apishipInsertImage(el, i, el2)
                         }
                         
                         el = `input:not([type=hidden])[value*='error'][value*="_${provider}_"]`;
@@ -804,7 +805,7 @@
                             else    
     	                        el2 = get_image_ref(provider);
     	                    
-    	                    document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
+							apishipInsertImage(el, i, el2)
                         }
                     });	
 
@@ -821,9 +822,7 @@
                         document.querySelectorAll(el)[i].nextSibling.textContent = text;
                     }
 					
-					
-					$('input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]').parent().append(el_select);
-                    $('input:not([type=hidden])[value^="apiship"][value*="point"]:not([value*="error"])').parent().append(el_change);
+					apishipInsertLink(el_select, el_change)
 
 					if (<?php echo $shipping_apiship_icon_show; ?>)					
                         show_icons();
@@ -835,7 +834,7 @@
 
 
 				function apiship_open(el) {
-                    		code = el.siblings("input").val()
+                    code = apishipGetCode(el)
 
 					$.ajax({
 						url: '<?php echo $shipping_apiship_get_points_url; ?>',
@@ -843,7 +842,7 @@
 						dataType: 'json',
 						data: {'code':code},
 						beforeSend: function() {
-                   			$('input:not([type=hidden])[value="'+ code +'"]').parent().append('<div class="apiship_loading"></div>');
+							apishipInsertLoader(code)
  						},
 						complete: function() {
                    				$(".apiship_loading").remove();

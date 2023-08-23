@@ -24,6 +24,7 @@ $_['entry_shipping_apiship_template']    		= 'Module items template<br>
 <b>%address</b> - pickup point address<br>
 <b>%tariff</b> - tariff name<br>
 <b>%time</b> - delivery terms<br>
+<b>%description</b> - tariff description<br>
 </div>';
 
 $_['entry_shipping_apiship_custom_code']    	= 'customCode for the rate calculator';
