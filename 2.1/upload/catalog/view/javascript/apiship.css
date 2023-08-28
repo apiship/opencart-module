@@ -37,6 +37,7 @@
 
 .modal-header h4 {
 	display: inline-block;
+    margin: 0
 }
 
 .apiship_yandex_map h4 {
@@ -73,9 +74,7 @@
     top: 0;
     margin: 3px;
 }
-.hidden {
-    display:none !important;
-}
+
 .btn-w-100{
     width: 100%;
 }
@@ -88,6 +87,7 @@
     	border-radius: 2em;
 	box-shadow: black 0.5em 0.5em 0.3em;
 	padding: 5px 20px 5px 20px;
+ display: inline-grid!important;
 	background: #FFFFFF;
 	white-space: nowrap;
 	display: inline-block;

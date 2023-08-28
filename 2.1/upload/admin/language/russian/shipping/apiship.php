@@ -24,6 +24,7 @@ $_['entry_shipping_apiship_template']    		= 'Шаблон пунктов мод
 <b>%address</b> - адрес ПВЗ<br>
 <b>%tariff</b> - название тарифа<br>
 <b>%time</b> - сроки доставки<br>
+<b>%description</b> - описание тарифа<br>
 </div>';
 
 $_['entry_shipping_apiship_custom_code']    	= 'customCode для калькулятора тарифов';

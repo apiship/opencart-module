@@ -250,18 +250,20 @@ class ModelShippingApiship extends Model {
 					foreach($tariff['pointIds'] as $point_id) {
 						if (!in_array($this->get_pickup_type($provider['providerKey']), $tariff['pickupTypes'])) continue;
 						
+						if (!isset($tariff['tariffDescription'])) $tariff['tariffDescription'] = '';
+
 						$key = 'point_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . 'error';
 						if (empty($start_points[$provider['providerKey']])) { 
-							$start_points[$provider['providerKey']] = ['key' => $key, 'tariffName' => $tariff['tariffName'], 'daysMin' => $tariff['daysMin'], 'daysMax' => $tariff['daysMax'], 'deliveryCost' => $tariff['deliveryCost']];
+							$start_points[$provider['providerKey']] = ['key' => $key, 'tariffName' => $tariff['tariffName'], 'daysMin' => $tariff['daysMin'], 'daysMax' => $tariff['daysMax'], 'deliveryCost' => $tariff['deliveryCost'], 'tariffDescription' => $tariff['tariffDescription']];
 						} elseif ($tariff['deliveryCost'] < $start_points[$provider['providerKey']]['deliveryCost']) {
 							if (strpos($start_points[$provider['providerKey']]['key'],'error')!==false)
-								$start_points[$provider['providerKey']] = ['key' => $key, 'tariffName' => $tariff['tariffName'], 'daysMin' => $tariff['daysMin'], 'daysMax' => $tariff['daysMax'], 'deliveryCost' => $tariff['deliveryCost']];
+								$start_points[$provider['providerKey']] = ['key' => $key, 'tariffName' => $tariff['tariffName'], 'daysMin' => $tariff['daysMin'], 'daysMax' => $tariff['daysMax'], 'deliveryCost' => $tariff['deliveryCost'], 'tariffDescription' => $tariff['tariffDescription']];
 						}
 
 						$key = 'point_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . $point_id;
 						if (isset($select_point[$provider['providerKey']]))
 						if ('apiship.' . $key == $select_point[$provider['providerKey']]['code'])  {
-							$start_points[$provider['providerKey']] = ['key' => $key, 'tariffName' => $tariff['tariffName'], 'daysMin' => $tariff['daysMin'], 'daysMax' => $tariff['daysMax'], 'deliveryCost' => $tariff['deliveryCost']];															
+							$start_points[$provider['providerKey']] = ['key' => $key, 'tariffName' => $tariff['tariffName'], 'daysMin' => $tariff['daysMin'], 'daysMax' => $tariff['daysMax'], 'deliveryCost' => $tariff['deliveryCost'], 'tariffDescription' => $tariff['tariffDescription']];															
 						}
 
 					}
@@ -275,7 +277,8 @@ class ModelShippingApiship extends Model {
 				'address' => $address,
 				'start_points' => $start_points,
 				'session' => $this->session->data,
-				'select_point' => $select_point
+				'select_point' => $select_point,
+				'weight' => $this->cart->getWeight()
 			]);
 
 			if ($this->apiship_params['shipping_apiship_group_points']) {
@@ -295,7 +298,7 @@ class ModelShippingApiship extends Model {
 						
 						if ($parce_code['point_id'] != 'error') {
 							$point = $this->apiship_point($parce_code['point_id']);
-							$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax']);
+							$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax'], $element['tariffDescription']);
 						}
 						else
 							$title = $this->language->get('shipping_apiship_point');
@@ -320,7 +323,7 @@ class ModelShippingApiship extends Model {
 						
 						if ($parce_code['point_id'] != 'error') {
 							$point = $this->apiship_point($parce_code['point_id']);
-							$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax']);
+							$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax'], $element['tariffDescription']);
 						}
 						else
 							$title = $this->language->get('shipping_apiship_point');
@@ -348,7 +351,7 @@ class ModelShippingApiship extends Model {
 					
 					if ($parce_code['point_id'] != 'error') {
 						$point = $this->apiship_point($parce_code['point_id']);
-						$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax']);
+						$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax'], $element['tariffDescription']);
 					}
 					else
 						$title = $this->language->get('shipping_apiship_point') . $this->get_provider_name($provider_key);
@@ -396,10 +399,12 @@ class ModelShippingApiship extends Model {
 			foreach($tariffs as $tariff) {
 				if (!in_array($this->get_pickup_type($provider['providerKey']), $tariff['pickupTypes'])) continue;
 
+				if (!isset($tariff['tariffDescription'])) $tariff['tariffDescription'] = '';
+
 				$key = 'door_' . $provider['providerKey'] . '_' . $tariff['tariffId'];
 				$quote_data[$key] = [
 					'code'         => 'apiship.' . $key,
-					'title'        => $this->get_title('door', '', $provider['providerKey'], $tariff['tariffName'], '', '', $tariff['daysMin'], $tariff['daysMax']), 
+					'title'        => $this->get_title('door', '', $provider['providerKey'], $tariff['tariffName'], '', '', $tariff['daysMin'], $tariff['daysMax'], $tariff['tariffDescription']), 
 					'cost'         => $tariff['deliveryCost'],
 					'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
 					'text'         => $this->currency->format($this->tax->calculate($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
@@ -409,6 +414,7 @@ class ModelShippingApiship extends Model {
 
 		}
 
+		/*
 		if(empty($quote_data)) {
 			// нет данных, потому что таймаут
 			$title = $this->apiship_params['shipping_apiship_error_timeout'];
@@ -435,7 +441,9 @@ class ModelShippingApiship extends Model {
 			);
 
 		}
+		*/
 
+		if(!empty($quote_data)) 
       	$method_data = array(
 	      	'code'       => 'apiship',
 	      	'title'      => $this->apiship_params['shipping_apiship_title'], 
@@ -449,7 +457,7 @@ class ModelShippingApiship extends Model {
 
   	}
 
-	private function get_title($type, $sub_type, $providerKey, $tariffName, $pointName, $pointAddress, $daysMin, $daysMax ) {
+	private function get_title($type, $sub_type, $providerKey, $tariffName, $pointName, $pointAddress, $daysMin, $daysMax, $tariffDescription ) {
 		$template = $this->apiship_params['shipping_apiship_template'];
 
 		$type_name = '';
@@ -471,7 +479,8 @@ class ModelShippingApiship extends Model {
 			'%name' => $pointName,
 			'%address' => $pointAddress,
 			'%tariff' => $tariffName,
-			'%time' => $time
+			'%time' => $time,
+			'%description' => $tariffDescription
 		];
 
 		foreach($template_ar as $teplate_key => $teplate_value) {
@@ -556,6 +565,7 @@ class ModelShippingApiship extends Model {
 			foreach($providers as $provider) {
 				if (isset($provider['tariffs'])) $tariffs = $provider['tariffs']; else $tariffs = [];					
 				foreach($tariffs as $tariff) {
+				if (!isset($tariff['tariffDescription'])) $tariff['tariffDescription'] = '';
 					foreach($tariff['pointIds'] as $point_id) {
 						if (!in_array($this->get_pickup_type($provider['providerKey']), $tariff['pickupTypes'])) continue;
 
@@ -576,7 +586,7 @@ class ModelShippingApiship extends Model {
 							'text' => $this->currency->format($this->tax->calculate($cost, $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select']),
 							'cost' => round($cost),						
 
-							'title' => $this->get_title('point', $point['type'], $provider['providerKey'], $tariff['tariffName'], $point['name'], $point['address'], $tariff['daysMin'], $tariff['daysMax']),
+						'title' => $this->get_title('point', $point['type'], $provider['providerKey'], $tariff['tariffName'], $point['name'], $point['address'], $tariff['daysMin'], $tariff['daysMax'], $tariff['tariffDescription']),
 				
 							'type' => $apiship_point_types[$point['type']-1],
 							'provider' => $apiship_providers[$provider['providerKey']],
@@ -712,6 +722,7 @@ class ModelShippingApiship extends Model {
 		foreach($providers as $provider) {
 			if (isset($provider['tariffs'])) $tariffs = $provider['tariffs']; else $tariffs = [];				
 			foreach($tariffs as $tariff) {
+				if (!isset($tariff['tariffDescription'])) $tariff['tariffDescription'] = '';
 				foreach($tariff['pointIds'] as $point_id) {
 					if (!in_array($this->get_pickup_type($provider['providerKey']), $tariff['pickupTypes'])) continue;
 					$key = $delivery_type. '_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . $point_id;
@@ -721,7 +732,7 @@ class ModelShippingApiship extends Model {
 
 						$postcode = $point['postIndex'];
 						$address1 = $this->apiship->get_address($point);
-						$title = $this->get_title('point', $point['type'], $provider['providerKey'], $tariff['tariffName'], $point['name'], $point['address'], $tariff['daysMin'], $tariff['daysMax']);
+						$title = $this->get_title('point', $point['type'], $provider['providerKey'], $tariff['tariffName'], $point['name'], $point['address'], $tariff['daysMin'], $tariff['daysMax'], $tariff['tariffDescription']);
 					}
 				}
 			}
@@ -853,8 +864,7 @@ class ModelShippingApiship extends Model {
 
 		$text = '';
 	
-		$this->load->model('checkout/order');
-		$order_products = $this->model_checkout_order->getOrderProducts($order_id);
+		$order_products = $this->getOrderProducts($order_id);
 
 		$order_totals_items = $this->get_order_totals($order_id);
 		$total_sum = $order_totals_items['total_sum'];
@@ -873,6 +883,7 @@ class ModelShippingApiship extends Model {
 		$total_weight = $shipping_apiship_place_weight; 
 		$total_cost = $calculate_data['total_cost'];
 
+		$this->load->model('checkout/order');
 		$order = $this->model_checkout_order->getOrder($order_id);
 
 		$shipping_code = $order['shipping_code'];
@@ -918,11 +929,11 @@ class ModelShippingApiship extends Model {
 		$order_params['orderPointOutId'] = $point_id;
 
 
-		$order_params['costAssessedCost'] = $this->apiship->format_cost($order_totals['total'] - $order_totals['shipping']);
+		$order_params['costAssessedCost'] = $this->apiship->format_cost($order['total'] - $order_totals['shipping']);
 		//$cash_on_delivery = in_array($order['payment_code'], $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
 		$paid_orders = in_array($order['order_status_id'], $this->apiship_params['shipping_apiship_paid_orders']);
 
-		$order_params['costCodCost'] = ($paid_orders==false) ? $this->apiship->format_cost($order_totals['total']) : 0;
+		$order_params['costCodCost'] = ($paid_orders==false) ? $this->apiship->format_cost($order['total']) : 0;
 		$order_params['costDeliveryCost'] =  ($paid_orders==false) ? $this->apiship->format_cost($order_totals['shipping']) : 0;
 		$order_params['sub_total_cost'] = $total_cost;
 
@@ -1040,7 +1051,7 @@ class ModelShippingApiship extends Model {
 		if (!isset($data)) {
 			$data = [
 				'last_import_date' => date("Y-m-d"),
-				'last_status_change_date' => date("Y-m-d\T00:00:00+03:00", strtotime("-5 day")),
+				'last_status_change_date' => date("Y-m-d\T00:00:00+03:00", strtotime("-2 day")),
 			];
 		}
 
@@ -1175,6 +1186,50 @@ class ModelShippingApiship extends Model {
 		return $this->insert_apiship_order_status($key, $name);
 	}
 
+	private function getProductOptionValue($product_id, $product_option_value_id) {
+		$query = $this->db->query("SELECT pov.option_value_id, ovd.name, pov.quantity, pov.subtract, pov.price, pov.price_prefix, pov.points, pov.points_prefix, pov.weight, pov.weight_prefix FROM " . DB_PREFIX . "product_option_value pov LEFT JOIN " . DB_PREFIX . "option_value ov ON (pov.option_value_id = ov.option_value_id) LEFT JOIN " . DB_PREFIX . "option_value_description ovd ON (ov.option_value_id = ovd.option_value_id) WHERE pov.product_id = '" . (int)$product_id . "' AND pov.product_option_value_id = '" . (int)$product_option_value_id . "' AND ovd.language_id = '" . (int)$this->config->get('config_language_id') . "'");
+
+		return $query->row;
+	}
+
+	private function getOrderProducts($order_id) {
+
+		$this->load->model('account/order');
+		$this->load->model('catalog/product');
+		$order_products = $this->model_account_order->getOrderProducts($order_id);
+
+		foreach($order_products as &$order_product) {
+			$order_options = $this->model_account_order->getOrderOptions($order_id, $order_product['order_product_id']);
+			$product_info = $this->model_catalog_product->getProduct($order_product['product_id']); 
+				
+			$weight = (isset($product_info['weight'])) ? $product_info['weight'] : 0;
+
+			$order_options_values = [];
+			foreach($order_options as $order_option) {
+				$product_option_value_info = $this->getProductOptionValue($order_product['product_id'], $order_option['product_option_value_id']);				
+				$order_options_values[] = $product_option_value_info;
+
+				if (!empty($product_option_value_info['weight'])) {
+					if ($product_option_value_info['weight_prefix'] == '+') {
+						$weight += $product_option_value_info['weight'];
+					} elseif ($product_option_value_info['weight_prefix'] == '-') {
+						$weight -= $product_option_value_info['weight'];
+					} elseif ($product_option_value_info['weight_prefix'] == '=') {
+						$weight = $product_option_value_info['weight'];
+					}
+
+				}
+
+			}
+
+			$order_product['weight'] = $weight * $order_product['quantity'];
+			$order_product['weight_class_id'] = $product_info['weight_class_id'];
+		}
+	
+		return $order_products;
+	}
+
+
 	public function get_order_params() {
 
 		if (isset($this->request->get['id'])) $order_id = $this->request->get['id']; else return array('text' => $this->apiship_params['shipping_apiship_error_params']);
@@ -1190,7 +1245,8 @@ class ModelShippingApiship extends Model {
 		if (isset($parce_code['provider'])) $provider = $parce_code['provider']; else $provider = '';
 		$apiship_pickup_type = $this->get_pickup_type($provider);
 		
-		$order_products = $this->model_checkout_order->getOrderProducts($order_id);
+		$order_products = $this->getOrderProducts($order_id);
+
 		$total_sum = $this->get_order_totals($order_id)['total_sum'];
 
 		$calculate_data = $this->apiship->calculate_places($order_products, $total_sum);
