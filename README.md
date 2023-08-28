@@ -24,47 +24,7 @@
 
 # Список служб доставки
 
-* 5Post
-* Accotdpost
-* Axilog
-* Az.Express
-* B2Cpl
-* BoxBerry
-* CityExprеss
-* Dalli-Service
-* Dostavista
-* Dostavka-Club
-* Dostavka.GURU
-* DPD
-* DRH Logistic
-* E-COMLOG
-* EASY BULKY
-* Logsis
-* Marlinzet
-* Omnic
-* PickPoint
-* Pony Express
-* RedExpress
-* runCRM
-* SmartDostavka
-* TopDelivery
-* Возовоз
-* Деловые линии
-* Интеграл
-* Е-КИТ
-* КГТ
-* КСЭ
-* Курьерист
-* Л-Пост
-* Подорожник
-* Почта России
-* ПЭК
-* РУ-ДОСТАВКА
-* Сберлогистика
-* СДЭК
-* Стриж
-* Чекбокс
-* Яндекс Доставка
+Актуальный список поддерживаемых служб доставки представлен на сайте ApiShip - https://apiship.ru/couriers
 
 # Функционал модуля
 
