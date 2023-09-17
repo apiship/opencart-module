@@ -2,15 +2,13 @@ var apiship = apiship || (function () {
 
 	var ID_MODAL = 'apiship_yandex_map';
 	var YANDEX_MAP_CONTAINER_ID = 'apiship_yandex_map_container';
-	var YANDEX_MAP_CONTAINER_ID_FOR_MAP = 'apiship-modal-yandex-map-wrap';
-	var YANDEX_MAP_CONTAINER_ID_FOR_ADDRESS = 'apiship-modal-yandex-map-address';
 
 
 	var modal = {
 		initLayout: {
 			createRoot: function () {
 				let root = document.createElement('div')
-				root.classList.add('modal', 'fade')
+				root.classList.add('modal', 'fade', 'apiship_modal')
 				root.setAttribute('tabindex', '-1')
 				root.setAttribute('role', 'dialog')
 				root.setAttribute('id', ID_MODAL)
@@ -19,23 +17,19 @@ var apiship = apiship || (function () {
 			},
 			createDialog: function (dom) {
 				let dialog = document.createElement('div')
-				dialog.classList.add('modal-dialog', 'modal-lg')
-				if (document.documentElement.clientWidth < 768) {
-					dialog.setAttribute('style', 'width: 100%')
-				}
+				dialog.classList.add('modal-dialog','apiship_modal-dialog')
 				dom.appendChild(dialog)
 				return dialog;
 			},
 			createContent: function (dom) {
 				let content = document.createElement('div')
-				content.classList.add('modal-content')
-				content.setAttribute('style', 'margin: 7px')
+				content.classList.add('modal-content', 'apiship_modal-content')
 				dom.appendChild(content)
 				return content;
 			},
 			createHeader: function (dom) {
 				let header = document.createElement('div')
-				header.classList.add('modal-header')
+				header.classList.add('modal-header', 'apiship_modal-header')
 				header.innerHTML = '<h4>Пункты самовывоза</h4>'
 				dom.appendChild(header)
 				return header;
@@ -43,7 +37,7 @@ var apiship = apiship || (function () {
 			createButtonClose: function (dom) {
 				let buttonClose = document.createElement('button')
 				buttonClose.setAttribute('type', 'button')
-				buttonClose.setAttribute('data-dismiss', 'modal')
+				buttonClose.setAttribute('data-dismiss', 'modal', 'apiship_modal')
 				buttonClose.setAttribute('aria-label', 'Close')
 				buttonClose.classList.add('close')
 				dom.appendChild(buttonClose)
@@ -58,22 +52,9 @@ var apiship = apiship || (function () {
 			},
 			createBody: function (dom) {
 				let body = document.createElement('div')
-				body.classList.add('modal-body')
+				body.classList.add('modal-body', 'apiship_modal-body')
 				dom.appendChild(body)
 				return body;
-			},
-			createRow: function (dom) {
-				let row = document.createElement('div')
-				row.classList.add('class', 'row')
-				dom.appendChild(row)
-				return row;
-			},
-			createColForMap: function (dom) {
-				let col = document.createElement('div')
-				col.classList.add('col-lg-12', 'col-md-12')
-				col.setAttribute('id', YANDEX_MAP_CONTAINER_ID_FOR_MAP)
-				dom.appendChild(col)
-				return
 			},
 
 		},
@@ -85,9 +66,7 @@ var apiship = apiship || (function () {
 				header = this.initLayout.createHeader(content),
 				buttonClose = this.initLayout.createButtonClose(header),
 				iconClose = this.initLayout.createIconClose(buttonClose),
-				body = this.initLayout.createBody(content),
-				row = this.initLayout.createRow(body),
-				colMap = this.initLayout.createColForMap(row);
+				body = this.initLayout.createBody(content);
 		},
 		checkOnInit: function () {
 			if (document.getElementById(this.idModal)) {
@@ -126,9 +105,8 @@ var apiship = apiship || (function () {
 		},
 		createContainer: function () {
 			let container = document.createElement('div'),
-				modalBody = document.getElementById(ID_MODAL).querySelector('.modal-body  #' + YANDEX_MAP_CONTAINER_ID_FOR_MAP);
+			modalBody = document.getElementById(ID_MODAL).querySelector('.modal-body');
 			container.setAttribute('id', YANDEX_MAP_CONTAINER_ID)
-			container.setAttribute('style', 'width: 100%')
 			modalBody.appendChild(container)
 		},
 		initMap: function (event) {
@@ -140,6 +118,7 @@ var apiship = apiship || (function () {
 				suppressMapOpenBlock: true
 			})
 			yandexMaps.createPlacemarks(yandexMaps.points, Mymap)
+
 		},
 		createPlacemarks: function (points, map) {
 
