@@ -1,30 +1,10 @@
 .apiship_points {
 	text-decoration: underline;
 }
+
 .apiship_img_providers {
 	vertical-align: middle;
 	width:60px;
-}
-
-#apiship-address-result {
-    padding: 10px;
-    border: 1px solid #ccc;
-}
-#apiship-address-result a {
-    display: block;
-    padding-bottom: 5px;
-    border-bottom: 1px dotted;
-    margin-bottom: 5px;
-    text-decoration: none;
-}
-#apiship-order-block-loading {
-    
-}
-.map__addresses{
-    padding-left: 0px;
-    overflow: auto;
-    max-height: 356px;
-    margin-bottom: 10px;
 }
 
 .apiship_loading {
@@ -35,51 +15,11 @@
 	background-size: contain;
 }
 
-.modal-header h4 {
-	display: inline-block;
-    margin: 0
-}
-
-.apiship_yandex_map h4 {
-    margin: 15px 0;
-}
-
 #apiship_yandex_map_container {
-    width: 570px;
-    height: 400px;
+    width: 100%;
+    height: 100%;
     border: 1px solid #ccc;
     padding: 5px;
-}
-.map__address__active{
-    color: #007bff;
-}
-.map__address__list__li {
-    border-bottom: 1px solid #eee;
-    font-size: 0.9em;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.5rem;
-    cursor: pointer;
-    line-height: 1.1em;
-}
-.map__address__list__li .text-danger {
-    font-size: 0.8em;
-}
-.map__address__list__li .important-text{
-    color: #dc3545;
-    font-weight: bold;
-}
-.apiship-comment {
-    right: 0;
-    position: absolute;
-    top: 0;
-    margin: 3px;
-}
-
-.btn-w-100{
-    width: 100%;
-}
-.btn:disabled{
-    cursor: not-allowed;
 }
 
 .apiship_cluster {
@@ -87,9 +27,64 @@
     	border-radius: 2em;
 	box-shadow: black 0.5em 0.5em 0.3em;
 	padding: 5px 20px 5px 20px;
- display: inline-grid!important;
+ 	display: inline-grid!important;
 	background: #FFFFFF;
 	white-space: nowrap;
 	display: inline-block;
 
  }
+
+.apiship_modal {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	overflow: hidden;
+	padding-right: 0px !important;
+}
+
+
+.apiship_modal-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border: none;
+}
+
+.apiship_modal-header h4 {
+	display: inline-block;
+      margin: 0
+}
+
+
+.apiship_modal-content {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    box-shadow: none;
+	margin: 7px;
+}
+
+
+.apiship_modal-body {
+    position: absolute;
+    top: 50px;
+    bottom: 0;
+    font-size: 15px;
+    overflow: auto;
+    margin-bottom: 15px;
+    padding: 0 15px 0;
+    width: 100%;
+}
+
+.apiship_modal-dialog {
+    width: 100%;
+    min-height: 100%;
+    padding: 0;
+    margin: 0;
+}

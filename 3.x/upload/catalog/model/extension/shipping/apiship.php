@@ -1065,9 +1065,12 @@ class ModelExtensionShippingApiship extends Model {
 			];
 		}
 
+		date_default_timezone_set('Europe/Moscow');
+		$dif_last_status_change_date = abs(strtotime(date("Y-m-d H:i:s")) - strtotime($data['last_status_change_date']));
+		if ($dif_last_status_change_date / 3600 > 48) $data['last_status_change_date'] = date("Y-m-d\T00:00:00+03:00", strtotime("-2 day"));
 
 		$time = strtotime(date("Y-m-d H:i:s")) - strtotime($data['last_import_date']);
-
+		
 		if ($time > 60) {
 		
 			$apiship_orders_status = $this->apiship->apiship_orders_status($data['last_status_change_date']);
@@ -1212,6 +1215,11 @@ class ModelExtensionShippingApiship extends Model {
 			$order_options = $this->model_checkout_order->getOrderOptions($order_id, $order_product['order_product_id']);
 			$product_info = $this->model_catalog_product->getProduct($order_product['product_id']); 
 				
+			$order_product['length'] = (isset($product_info['length'])) ? $product_info['length'] : 0; 
+			$order_product['width'] = (isset($product_info['width'])) ? $product_info['width'] : 0;
+			$order_product['height'] = (isset($product_info['height'])) ? $product_info['height'] : 0;
+			$order_product['length_class_id'] = $product_info['length_class_id'];
+
 			$weight = (isset($product_info['weight'])) ? $product_info['weight'] : 0;
 
 			$order_options_values = [];
