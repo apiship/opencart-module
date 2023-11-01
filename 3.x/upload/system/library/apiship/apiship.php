@@ -770,10 +770,14 @@ class Apiship {
 		}
 
 		if ($total_cost != 0) {
-			$items[] = end($items);
-			$items[count($items)-2]['quantity'] = $items[count($items)-2]['quantity'] - 1;
-			$items[count($items)-1]['quantity'] = 1;
-			$items[count($items)-1]['cost'] = $items[count($items)-1]['cost'] + $total_cost;
+			if ($items[count($items)-1]['quantity'] > 1) {
+				$items[] = end($items);			
+				$items[count($items)-2]['quantity'] = $items[count($items)-2]['quantity'] - 1;
+				$items[count($items)-1]['quantity'] = 1;
+				$items[count($items)-1]['cost'] = $items[count($items)-1]['cost'] + $total_cost;
+			} else {
+				$items[count($items)-1]['cost'] = $items[count($items)-1]['cost'] + $total_cost;
+			}
 		}
 
 		$place_params_length = $this->apiship_params['shipping_apiship_place_length'];

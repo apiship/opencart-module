@@ -114,6 +114,9 @@ $_['entry_shipping_apiship_cancel_confirm']	= 'Отменить экспорти
 
 // Error
 $_['error_permission']  				= 'У Вас нет прав для управления этим модулем!';
+$_['error_shipping_apiship_rub_select'] 		= 'Необходимо заполнить поле!';
+$_['error_shipping_apiship_gr_select'] 		= 'Необходимо заполнить поле!';
+$_['error_shipping_apiship_cm_select'] 		= 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_token'] 			= 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_sending_country'] 	= 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_sending_region'] 	= 'Необходимо заполнить поле!';
@@ -132,4 +135,4 @@ $_['error_shipping_apiship_parcel_width'] 	= 'Необходимо заполн�
 $_['error_shipping_apiship_parcel_height'] 	= 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_parcel_weight'] 	= 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_select_orders'] 	= 'Необходимо выбрать заказы!';
-
+$_['error_shipping_apiship_fields_filled']	= 'Необходимо заполнить обязательные поля!';
