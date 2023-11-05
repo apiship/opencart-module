@@ -43,13 +43,16 @@
             <div class="col-sm-8">
               <select name="shipping_apiship_rub_select" id="shipping_apiship_rub_select" class="form-control">
               	<?php foreach($currencies as $currency) { ?>
-              	<?php if ($currency['code'] == $shipping_apiship_rub_select) { ?>
+              	<?php if (($currency['code'] == $shipping_apiship_rub_select) && (!empty($currency['code']))) { ?>
               	<option value=<?php echo $currency['code']; ?> selected="selected"><?php echo $currency['code']; ?></option>
               	<?php } else { ?> 
               	<option value=<?php echo $currency['code'];?>><?php echo $currency['code'];?></option>
 	        	<?php } ?>
               	<?php } ?>
               </select>
+			<?php if ($error_shipping_apiship_rub_select) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_rub_select; ?></div>
+              	<?php } ?>
             </div>
           </div>
 
@@ -58,13 +61,16 @@
             <div class="col-sm-8">
               <select name="shipping_apiship_gr_select" id="shipping_apiship_gr_select" class="form-control">
                 	<?php foreach($weight_classes as $weight_class) { ?>
-                	<?php if ($weight_class['weight_class_id'] == $shipping_apiship_gr_select) { ?>
+                	<?php if (($weight_class['weight_class_id'] == $shipping_apiship_gr_select) && (!empty($weight_class['weight_class_id']))){ ?>
                 	<option value="<?php echo $weight_class['weight_class_id']; ?>" selected="selected"><?php echo $weight_class['title']; ?></option>
               	<?php } else { ?> 
                 	<option value="<?php echo $weight_class['weight_class_id']; ?>"><?php echo $weight_class['title']; ?></option>
 	        	<?php } ?>
               	<?php } ?>
               </select>
+			<?php if ($error_shipping_apiship_gr_select) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_gr_select; ?></div>
+              	<?php } ?>
             </div>
           </div>
 
@@ -73,13 +79,16 @@
             <div class="col-sm-8">
               <select name="shipping_apiship_cm_select" id="shipping_apiship_cm_select" class="form-control">
                 	<?php foreach($length_classes as $length_class) { ?>
-                	<?php if ($length_class['length_class_id'] == $shipping_apiship_cm_select) { ?>
+                	<?php if (($length_class['length_class_id'] == $shipping_apiship_cm_select) && (!empty($length_class['length_class_id']))) { ?>
                 	<option value="<?php echo $length_class['length_class_id']; ?>" selected="selected"><?php echo $length_class['title']; ?></option>
               	<?php } else { ?> 
                 	<option value="<?php echo $length_class['length_class_id']; ?>"><?php echo $length_class['title']; ?></option>
 	        	<?php } ?>
               	<?php } ?>
               	</select>
+			<?php if ($error_shipping_apiship_cm_select) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_cm_select; ?></div>
+              	<?php } ?>
             </div>
           </div>
 

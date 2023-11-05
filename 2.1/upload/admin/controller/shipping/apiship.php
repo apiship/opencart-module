@@ -48,7 +48,7 @@ class ControllerShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.8.5.1 (OpenCart 2.0 - 2.2)';
+		$data['shipping_apiship_version'] = '0.8.6 (OpenCart 2.0 - 2.2)';
 		$data['shipping_apiship_version_js_mod'] = rand();
 
 		$data['button_save'] = $this->language->get('button_save');
@@ -135,7 +135,7 @@ class ControllerShippingApiship extends Controller {
 		];                
 
             $this->load->model('localisation/currency');
-		$data['currencies'] = $this->model_localisation_currency->getCurrencies();
+		$data['currencies'] = ['' => ['code' => '']] + $this->model_localisation_currency->getCurrencies();
 
 		$this->load->model('localisation/geo_zone');
 		$data['geo_zones'] = $this->model_localisation_geo_zone->getGeoZones();
@@ -144,10 +144,10 @@ class ControllerShippingApiship extends Controller {
 		$data['tax_classes'] = $this->model_localisation_tax_class->getTaxClasses();
 
 		$this->load->model('localisation/weight_class');
-		$data['weight_classes'] = $this->model_localisation_weight_class->getWeightClasses();
+		$data['weight_classes'] = ['' => ['weight_class_id' => '', 'title' => '']] + $this->model_localisation_weight_class->getWeightClasses();
 
 		$this->load->model('localisation/length_class');
-		$data['length_classes'] = $this->model_localisation_length_class->getLengthClasses(); 
+		$data['length_classes'] = ['' => ['length_class_id' => '', 'title' => '']] + $this->model_localisation_length_class->getLengthClasses(); 
 
 		$this->load->model('localisation/order_status');	
 		$data['order_statuses'] = $this->model_localisation_order_status->getOrderStatuses();
@@ -156,10 +156,8 @@ class ControllerShippingApiship extends Controller {
 
 		if (isset($this->request->post['shipping_apiship_rub_select'])) {
 			$data['shipping_apiship_rub_select'] = $this->request->post['shipping_apiship_rub_select'];
-		} elseif( $this->config->get('shipping_apiship_rub_select') ) {
-			$data['shipping_apiship_rub_select'] = $this->config->get('shipping_apiship_rub_select');
 		} else {
-			$data['shipping_apiship_rub_select'] = 'RUB';
+			$data['shipping_apiship_rub_select'] = $this->config->get('shipping_apiship_rub_select');
 		}
 
             if (isset($this->request->post['shipping_apiship_gr_select'])) {
@@ -450,6 +448,24 @@ class ControllerShippingApiship extends Controller {
 			$data['error_warning'] = '';
 		}
 
+		if (isset($this->error['error_shipping_apiship_rub_select'])) {
+			$data['error_shipping_apiship_rub_select'] = $this->error['error_shipping_apiship_rub_select'];
+		} else {
+			$data['error_shipping_apiship_rub_select'] = '';
+		}
+
+		if (isset($this->error['error_shipping_apiship_gr_select'])) {
+			$data['error_shipping_apiship_gr_select'] = $this->error['error_shipping_apiship_gr_select'];
+		} else {
+			$data['error_shipping_apiship_gr_select'] = '';
+		}
+
+		if (isset($this->error['error_shipping_apiship_cm_select'])) {
+			$data['error_shipping_apiship_cm_select'] = $this->error['error_shipping_apiship_cm_select'];
+		} else {
+			$data['error_shipping_apiship_cm_select'] = '';
+		}
+
 		if (isset($this->error['error_shipping_apiship_token'])) {
 			$data['error_shipping_apiship_token'] = $this->error['error_shipping_apiship_token'];
 		} else {
@@ -548,6 +564,18 @@ class ControllerShippingApiship extends Controller {
 			$this->error['warning'] = $this->language->get('error_permission');
 		}
 		
+		if (empty($this->request->post['shipping_apiship_rub_select'])) {
+			$this->error['error_shipping_apiship_rub_select'] = $this->language->get('error_shipping_apiship_rub_select');
+		}
+		
+		if (empty($this->request->post['shipping_apiship_gr_select'])) {
+			$this->error['error_shipping_apiship_gr_select'] = $this->language->get('error_shipping_apiship_gr_select');
+		}
+
+		if (empty($this->request->post['shipping_apiship_cm_select'])) {
+			$this->error['error_shipping_apiship_cm_select'] = $this->language->get('error_shipping_apiship_cm_select');
+		}
+
 		if (!$this->request->post['shipping_apiship_token']) {
 			$this->error['error_shipping_apiship_token'] = $this->language->get('error_shipping_apiship_token');
 		}

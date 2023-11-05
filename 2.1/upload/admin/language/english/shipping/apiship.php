@@ -115,6 +115,9 @@ $_['entry_shipping_apiship_cancel_confirm']	= 'Cancel an exported order?';
 
 // Error
 $_['error_permission'] 					= 'You are not allowed to control this unit';
+$_['error_shipping_apiship_rub_select'] 		= 'Fill the field!';
+$_['error_shipping_apiship_gr_select'] 		= 'Fill the field!';
+$_['error_shipping_apiship_cm_select'] 		= 'Fill the field!';
 $_['error_shipping_apiship_token'] 			= 'Fill the field!';
 $_['error_shipping_apiship_sending_country'] 	= 'Fill the field!';
 $_['error_shipping_apiship_sending_region'] 	= 'Fill the field!';
@@ -133,4 +136,4 @@ $_['error_shipping_apiship_parcel_width'] 	= 'Fill the field!';
 $_['error_shipping_apiship_parcel_height'] 	= 'Fill the field!';
 $_['error_shipping_apiship_parcel_weight'] 	= 'Fill the field!';
 $_['error_shipping_apiship_select_orders'] 	= 'Select orders!';
-
+$_['error_shipping_apiship_fields_filled']	= 'Required fields must be filled in!';

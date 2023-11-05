@@ -43,13 +43,16 @@
             <div class="col-sm-8">
               <select name="shipping_apiship_rub_select" id="shipping_apiship_rub_select" class="form-control">
               {% for currency in currencies %}
-              {% if currency.code == shipping_apiship_rub_select %}
+              {% if (currency.code == shipping_apiship_rub_select) and (currency.code is not empty) %}
               <option value={{ currency.code }} selected="selected">{{ currency.code }}</option>
               {% else %}
               <option value={{ currency.code }}>{{ currency.code}}</option>
 	        {% endif %}
               {% endfor %}
               </select>
+			{% if error_shipping_apiship_rub_select %}
+              		<div class="text-danger">{{ error_shipping_apiship_rub_select }}</div>
+              	{% endif %}
             </div>
           </div>
 
@@ -58,13 +61,16 @@
             <div class="col-sm-8">
               <select name="shipping_apiship_gr_select" id="shipping_apiship_gr_select" class="form-control">
                 {% for weight_class in weight_classes %}
-                {% if weight_class.weight_class_id == shipping_apiship_gr_select %}
+                {% if (weight_class.weight_class_id == shipping_apiship_gr_select) and (weight_class.weight_class_id is not empty) %}
                 <option value="{{ weight_class.weight_class_id }}" selected="selected">{{ weight_class.title }}</option>
                 {% else %}
                 <option value="{{ weight_class.weight_class_id }}">{{ weight_class.title }}</option>
      	          {% endif %}
                 {% endfor %}
               </select>
+			{% if error_shipping_apiship_gr_select %}
+              		<div class="text-danger">{{ error_shipping_apiship_gr_select }}</div>
+              	{% endif %}
             </div>
           </div>
 
@@ -73,13 +79,16 @@
             <div class="col-sm-8">
               <select name="shipping_apiship_cm_select" id="shipping_apiship_cm_select" class="form-control">
                 {% for length_class in length_classes %}
-                {% if length_class.length_class_id == shipping_apiship_cm_select %}
+                {% if (length_class.length_class_id == shipping_apiship_cm_select) and (length_class.length_class_id is not empty) %}
                 <option value="{{ length_class.length_class_id }}" selected="selected">{{ length_class.title }}</option>
                 {% else %}
                 <option value="{{ length_class.length_class_id }}">{{ length_class.title }}</option>
      	          {% endif %}
                 {% endfor %}
               </select>
+			{% if error_shipping_apiship_cm_select %}
+              		<div class="text-danger">{{ error_shipping_apiship_cm_select }}</div>
+              	{% endif %}
             </div>
           </div>
 
