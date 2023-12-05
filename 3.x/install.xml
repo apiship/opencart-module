@@ -731,7 +731,11 @@
 			    $this->_templateData['shipping_apiship_providers_keys'] = json_encode(array_keys($providers));
 			    $this->_templateData['shipping_apiship_group_points'] = $this->config->get('shipping_apiship_group_points') ? 'true' : 'false';
 			
-				$code = $this->_templateData['shipping_method']['code'];
+				if (is_array($this->_templateData['shipping_method']) && isset($this->_templateData['shipping_method']['code'])) {
+					$code = $this->_templateData['shipping_method']['code'];
+                    		} else {
+					$code = null;
+				}
 
 				if ((strpos($code, 'apiship')!==false) && (strpos($code, 'error')!==false))
 				{
