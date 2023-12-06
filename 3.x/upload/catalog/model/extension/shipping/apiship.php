@@ -253,6 +253,9 @@ class ModelExtensionShippingApiship extends Model {
 
 		if ($full_list == false)
 		{
+			$daysMin = [];
+			$daysMax = [];
+
 			if (isset($data['deliveryToPoint'])) $providers = $data['deliveryToPoint']; else $providers = [];
 			foreach($providers as $provider) {	
 				if (isset($provider['tariffs'])) $tariffs = $provider['tariffs']; else $tariffs = [];			
@@ -261,6 +264,30 @@ class ModelExtensionShippingApiship extends Model {
 						if (!in_array($this->get_pickup_type($provider['providerKey']), $tariff['pickupTypes'])) continue;
 						
 						if (!isset($tariff['tariffDescription'])) $tariff['tariffDescription'] = '';
+
+						if (empty($daysMin[$provider['providerKey']])) {
+							$daysMin[$provider['providerKey']] = $tariff['daysMin'];
+						} else {
+							if ($tariff['daysMin'] < $daysMin[$provider['providerKey']]) $daysMin[$provider['providerKey']] = $tariff['daysMin'];
+						}
+						
+						if (empty($daysMax[$provider['providerKey']])) {
+							$daysMax[$provider['providerKey']] = $tariff['daysMax'];
+						} else {
+							if ($tariff['daysMax'] > $daysMax[$provider['providerKey']]) $daysMax[$provider['providerKey']] = $tariff['daysMax'];
+						}
+
+						if (empty($daysMinAllPoints)) {
+							$daysMinAllPoints = $tariff['daysMin'];
+						} else {
+							if ($tariff['daysMin'] < $daysMinAllPoints) $daysMinAllPoints = $tariff['daysMin'];
+						}
+
+						if (empty($daysMaxAllPoints)) {
+							$daysMaxAllPoints = $tariff['daysMax'];
+						} else {
+							if ($tariff['daysMax'] > $daysMaxAllPoints) $daysMaxAllPoints = $tariff['daysMax'];
+						}
 
 						$key = 'point_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . 'error';
 						if (empty($start_points[$provider['providerKey']])) { 
@@ -308,10 +335,26 @@ class ModelExtensionShippingApiship extends Model {
 						
 						if ($parce_code['point_id'] != 'error') {
 							$point = $this->apiship_point($parce_code['point_id']);
-							$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax'], $element['tariffDescription']);
+							$title = $this->get_title([
+								'template' => 'shipping_apiship_template',
+								'type' => 'point', 
+								'sub_type' => $point['type'], 
+								'providerKey' => $point['providerKey'], 
+								'tariffName' => $element['tariffName'], 
+								'pointName' => $point['name'], 
+								'pointAddress' => $this->apiship->get_address($point), 
+								'daysMin' => $element['daysMin'], 
+								'daysMax' => $element['daysMax'], 
+								'tariffDescription' => $element['tariffDescription']
+							]);
 						}
 						else
-							$title = $this->language->get('shipping_apiship_point');
+							$title = $this->get_title([
+								'template' => '',
+								'type' => 'point',
+								'daysMin' => $daysMinAllPoints,
+								'daysMax' => $daysMaxAllPoints
+							]);
 									
 						$quote_data[$element['key']] = [
 							'code'         => 'apiship.' . $element['key'],
@@ -333,10 +376,26 @@ class ModelExtensionShippingApiship extends Model {
 						
 						if ($parce_code['point_id'] != 'error') {
 							$point = $this->apiship_point($parce_code['point_id']);
-							$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax'], $element['tariffDescription']);
+							$title = $this->get_title([
+								'template' => 'shipping_apiship_template',
+								'type' => 'point', 
+								'sub_type' => $point['type'], 
+								'providerKey' => $point['providerKey'], 
+								'tariffName' => $element['tariffName'], 
+								'pointName' => $point['name'], 
+								'pointAddress' => $this->apiship->get_address($point), 
+								'daysMin' => $element['daysMin'], 
+								'daysMax' => $element['daysMax'], 
+								'tariffDescription' => $element['tariffDescription']
+							]);
 						}
 						else
-							$title = $this->language->get('shipping_apiship_point');
+							$title = $this->get_title([
+								'template' => '',
+								'type' => 'point',
+								'daysMin' => $daysMinAllPoints,
+								'daysMax' => $daysMaxAllPoints
+							]);
 									
 						$quote_data[$element['key']] = [
 							'code'         => 'apiship.' . $element['key'],
@@ -361,10 +420,27 @@ class ModelExtensionShippingApiship extends Model {
 					
 					if ($parce_code['point_id'] != 'error') {
 						$point = $this->apiship_point($parce_code['point_id']);
-						$title = $this->get_title('point', $point['type'], $point['providerKey'], $element['tariffName'], $point['name'], $this->apiship->get_address($point), $element['daysMin'], $element['daysMax'], $element['tariffDescription']);
+						$title = $this->get_title([
+							'template' => 'shipping_apiship_template',
+							'type' => 'point', 
+							'sub_type' => $point['type'], 
+							'providerKey' => $point['providerKey'], 
+							'tariffName' => $element['tariffName'], 
+							'pointName' => $point['name'], 
+							'pointAddress' => $this->apiship->get_address($point), 
+							'daysMin' => $element['daysMin'], 
+							'daysMax' => $element['daysMax'], 
+							'tariffDescription' => $element['tariffDescription']
+						]);
 					}
 					else
-						$title = $this->language->get('shipping_apiship_point') . $this->get_provider_name($provider_key);
+						$title = $this->get_title([
+							'template' => '',
+							'type' => 'point', 
+							'providerKey' => $provider_key, 
+							'daysMin' => $daysMin[$provider_key], 
+							'daysMax' => $daysMax[$provider_key]
+						]);
 								
 					$quote_data[$element['key']] = [
 						'code'         => 'apiship.' . $element['key'],
@@ -414,7 +490,15 @@ class ModelExtensionShippingApiship extends Model {
 				$key = 'door_' . $provider['providerKey'] . '_' . $tariff['tariffId'];
 				$quote_data[$key] = [
 					'code'         => 'apiship.' . $key,
-					'title'        => $this->get_title('door', '', $provider['providerKey'], $tariff['tariffName'], '', '', $tariff['daysMin'], $tariff['daysMax'], $tariff['tariffDescription']), 
+					'title'        => $this->get_title([
+									'template' => 'shipping_apiship_template',
+									'type' => 'door',
+									'providerKey' => $provider['providerKey'], 
+									'tariffName' => $tariff['tariffName'], 
+									'daysMin' => $tariff['daysMin'], 
+									'daysMax' => $tariff['daysMax'], 
+									'tariffDescription' => $tariff['tariffDescription']
+								]), 
 					'cost'         => $tariff['deliveryCost'],
 					'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
 					'text'         => $this->currency->format($this->tax->calculate($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
@@ -467,10 +551,24 @@ class ModelExtensionShippingApiship extends Model {
 
   	}
 
-	private function get_title($type, $sub_type, $providerKey, $tariffName, $pointName, $pointAddress, $daysMin, $daysMax, $tariffDescription ) {
-		$template = $this->apiship_params['shipping_apiship_template'];
 
-		$type_name = '';
+	private function get_title($params) {
+		//template, type, sub_type, providerKey, tariffName, pointName, pointAddress, daysMin, daysMax, tariffDescription 
+
+		if (isset($params['type'])) $type = $params['type']; else $type = '';
+		if (isset($params['sub_type'])) $sub_type = $params['sub_type']; else $sub_type = '';
+		if (isset($params['providerKey'])) $providerKey = $params['providerKey']; else $providerKey = '';
+		if (isset($params['tariffName'])) $tariffName = $params['tariffName']; else $tariffName = '';
+		if (isset($params['pointName'])) $pointName = $params['pointName']; else $pointName = '';
+		if (isset($params['pointAddress'])) $pointAddress = $params['pointAddress']; else $pointAddress = '';
+		if (isset($params['daysMin'])) $daysMin = $params['daysMin']; else $daysMin = '';
+		if (isset($params['daysMax'])) $daysMax = $params['daysMax']; else $daysMax = '';
+		if (isset($params['tariffDescription'])) $tariffDescription = $params['tariffDescription']; else $tariffDescription = '';
+
+		$template = '%type %company %time';
+		if ($params['template'] == 'shipping_apiship_template') $template = $this->apiship_params['shipping_apiship_template'];
+
+		$type_name = '';		
 		if ($type == 'door') $type_name = $this->language->get('shipping_apiship_door');
 		if ($type == 'point') $type_name = $this->language->get('shipping_apiship_point');
 	
@@ -479,7 +577,7 @@ class ModelExtensionShippingApiship extends Model {
 		if ($sub_type == 3) $type_name = $type_name . $this->language->get('shipping_apiship_point_3');
 		if ($sub_type == 4) $type_name = $type_name . $this->language->get('shipping_apiship_point_4');
 
-		$time = $daysMin . ' - ' . $daysMax . $this->apiship_params['shipping_apiship_title_days'];
+		$time = $daysMin . '-' . $daysMax . $this->apiship_params['shipping_apiship_title_days'];
 		if ($daysMin == $daysMax) $time = $daysMin . $this->apiship_params['shipping_apiship_title_days'];
 		if ($daysMin == 0) $time = '';
 
@@ -596,7 +694,18 @@ class ModelExtensionShippingApiship extends Model {
 						'text' => $this->currency->format($this->tax->calculate($cost, $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select']),
 						'cost' => round($cost),						
 
-						'title' => $this->get_title('point', $point['type'], $provider['providerKey'], $tariff['tariffName'], $point['name'], $point['address'], $tariff['daysMin'], $tariff['daysMax'], $tariff['tariffDescription']),
+						'title' => $this->get_title([
+							'template' => 'shipping_apiship_template',
+							'type' => 'point',
+							'sub_type' => $point['type'], 
+							'providerKey' => $provider['providerKey'], 
+							'tariffName' => $tariff['tariffName'], 
+							'pointName' => $point['name'], 
+							'pointAddress' => $point['address'], 
+							'daysMin' => $tariff['daysMin'], 
+							'daysMax' => $tariff['daysMax'], 
+							'tariffDescription' => $tariff['tariffDescription']
+						]),
 			
 						'type' => $apiship_point_types[$point['type']-1],
 						'provider' => $apiship_providers[$provider['providerKey']],
@@ -635,14 +744,7 @@ class ModelExtensionShippingApiship extends Model {
 			return [];
 
 		$search_list = [
-			'code%',
-			'street%',
-			'city%',
-			'community%',
-			'region%',
-			'area%',
-			'house%',
-			'block%'
+			'code%'
 		];
 
 		$points_data = [];
@@ -742,7 +844,18 @@ class ModelExtensionShippingApiship extends Model {
 
 						$postcode = $point['postIndex'];
 						$address1 = $this->apiship->get_address($point);
-						$title = $this->get_title('point', $point['type'], $provider['providerKey'], $tariff['tariffName'], $point['name'], $point['address'], $tariff['daysMin'], $tariff['daysMax'], $tariff['tariffDescription']);
+						$title = $this->get_title([
+							'template' => 'shipping_apiship_template',
+							'type' => 'point', 
+							'sub_type' => $point['type'], 
+							'providerKey' => $provider['providerKey'], 
+							'tariffName' => $tariff['tariffName'], 
+							'pointName' => $point['name'], 
+							'pointAddress' => $point['address'], 
+							'daysMin' => $tariff['daysMin'], 
+							'daysMax' => $tariff['daysMax'], 
+							'tariffDescription' => $tariff['tariffDescription']
+						]);
 					}
 				}
 			}
@@ -945,7 +1058,7 @@ class ModelExtensionShippingApiship extends Model {
 
 		$order_params['costCodCost'] = ($paid_orders==false) ? $this->apiship->format_cost($order['total']) : 0;
 		$order_params['costDeliveryCost'] =  ($paid_orders==false) ? $this->apiship->format_cost($order_totals['shipping']) : 0;
-		$order_params['sub_total_cost'] = $total_cost;
+		$order_params['sub_total_cost'] = $this->apiship->format_cost($total_cost);
 
 
 		$order_params['recipientPhone'] =  $order['telephone'];  

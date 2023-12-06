@@ -22,6 +22,9 @@
 * OpenCart 2.1
 * Модуль Simple
 * Шаблон Простор
+* Шаблон Smartstore
+* Шаблон UltraStore
+* Шаблон UniShop
 
 # Список служб доставки
 
