@@ -384,9 +384,9 @@
 				<div class="checkbox col-sm-1">
 					<label>
 			                  <?php if (isset($shipping_apiship_provider[$provider['key']]['pickup_type'])) { ?>
-			                  <input class="shipping_apiship_provider_checkbox" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" value="1" checked="checked" />
+			                  <input class="shipping_apiship_provider_point" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" value="1" checked="checked" />
 			                  <?php } else { ?>
-			                  <input class="shipping_apiship_provider_checkbox" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" value="1" />
+			                  <input class="shipping_apiship_provider_point" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" value="1" />
 			                  <?php } ?>
 	      		      </label>
 				</div>
@@ -397,6 +397,21 @@
 					</select>
 	            	</div>
 			</div>
+
+			<div class="row">
+
+				<label class="col-sm-4 control-label" for="shipping_apiship_provider[<?php echo $provider['key'];?>][courier_type]"><?php echo $entry_providers_courier; ?> <?php echo $provider['name']; ?></label>
+				<div class="checkbox col-sm-1">
+					<label>
+			                  <?php if (isset($shipping_apiship_provider[$provider['key']]['courier_type'])) { ?>
+			                  <input class="shipping_apiship_provider_courier" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" value="1" checked="checked" />
+			                  <?php } else { ?>
+			                  <input class="shipping_apiship_provider_courier" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" value="1" />
+			                  <?php } ?>
+	      		      </label>
+				</div>
+			</div>
+
             </div>
 	    </div>
 	    <?php } ?>
@@ -517,6 +532,21 @@
             <div class="col-sm-8">
               <input type="text" name="shipping_apiship_prefix" value="<?php echo $shipping_apiship_prefix; ?>" placeholder="" id="shipping_apiship_prefix" class="form-control" />
             </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_error_stub_show"><?php echo $entry_shipping_apiship_error_stub_show; ?></label>
+            <div class="col-sm-8">
+			<div class="checkbox">
+				<label>
+		                  <?php if ($shipping_apiship_error_stub_show) { ?>
+		                  <input type="checkbox" name="shipping_apiship_error_stub_show" id="shipping_apiship_error_stub_show" value="1" checked="checked" />
+		                  <?php } else { ?>
+		                  <input type="checkbox" name="shipping_apiship_error_stub_show" id="shipping_apiship_error_stub_show" value="1" />
+		                  <?php } ?>
+      		      </label>
+			</div>
+		</div>
           </div>
 
           <div class="form-group">
@@ -704,12 +734,12 @@ function set_providers_checkbox(checked, provider) {
 
 }
 
-$(".shipping_apiship_provider_checkbox").on("click", function () {
+$(".shipping_apiship_provider_point").on("click", function () {
 	provider = $(this).attr('data-id')
 	set_providers_checkbox(this.checked, provider)
 });
 
-jQuery('.shipping_apiship_provider_checkbox').each(function() {
+jQuery('.shipping_apiship_provider_point').each(function() {
 	provider = $(this).attr('data-id')
 	set_providers_checkbox(this.checked, provider)
 });

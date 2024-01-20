@@ -86,6 +86,7 @@ $_['entry_shipping_apiship_geo_zone']     	= 'Географическая зо�
 
 $_['entry_shipping_apiship_icon_show']    	= 'Показывать иконку';
 $_['entry_shipping_apiship_prefix']    		= 'Префикс номера заказа';
+$_['entry_shipping_apiship_error_stub_show']   	= 'Показывать заглушку в корзине об ошибке';
 
 $_['entry_shipping_apiship_mode']   		= 'Режим работы';
 $_['entry_shipping_apiship_mode_normal']		= 'Нормальный';
@@ -100,6 +101,7 @@ $_['entry_place_defaults']				= 'Параметры грузоместа (исп
 $_['entry_extra_settings']				= 'Дополнительные параметры';
 $_['entry_providers_points']				= 'Параметры отгрузки в службы доставки';
 $_['entry_providers_point']				= 'Привоз на склад';
+$_['entry_providers_courier']				= 'Забирает курьер';
 
 $_['entry_events_mapping']				= 'Параметры сопоставления статусов';
 $_['entry_events_mapping_notify']			= 'Оповестить';
