@@ -97,6 +97,18 @@ class Apiship {
 
  	private function apiship_data($cmd, $limit, $filter_list = '') {
 
+		$data_key = 'apiship_' . $cmd . md5($limit . print_r($filter_list,1));
+		$data_hash = md5($cmd . $limit . print_r($filter_list,1));
+
+		$data = $this->getData($data_key);
+		if ($data!==null) {			
+			if ($data['data_hash']==$data_hash) {
+				$this->toLog($data_key . ' cached');
+				return $data['rows'];
+			}
+		}
+
+
 		$offset = 0;
 		$rows = [];
 		$x_tracing_ids = [];
@@ -131,7 +143,36 @@ class Apiship {
 		
 		$this->toLog('shipping_apiship_data '.$cmd, ['url' => $url,	'$x_tracing_id' => $x_tracing_ids, 'output' => $rows]);
 
+		$this->setData($data_key, ['rows' => $rows, 'data_hash' => $data_hash]);
 		return $rows;
+	}
+
+	public function setData($key, $value, $expired_timeout_minuts = 10) {
+
+		if(!isset($value)) return;
+
+		if(session_id() == '') {
+		    session_start();
+		}
+
+		if ($expired_timeout_minuts == 0)		
+			$_SESSION['shipping_apiship'][$key] = ['value' => $value];
+		else
+			$_SESSION['shipping_apiship'][$key] = ['value' => $value, 'time' => strtotime('now') + 60*$expired_timeout_minuts];
+
+	}
+
+	public function getData($key) {
+
+		if(session_id() == '') {
+		    session_start();
+		}
+
+		if (!isset($_SESSION['shipping_apiship'][$key])) return null;
+		if (!isset($_SESSION['shipping_apiship'][$key]['time'])) $_SESSION['shipping_apiship'][$key]['value'];
+		if ((strtotime('now') > $_SESSION['shipping_apiship'][$key]['time'])) return null;
+		
+		return $_SESSION['shipping_apiship'][$key]['value'];
 	}
 
  	public function apiship_providers() {
@@ -196,6 +237,18 @@ class Apiship {
 	}
 
  	public function apiship_points($points) {
+
+		$data_hash = md5(print_r($points,1));
+		$data_key = 'apiship_points';
+
+		$data = $this->getData($data_key);
+		if ($data!==null) {			
+			if ($data['data_hash']==$data_hash) {
+				$this->toLog($data_key . ' cached');
+				return $data['all_points'];
+			}
+		}
+
 		$all_points = [];
 		$limit = 1000;
 		$offset = 0;
@@ -223,6 +276,7 @@ class Apiship {
 			$offset++;
 		}
 
+		$this->setData($data_key, ['all_points' => $all_points, 'data_hash' => $data_hash]);
 		return $all_points;
 	}
 
@@ -269,6 +323,8 @@ class Apiship {
 	}
 
  	public function apiship_calculator($country, $region, $city, $postcode, $ext_address, $providers, $products, $total, $cash_on_delivery) {
+		
+		$postcode = '';
 
 		if (trim($city) == '') {		
 			$output['message'] = $this->apiship_params['shipping_apiship_error_select_city']; 
@@ -277,6 +333,17 @@ class Apiship {
 				'body' => $output,
 				'x-tracing-id' => ''
 			];
+		}
+
+		$data_hash = md5($country.$region.$city.$postcode.$ext_address.print_r($providers,1).print_r($products,1).$total.$cash_on_delivery);
+		$data_key = 'apiship_calculator';
+
+		$data = $this->getData($data_key);
+		if ($data!==null) {			
+			if ($data['data_hash']==$data_hash) {
+				$this->toLog($data_key . ' cached');
+				return $data;
+			}
 		}
 
 		$calculate_data = $this->calculate_places($products, $total);
@@ -352,20 +419,22 @@ class Apiship {
 
 		$data = [
 			'body' => json_decode($output['body'], true),
-			'x-tracing-id' => $x_tracing_id
+			'x-tracing-id' => $x_tracing_id,
+			'data_hash' => $data_hash
 		];
 
 		$this->toLog('shipping_apiship_calculator', ['url' => $url,	'params' => $params, 'output' => $data], isset($data['body']['errors']));
 
 		if (isset($data['body']['errors'])) {		
-			$output['message'] = $this->apiship_params['shipping_apiship_error_calculator']; 
+			$output['message'] = sprintf($this->apiship_params['shipping_apiship_no_shipping'], $city .', '.$region); 
 				
 			return [
 				'body' => $output,
-				'x-tracing-id' => ''
+				'x-tracing-id' => $x_tracing_id
 			];
 		}
 
+		$this->setData($data_key, $data);
 		return $data;
 
 	}
@@ -584,6 +653,7 @@ class Apiship {
 
 
 	public function get_address($params, $show_post_index = false) {
+		if (!isset($params['regionType'])) return '';
 
 		if ($params['regionType'] == 'г') {
 			$address = $params['region'];
@@ -675,21 +745,30 @@ class Apiship {
 	}
 
 	public function parce_code($code) {
-
 		$code_parts = explode('.',$code);
-		if (isset($code_parts[1])) $tariff_parts = explode('_',$code_parts[1]);
+		$short_code = "";
+		if (isset($code_parts[1])) { 
+			$tariff_parts = explode('_',$code_parts[1]);
+			$short_code = $code_parts[1];
+		}
 
 		if (isset($tariff_parts[0])) $delivery_type = $tariff_parts[0]; else $delivery_type = '';
 		if (isset($tariff_parts[1])) $provider = $tariff_parts[1]; else $provider = ''; 
 		if (isset($tariff_parts[2])) $tariff_id = $tariff_parts[2]; else $tariff_id = '';
 		if (isset($tariff_parts[3])) $point_id = $tariff_parts[3]; else $point_id = '';
+		if (isset($tariff_parts[4])) $pickup_type = $tariff_parts[4]; else $pickup_type = '';
+		if ($delivery_type == 'door') { 
+			$pickup_type = $point_id;
+			$point_id = '';
+		}
 
 		return [
 			'delivery_type' => $delivery_type,
 			'provider' => $provider,
 			'tariff_id' => $tariff_id,
 			'point_id' => $point_id,
-			'short_code' => $code_parts[1]
+			'short_code' => $short_code,
+			'pickup_type' => $pickup_type
 		];
 	}
 
@@ -771,10 +850,10 @@ class Apiship {
 
 		if ($total_cost != 0) {
 			if ($items[count($items)-1]['quantity'] > 1) {
-			$items[] = end($items);
-			$items[count($items)-2]['quantity'] = $items[count($items)-2]['quantity'] - 1;
-			$items[count($items)-1]['quantity'] = 1;
-			$items[count($items)-1]['cost'] = $items[count($items)-1]['cost'] + $total_cost;
+				$items[] = end($items);			
+				$items[count($items)-2]['quantity'] = $items[count($items)-2]['quantity'] - 1;
+				$items[count($items)-1]['quantity'] = 1;
+				$items[count($items)-1]['cost'] = $items[count($items)-1]['cost'] + $total_cost;
 			} else {
 				$items[count($items)-1]['cost'] = $items[count($items)-1]['cost'] + $total_cost;
 			}

@@ -86,6 +86,7 @@ $_['entry_shipping_apiship_geo_zone'] 		= 'Geo Zone';
 
 $_['entry_shipping_apiship_icon_show']    	= 'Show icon';
 $_['entry_shipping_apiship_prefix']    		= 'Order prefix';
+$_['entry_shipping_apiship_error_stub_show']   	= 'Show a stub in the cart about an error';
 
 $_['entry_shipping_apiship_mode']   		= 'Working mode';
 $_['entry_shipping_apiship_mode_normal']		= 'Normal';
@@ -100,6 +101,7 @@ $_['entry_place_defaults']				= 'Package parameters (used if filled out)';
 $_['entry_extra_settings']				= 'Extra settings';
 $_['entry_providers_points']				= 'DC points';
 $_['entry_providers_point']				= 'DC point';
+$_['entry_providers_courier']				= 'Picked up by courier';
 
 $_['entry_events_mapping']				= 'Status mapping table';
 $_['entry_events_mapping_notify']			= 'Notify';
