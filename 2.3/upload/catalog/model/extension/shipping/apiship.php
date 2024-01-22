@@ -793,14 +793,12 @@ class ModelExtensionShippingApiship extends Model {
 
 		$points = [];
 		$parce_code = $this->apiship->parce_code($code);
-		$provider = [$parce_code['provider']];
-		if ($this->apiship_params['shipping_apiship_group_points']) $provider = [];
 		
 		$data = $this->get_points_array($country, $region, $city, $postcode, $ext_address);
 
 		$points = [];
 		foreach($data['points'] as $point) {
-			if ($point['provider_key']==$parce_code['provider']) $points[] = $point;
+			if (($this->apiship_params['shipping_apiship_group_points']) || ($point['provider_key']==$parce_code['provider'])) $points[] = $point;
 		}
 
 		echo json_encode(['error' => $data['error'],'points' => $points]);
