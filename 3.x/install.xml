@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>0.8.8 (OpenCart 3.x)</version>
+	<version>0.8.8.1 (OpenCart 3.x)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -614,7 +614,7 @@
 					el = 'input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]';
 					for(var i=0; i<document.querySelectorAll(el).length; i++) {
 	                    text = document.querySelectorAll(el)[i].nextSibling.textContent;
-                        text = text.replace('-', '{{shipping_apiship_title_from}}');
+                        text = text.replace(' - ', ' {{shipping_apiship_title_from}} ');
                         document.querySelectorAll(el)[i].nextSibling.textContent = text;
                     }
                     
