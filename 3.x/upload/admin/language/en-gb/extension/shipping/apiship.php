@@ -57,6 +57,7 @@ $_['entry_shipping_apiship_place_weight']   	= 'Weight (gr)';
 $_['entry_shipping_apiship_package_weight']   	= 'Package Weight (gr)';
 
 $_['entry_shipping_apiship_sort_order']   	= 'Sort order';
+$_['entry_shipping_apiship_yandex_api_key']   	= 'Yandex Api Key';
 $_['entry_shipping_apiship_status']   		= 'Status';
 $_['entry_shipping_apiship_export_status'] 	= 'Status after export';
 $_['entry_shipping_apiship_cancel_export_status'] 	= 'Status after canceling export';
@@ -68,6 +69,8 @@ $_['entry_shipping_apiship_waybill_title']	= 'Waybill';
 $_['entry_shipping_apiship_pickup_type']		= 'Pickup type';
 $_['entry_shipping_apiship_pickup_type1']		= 'Courier';
 $_['entry_shipping_apiship_pickup_type2']		= 'Delivery to the warehouse';
+
+$_['entry_shipping_apiship_shipping_date']	= 'Shipping date';
 
 $_['entry_shipping_apiship_place_dimensions']	= 'Place dimensions (cm)';
 $_['entry_shipping_apiship_place_weight']		= 'Place weight (gr)';

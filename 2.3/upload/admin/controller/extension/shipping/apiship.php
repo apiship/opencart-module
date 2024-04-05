@@ -47,7 +47,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.8.8.1 (OpenCart 2.3)';
+		$data['shipping_apiship_version'] = '0.8.9 (OpenCart 2.3)';
 		$data['shipping_apiship_version_js_mod'] = rand();
 
 		$data['button_save'] = $this->language->get('button_save');
@@ -82,6 +82,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['entry_shipping_apiship_package_weight'] = $this->language->get('entry_shipping_apiship_package_weight');
 
 		$data['entry_shipping_apiship_sort_order'] = $this->language->get('entry_shipping_apiship_sort_order');
+		$data['entry_shipping_apiship_yandex_api_key'] = $this->language->get('entry_shipping_apiship_yandex_api_key');
 		$data['entry_shipping_apiship_status'] = $this->language->get('entry_shipping_apiship_status');
 		$data['entry_shipping_apiship_rub_select'] = $this->language->get('entry_shipping_apiship_rub_select');
 		$data['entry_shipping_apiship_gr_select'] = $this->language->get('entry_shipping_apiship_gr_select');
@@ -383,6 +384,12 @@ class ControllerExtensionShippingApiship extends Controller {
 			$data['shipping_apiship_sort_order'] = $this->request->post['shipping_apiship_sort_order'];
 		} else {
 			$data['shipping_apiship_sort_order'] = $this->config->get('shipping_apiship_sort_order');
+		}                
+
+		if (isset($this->request->post['shipping_apiship_yandex_api_key'])) {
+			$data['shipping_apiship_yandex_api_key'] = $this->request->post['shipping_apiship_yandex_api_key'];
+		} else {
+			$data['shipping_apiship_yandex_api_key'] = $this->config->get('shipping_apiship_yandex_api_key');
 		}                
 
 		if (isset($this->request->post['shipping_apiship_export_status'])) {

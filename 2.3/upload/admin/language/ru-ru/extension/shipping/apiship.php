@@ -57,6 +57,7 @@ $_['entry_shipping_apiship_place_weight']   	= 'Вес (гр)';
 $_['entry_shipping_apiship_package_weight']   	= 'Вес упаковки (гр)';
 
 $_['entry_shipping_apiship_sort_order']   	= 'Порядок сортировки';
+$_['entry_shipping_apiship_yandex_api_key']   	= 'Ключ Яндекс API';
 $_['entry_shipping_apiship_status']   		= 'Статус';
 $_['entry_shipping_apiship_export_status'] 	= 'Статус после экспорта';
 $_['entry_shipping_apiship_cancel_export_status'] 	= 'Статус после отмены экспорта';
@@ -68,6 +69,8 @@ $_['entry_shipping_apiship_waybill_title']	= 'Акт приема-передач
 $_['entry_shipping_apiship_pickup_type']		= 'Тип забора груза';
 $_['entry_shipping_apiship_pickup_type1']		= 'Курьер';
 $_['entry_shipping_apiship_pickup_type2']		= 'Привоз на склад СД';
+
+$_['entry_shipping_apiship_shipping_date']	= 'Дата отгрузки';
 
 $_['entry_shipping_apiship_place_dimensions']	= 'Габариты места (см)';
 $_['entry_shipping_apiship_place_weight']		= 'Вес места (гр)';

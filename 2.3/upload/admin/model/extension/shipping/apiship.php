@@ -54,7 +54,6 @@ class ModelExtensionShippingApiship extends Model {
 		return $this->apiship->get_integrator_statuses();
 	}
 
-
 	public function get_payment_methods() {
 
 		$payment_methods = [];

@@ -93,7 +93,13 @@ var apiship = apiship || (function () {
 		points: [],
 		settings: {},
 		initApi: function () {
-			const script_src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU';
+			yandex_api_key = get_yandex_api_key()
+
+			if (yandex_api_key==='')
+				script_src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
+			else
+				script_src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=' + yandex_api_key
+
 
 			if (typeof ymaps !== 'undefined') return;
 
@@ -110,10 +116,17 @@ var apiship = apiship || (function () {
 			modalBody.appendChild(container)
 		},
 		initMap: function (event) {
+		      var apishipSearchControl = new ymaps.control.SearchControl({
+		        options: {
+		            provider: 'yandex#search',
+				noPopup: 'true'
+		        }
+		      });
+	
 			Mymap = new ymaps.Map(YANDEX_MAP_CONTAINER_ID, {
 				center: [yandexMaps.points[0]['lat'], yandexMaps.points[0]['lon']],
 				zoom: 10,
-				controls: ['zoomControl']
+				controls: (get_yandex_api_key()==='')?['zoomControl']:['zoomControl','geolocationControl',apishipSearchControl]
 			}, {
 				suppressMapOpenBlock: true
 			})

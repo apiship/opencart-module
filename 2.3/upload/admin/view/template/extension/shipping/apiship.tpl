@@ -644,6 +644,13 @@
           </div>	
 
           <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_yandex_api_key"><?php echo $entry_shipping_apiship_yandex_api_key; ?></label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_yandex_api_key" value="<?php echo $shipping_apiship_yandex_api_key; ?>" placeholder="" id="shipping_apiship_yandex_api_key" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
             <label class="col-sm-4 control-label" for="shipping_apiship_status"><?php echo $entry_shipping_apiship_status; ?></label>
             <div class="col-sm-8">
               <select name="shipping_apiship_status" id="shipping_apiship_status" class="form-control">

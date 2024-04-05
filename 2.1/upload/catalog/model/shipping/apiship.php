@@ -208,6 +208,7 @@ class ModelShippingApiship extends Model {
 		$country = (isset($address['iso_code_2']))?trim($address['iso_code_2']):'';
 		$payment_method_code = (isset($this->session->data['payment_method']['code']))?$this->session->data['payment_method']['code']:'';
 		$cash_on_delivery = in_array($payment_method_code, $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
+
 		$apiship_calculator_data = $this->apiship->apiship_calculator($country,$region,$city,$postcode,$ext_address,[],$this->cart->getProducts(),$this->getCartTotal(),$cash_on_delivery);
 		$data = $apiship_calculator_data['body'];
 
@@ -434,6 +435,7 @@ class ModelShippingApiship extends Model {
 				usort($points_data['points'], function($a, $b) {
 				    return $a['title'] > $b['title'];
 				});
+
 				foreach($points_data['points'] as $point) {					
 					$parce_code = $this->apiship->parce_code($point['code']);
 					$quote_data[$parce_code['short_code']] = [
@@ -443,7 +445,9 @@ class ModelShippingApiship extends Model {
 						'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
 						'text'         => $point['text']
 					];
+
 				}
+
 			}
 				
 		}
@@ -462,21 +466,21 @@ class ModelShippingApiship extends Model {
 					if (!isset($tariff['tariffDescription'])) $tariff['tariffDescription'] = '';
 		
 					$key = 'door_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . $pickup_type;
-				$quote_data[$key] = [
-					'code'         => 'apiship.' . $key,
-					'title'        => $this->get_title([
-									'template' => 'shipping_apiship_template',
-									'type' => 'door',
-									'providerKey' => $provider['providerKey'], 
-									'tariffName' => $tariff['tariffName'], 
-									'daysMin' => $tariff['daysMin'], 
-									'daysMax' => $tariff['daysMax'], 
-									'tariffDescription' => $tariff['tariffDescription']
-								]), 
-					'cost'         => $tariff['deliveryCost'],
-					'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-					'text'         => $this->currency->format($this->tax->calculate($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
-				];
+					$quote_data[$key] = [
+						'code'         => 'apiship.' . $key,
+						'title'        => $this->get_title([
+							'template' => 'shipping_apiship_template',
+							'type' => 'door',
+							'providerKey' => $provider['providerKey'], 
+							'tariffName' => $tariff['tariffName'], 
+							'daysMin' => $tariff['daysMin'], 
+							'daysMax' => $tariff['daysMax'], 
+							'tariffDescription' => $tariff['tariffDescription']
+						]), 
+						'cost'         => $tariff['deliveryCost'],
+						'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
+						'text'         => $this->currency->format($this->tax->calculate($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
+					];
 				}
 
 			}
@@ -894,7 +898,17 @@ class ModelShippingApiship extends Model {
 
 		if (isset($this->session->data['api_id']))
 		{
-			 return $this->get_quote_list($address, true);
+			if (isset($this->request->get['term'])) $search = $this->request->get['term']; else $search = "";
+			$data = $this->get_quote_list($address, true);
+			$result = [];
+			foreach($data['quote'] as $item)
+			{
+				if (($search=='')||(mb_stripos($item['title'], $search) !== false))
+					$result[] = $item;
+				if (count($result) > 50) break; 
+			}
+			$data['quote'] = $result;
+			return $data;
 		}
 
 		return $this->get_quote_list($address);
@@ -981,6 +995,7 @@ class ModelShippingApiship extends Model {
 		if (isset($this->request->get['shipping_apiship_place_height'])) $shipping_apiship_place_height = $this->request->get['shipping_apiship_place_height']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
 		if (isset($this->request->get['shipping_apiship_place_weight'])) $shipping_apiship_place_weight = $this->request->get['shipping_apiship_place_weight']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
 		if (isset($this->request->get['shipping_apiship_comment'])) $shipping_apiship_comment = $this->request->get['shipping_apiship_comment']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
+		if (isset($this->request->get['shipping_apiship_pickup_date'])) $shipping_apiship_pickup_date = $this->request->get['shipping_apiship_pickup_date']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
 
 		$text = '';
 	
@@ -1044,6 +1059,7 @@ class ModelShippingApiship extends Model {
 		$order_params['orderWeight'] = $total_weight;
 		$order_params['orderProviderKey'] = $provider;
 		$order_params['orderPickupType'] = $shipping_apiship_pickup_type; 
+		$order_params['orderPickupDate'] = $shipping_apiship_pickup_date; 
 		$order_params['orderDeliveryType'] = ($delivery_type=='point')?2:1;
 		$order_params['orderTariffId'] = $tariff_id;
 		$order_params['orderPointOutId'] = $point_id;
@@ -1391,6 +1407,8 @@ class ModelShippingApiship extends Model {
 		$apiship_order_status = '';
 		$apiship_comment = $order_info['comment'];
 
+		$pickup_date = date("Y-m-d", strtotime("+1 day"));
+
 		if ($apiship_export == true) {
 			$apiship_order = $this->get_apiship_order_by_oc_number($order_id);
 			if (isset($apiship_order['apiship_order_id'])) $order_status = $this->apiship->apiship_order_status($apiship_order['apiship_order_id']);
@@ -1403,13 +1421,14 @@ class ModelShippingApiship extends Model {
 					$order_info = $this->apiship->apiship_order_info($order_status['orderInfo']['orderId']);
 	
 					if (isset($order_info['body']['order']['pickupType'])) $apiship_pickup_type = $order_info['body']['order']['pickupType'];
-					
+					if (isset($order_info['body']['order']['pickupDate'])) $pickup_date = date("Y-m-d", strtotime($order_info['body']['order']['pickupDate']));
+
 					if (isset($order_info['body']['places'][0]['height'])) $apiship_place_height = $order_info['body']['places'][0]['height'];
 					if (isset($order_info['body']['places'][0]['length'])) $apiship_place_length = $order_info['body']['places'][0]['length'];
 					if (isset($order_info['body']['places'][0]['width'])) $apiship_place_width = $order_info['body']['places'][0]['width'];	
 					if (isset($order_info['body']['places'][0]['weight'])) $apiship_place_weight = $order_info['body']['places'][0]['weight'];
 					
-					if (isset($order_info['body']['recipient']['comment'])) $apiship_comment = $order_info['body']['recipient']['comment']; 
+					if (isset($order_info['body']['recipient']['comment'])) $apiship_comment = $order_info['body']['recipient']['comment'];
 				}
 			}
 		}
@@ -1423,7 +1442,8 @@ class ModelShippingApiship extends Model {
 			'place_height' => $apiship_place_height,
 			'place_weight' => $apiship_place_weight,
 			'order_status' => $apiship_order_status,
-			'comment' => $apiship_comment 
+			'comment' => $apiship_comment,
+			'pickup_date' => $pickup_date
 		];
 	}
 

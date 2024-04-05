@@ -452,7 +452,7 @@ class Apiship {
 		    		'deliveryType' => $order_params['orderDeliveryType'], // Тип доставки 1 - до двери 2 – до ПВЗ 
 		    		'tariffId' => $order_params['orderTariffId'], // Тариф службы доставки по которому осуществляется доставка
 				'pointOutId' => $order_params['orderPointOutId'], // ID пункта выдачи заказов из метода /lists/points. Обязательно если доставка до ПВЗ
-				'pickupDate' => date("Y-m-d", strtotime("+1 day"))
+				'pickupDate' => $order_params['orderPickupDate']
 		  	],
 		  	'cost' => [
 		    		'assessedCost' => $order_params['sub_total_cost'], // Оценочная стоимость / сумма страховки (в рублях)
