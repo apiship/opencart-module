@@ -445,8 +445,9 @@ class ModelExtensionShippingApiship extends Model {
 				usort($points_data['points'], function($a, $b) {
 				    return $a['title'] > $b['title'];
 				});
-				foreach($points_data['points'] as $point) {					
-					$parce_code = $this->apiship->parce_code($point['code']);
+
+				foreach($points_data['points'] as $point) {										
+					$parce_code = $this->apiship->parce_code($point['code']);					
 					$quote_data[$parce_code['short_code']] = [
 						'code'         => $point['code'],
 						'title'        => $point['title'], 
@@ -454,7 +455,9 @@ class ModelExtensionShippingApiship extends Model {
 						'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
 						'text'         => $point['text']
 					];
+
 				}
+
 			}
 				
 		}
@@ -905,7 +908,17 @@ class ModelExtensionShippingApiship extends Model {
 
 		if (isset($this->session->data['api_id']))
 		{
-			 return $this->get_quote_list($address, true);
+			if (isset($this->request->get['term'])) $search = $this->request->get['term']; else $search = "";
+			$data = $this->get_quote_list($address, true);
+			$result = [];
+			foreach($data['quote'] as $item)
+			{
+				if (($search=='')||(mb_stripos($item['title'], $search) !== false))
+					$result[] = $item;
+				if (count($result) > 50) break; 
+			}
+			$data['quote'] = $result;
+			return $data;
 		}
 
 		return $this->get_quote_list($address);
@@ -992,6 +1005,7 @@ class ModelExtensionShippingApiship extends Model {
 		if (isset($this->request->get['shipping_apiship_place_height'])) $shipping_apiship_place_height = $this->request->get['shipping_apiship_place_height']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
 		if (isset($this->request->get['shipping_apiship_place_weight'])) $shipping_apiship_place_weight = $this->request->get['shipping_apiship_place_weight']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
 		if (isset($this->request->get['shipping_apiship_comment'])) $shipping_apiship_comment = $this->request->get['shipping_apiship_comment']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
+		if (isset($this->request->get['shipping_apiship_pickup_date'])) $shipping_apiship_pickup_date = $this->request->get['shipping_apiship_pickup_date']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
 
 		$text = '';
 	
@@ -1055,6 +1069,7 @@ class ModelExtensionShippingApiship extends Model {
 		$order_params['orderWeight'] = $total_weight;
 		$order_params['orderProviderKey'] = $provider;
 		$order_params['orderPickupType'] = $shipping_apiship_pickup_type; 
+		$order_params['orderPickupDate'] = $shipping_apiship_pickup_date; 
 		$order_params['orderDeliveryType'] = ($delivery_type=='point')?2:1;
 		$order_params['orderTariffId'] = $tariff_id;
 		$order_params['orderPointOutId'] = $point_id;
@@ -1402,6 +1417,8 @@ class ModelExtensionShippingApiship extends Model {
 		$apiship_order_status = '';
 		$apiship_comment = $order_info['comment'];
 
+		$pickup_date = date("Y-m-d", strtotime("+1 day"));
+
 		if ($apiship_export == true) {
 			$apiship_order = $this->get_apiship_order_by_oc_number($order_id);
 			if (isset($apiship_order['apiship_order_id'])) $order_status = $this->apiship->apiship_order_status($apiship_order['apiship_order_id']);
@@ -1414,6 +1431,7 @@ class ModelExtensionShippingApiship extends Model {
 					$order_info = $this->apiship->apiship_order_info($order_status['orderInfo']['orderId']);
 	
 					if (isset($order_info['body']['order']['pickupType'])) $apiship_pickup_type = $order_info['body']['order']['pickupType'];
+					if (isset($order_info['body']['order']['pickupDate'])) $pickup_date = date("Y-m-d", strtotime($order_info['body']['order']['pickupDate']));
 					
 					if (isset($order_info['body']['places'][0]['height'])) $apiship_place_height = $order_info['body']['places'][0]['height'];
 					if (isset($order_info['body']['places'][0]['length'])) $apiship_place_length = $order_info['body']['places'][0]['length'];
@@ -1434,7 +1452,8 @@ class ModelExtensionShippingApiship extends Model {
 			'place_height' => $apiship_place_height,
 			'place_weight' => $apiship_place_weight,
 			'order_status' => $apiship_order_status,
-			'comment' => $apiship_comment
+			'comment' => $apiship_comment,
+			'pickup_date' => $pickup_date
 		];
 	}
 
