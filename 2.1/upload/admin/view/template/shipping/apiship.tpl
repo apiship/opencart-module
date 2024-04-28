@@ -247,6 +247,16 @@
             </div>
           </div>
 
+          <div class="form-group ">
+            <label class="col-sm-4 control-label" for="shipping_apiship_contact_inn"><?php echo $entry_shipping_apiship_contact_inn; ?></label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_contact_inn" value="<?php echo $shipping_apiship_contact_inn; ?>" placeholder="<?php echo $entry_shipping_apiship_contact_inn; ?>" id="shipping_apiship_contact_inn" class="form-control" />
+			<?php if ($error_shipping_apiship_contact_inn) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_contact_inn; ?></div>
+              	<?php } ?>
+            </div>
+          </div>
+
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_contact_name"><?php echo $entry_shipping_apiship_contact_name; ?></label>
             <div class="col-sm-8">

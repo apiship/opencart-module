@@ -48,7 +48,7 @@ class ControllerShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.8.9 (OpenCart 2.0 - 2.2)';
+		$data['shipping_apiship_version'] = '0.9.0 (OpenCart 2.0 - 2.2)';
 		$data['shipping_apiship_version_js_mod'] = rand();
 
 		$data['button_save'] = $this->language->get('button_save');
@@ -67,6 +67,7 @@ class ControllerShippingApiship extends Controller {
 		$data['entry_shipping_apiship_sending_office'] = $this->language->get('entry_shipping_apiship_sending_office');
 
 		$data['entry_shipping_apiship_contact_organization'] = $this->language->get('entry_shipping_apiship_contact_organization');
+		$data['entry_shipping_apiship_contact_inn'] = $this->language->get('entry_shipping_apiship_contact_inn');
 		$data['entry_shipping_apiship_contact_name'] = $this->language->get('entry_shipping_apiship_contact_name');
 		$data['entry_shipping_apiship_contact_phone'] = $this->language->get('entry_shipping_apiship_contact_phone');
 		$data['entry_shipping_apiship_contact_email'] = $this->language->get('entry_shipping_apiship_contact_email');
@@ -128,7 +129,11 @@ class ControllerShippingApiship extends Controller {
 		];
 
 		$data['shipping_apiship_countries'] = [
-			['code'=>'RU', 'code_text'=>$this->language->get('entry_country_ru')]
+			['code'=>'RU', 'code_text'=>$this->language->get('entry_country_ru')],
+			['code'=>'KZ', 'code_text'=>$this->language->get('entry_country_kz')],
+			['code'=>'BY', 'code_text'=>$this->language->get('entry_country_by')],
+			['code'=>'KG', 'code_text'=>$this->language->get('entry_country_kg')],
+			['code'=>'AM', 'code_text'=>$this->language->get('entry_country_am')]
 		];
 
 		$data['entry_shipping_apiship_pickup_type'] = $this->language->get('entry_shipping_apiship_pickup_type');
@@ -275,6 +280,12 @@ class ControllerShippingApiship extends Controller {
 			$data['shipping_apiship_contact_organization'] = $this->request->post['shipping_apiship_contact_organization'];
 		} else {
 			$data['shipping_apiship_contact_organization'] = $this->config->get('shipping_apiship_contact_organization');
+		} 
+
+		if (isset($this->request->post['shipping_apiship_contact_inn'])) {
+			$data['shipping_apiship_contact_inn'] = $this->request->post['shipping_apiship_contact_inn'];
+		} else {
+			$data['shipping_apiship_contact_inn'] = $this->config->get('shipping_apiship_contact_inn');
 		} 
 
 		if (isset($this->request->post['shipping_apiship_contact_name'])) {
@@ -517,6 +528,12 @@ class ControllerShippingApiship extends Controller {
 			$data['error_shipping_apiship_contact_organization'] = '';
 		}
 
+		if (isset($this->error['error_shipping_apiship_contact_inn'])) {
+			$data['error_shipping_apiship_contact_inn'] = $this->error['error_shipping_apiship_contact_inn'];
+		} else {
+			$data['error_shipping_apiship_contact_inn'] = '';
+		}
+
 		if (isset($this->error['error_shipping_apiship_contact_name'])) {
 			$data['error_shipping_apiship_contact_name'] = $this->error['error_shipping_apiship_contact_name'];
 		} else {
@@ -614,6 +631,10 @@ class ControllerShippingApiship extends Controller {
 		if (!$this->request->post['shipping_apiship_contact_organization']) {
 			$this->error['error_shipping_apiship_contact_organization'] = $this->language->get('error_shipping_apiship_contact_organization');
 		}
+
+		//if (!$this->request->post['shipping_apiship_contact_inn']) {
+		//	$this->error['error_shipping_apiship_contact_inn'] = $this->language->get('error_shipping_apiship_contact_inn');
+		//}
 
 		if (!$this->request->post['shipping_apiship_contact_name']) {
 			$this->error['error_shipping_apiship_contact_name'] = $this->language->get('error_shipping_apiship_contact_name');

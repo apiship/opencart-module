@@ -463,6 +463,7 @@ class Apiship {
 				'email' => $this->apiship_params['shipping_apiship_contact_email'],// Контактный email адрес
 			    	'phone' => $this->apiship_params['shipping_apiship_contact_phone'], // Контактный телефон
 				'companyName' => $this->apiship_params['shipping_apiship_contact_organization'],// Название компании
+				'companyInn' => $this->apiship_params['shipping_apiship_contact_inn'],// ИНН компании
 			    	'contactName' => $this->apiship_params['shipping_apiship_contact_name'], // ФИО контактного лица
 			    	'countryCode' => $this->apiship_params['shipping_apiship_sending_country_code'], // Код страны в соответствии с ISO 3166-1 alpha-2
 			    	'region' => $this->apiship_params['shipping_apiship_sending_region'], // Область или республика или край
