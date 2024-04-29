@@ -38,9 +38,15 @@ $_['entry_shipping_apiship_sending_house']    	= 'House';
 $_['entry_shipping_apiship_sending_block']   	= 'Building/Building';
 $_['entry_shipping_apiship_sending_office']   	= 'Office/Apartment';
 
-$_['entry_country_ru']   				= 'Russia';
+$_['entry_country_ru']   				= 'Russian Federation';
+$_['entry_country_kz']   				= 'Kazakhstan';
+$_['entry_country_by']   				= 'Belarus';
+$_['entry_country_kg']   				= 'Kyrgyzstan';
+$_['entry_country_am']   				= 'Armenia';
+
 
 $_['entry_shipping_apiship_contact_organization']   = 'Organization';
+$_['entry_shipping_apiship_contact_inn']   	= 'Organization EIN';
 $_['entry_shipping_apiship_contact_name']   	= 'Name';
 $_['entry_shipping_apiship_contact_phone']   	= 'Phone';
 $_['entry_shipping_apiship_contact_email']   	= 'Email';

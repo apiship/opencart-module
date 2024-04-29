@@ -18,6 +18,7 @@ class ModelExtensionShippingApiship extends Model {
 			'shipping_apiship_token' => $this->config->get('shipping_apiship_token'),
 	
 			'shipping_apiship_contact_organization' => $this->config->get('shipping_apiship_contact_organization'),
+			'shipping_apiship_contact_inn' => $this->config->get('shipping_apiship_contact_inn'),
 			'shipping_apiship_contact_name' => $this->config->get('shipping_apiship_contact_name'),
 			'shipping_apiship_contact_phone' => $this->config->get('shipping_apiship_contact_phone'),
 			'shipping_apiship_contact_email' => $this->config->get('shipping_apiship_contact_email'),
@@ -184,7 +185,7 @@ class ModelExtensionShippingApiship extends Model {
 		}
 		if ($end_total < 0) $end_total = $end_total + $shipping_cost;
 
-		return $end_total;
+		return $this->currency->convert($end_total,$this->config->get('config_currency'),$this->apiship_params['shipping_apiship_rub_select']);
 	}
 
 	private function check_geo_zone($address) {
@@ -340,9 +341,9 @@ class ModelExtensionShippingApiship extends Model {
 						$quote_data[$element['key']] = [
 							'code'         => 'apiship.' . $element['key'],
 							'title'        => $title, 
-							'cost'         => $element['deliveryCost'],
+							'cost'         => $this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 							'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-							'text'         => $this->currency->format($this->tax->calculate($element['deliveryCost'], $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
+							'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
 						];
 
 						break;
@@ -381,9 +382,9 @@ class ModelExtensionShippingApiship extends Model {
 						$quote_data[$element['key']] = [
 							'code'         => 'apiship.' . $element['key'],
 							'title'        => $title, 
-							'cost'         => $element['deliveryCost'],
+							'cost'         => $this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 							'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-							'text'         => $this->currency->format($this->tax->calculate($element['deliveryCost'], $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
+							'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
 						];
 
 						break;
@@ -426,9 +427,9 @@ class ModelExtensionShippingApiship extends Model {
 					$quote_data[$element['key']] = [
 						'code'         => 'apiship.' . $element['key'],
 						'title'        => $title, 
-						'cost'         => $element['deliveryCost'],
+						'cost'         => $this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 						'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-						'text'         => $this->currency->format($this->tax->calculate($element['deliveryCost'], $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
+						'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
 					];
 	
 				}
@@ -486,9 +487,9 @@ class ModelExtensionShippingApiship extends Model {
 										'daysMax' => $tariff['daysMax'], 
 										'tariffDescription' => $tariff['tariffDescription']
 									]), 
-						'cost'         => $tariff['deliveryCost'],
+						'cost'         => $this->currency->convert($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 						'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-						'text'         => $this->currency->format($this->tax->calculate($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
+						'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
 					];
 				}
 
@@ -519,7 +520,7 @@ class ModelExtensionShippingApiship extends Model {
 				'title'        => $title,
 				'cost'         => 0,
 				'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-				'text'         => $this->currency->format(0, $this->apiship_params['shipping_apiship_rub_select'])
+					'text'         => $this->currency->format(0, $this->session->data['currency'])
 			);
 
 		    }
@@ -690,8 +691,8 @@ class ModelExtensionShippingApiship extends Model {
 							'daysMin' => $tariff['daysMin'],							
 							'daysMax' => $tariff['daysMax'],
 	
-							'text' => $this->currency->format($this->tax->calculate($cost, $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select']),
-							'cost' => round($cost),						
+							'text' => $this->currency->format($this->tax->calculate($this->currency->convert($cost, $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']),
+							'cost' => $this->currency->convert($cost, $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),						
 	
 							'title' => $this->get_title([
 								'template' => 'shipping_apiship_template',
@@ -876,9 +877,9 @@ class ModelExtensionShippingApiship extends Model {
 		$shipping_apiship = [
 				'code'    	   => $code,
 				'title'        => $title,
-				'cost'         => $cost,
+				'cost'         => $this->currency->convert($cost, $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 				'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-				'text'         => $this->currency->format($this->tax->calculate($cost, $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->apiship_params['shipping_apiship_rub_select'])
+				'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($cost, $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
 		];
 
 		$select_points = $this->apiship->getData('shipping_apiship_select_points');
