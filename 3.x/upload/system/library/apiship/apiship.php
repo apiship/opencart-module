@@ -547,12 +547,14 @@ class Apiship {
 			'total_weight' => $total_weight,
 			'placeWeight' => $order_params['placeWeight'],			
 			'placeCalculateWeight' => $order_params['placeCalculateWeight'],
-			'total_count' => $total_count
+			'total_count' => $total_count,
+			'params' => $params
 		]);
 
 		if (($cost_dif != 0)||($order_params['placeWeight'] != $total_weight)) {
 			if ($params['places'][0]['items'][0]['quantity'] == 1) {
 				$params['places'][0]['items'][0]['cost'] -= $cost_dif;
+				$params['places'][0]['items'][0]['assessedCost'] = $params['places'][0]['items'][0]['cost'];
 			} else {
 
 				$params['places'][0]['items'][0]['quantity']--;
@@ -775,7 +777,7 @@ class Apiship {
 
 	public function calculate_places($products, $total_sum) {
 
-		$this->toLog('calculate_places', ['products' => $products]); 
+		$this->toLog('calculate_places', ['products' => $products, 'total_sum' => $total_sum]); 
 
 		$total_weight = 0;
 		$total_length = 0;
@@ -840,13 +842,21 @@ class Apiship {
 			}
 		}
 
-		$delta_total_summ = $total_cost - $total_sum;
-		$delta_per_item = $delta_total_summ / $total_quantity;
-				
+		$delta_koef = ($total_cost - $total_sum) / $total_sum;
+
 		$total_cost = $total_sum;
 		foreach($items as &$item) {
-			$item['cost'] = $this->format_cost($item['cost'] - $delta_per_item);	
+			$item['cost'] = $this->format_cost($item['cost'] - $delta_koef*$item['cost']);	
 			$total_cost = $this->format_cost($total_cost - $item['cost']*$item['quantity']);
+		}
+
+		if ($total_cost > 0) {
+			$delta_per_item = $total_cost / $total_quantity;
+
+			foreach($items as &$item) {
+				$item['cost'] = $this->format_cost($item['cost'] + $delta_per_item);	
+				$total_cost = $this->format_cost($total_cost - $delta_per_item*$item['quantity']);
+			}
 		}
 
 		if ($total_cost != 0) {
