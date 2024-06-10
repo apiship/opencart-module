@@ -295,7 +295,7 @@ class ModelShippingApiship extends Model {
 				// все ПВЗ на одной карте
 
 				usort($start_points, function($a, $b) {
-				    return $a['deliveryCost'] > $b['deliveryCost'];
+				    return $a['deliveryCost'] <=> $b['deliveryCost'];
 				});
 
 				foreach($start_points as $provider_key => $element) {
@@ -434,7 +434,7 @@ class ModelShippingApiship extends Model {
 			$points_data = $this->get_points_array($country,$region,$city,$postcode,$ext_address);
 			if ($points_data['error'] == 'no_error') {
 				usort($points_data['points'], function($a, $b) {
-				    return $a['title'] > $b['title'];
+				    return $a['title'] <=> $b['title'];
 				});
 
 				foreach($points_data['points'] as $point) {					
@@ -713,7 +713,7 @@ class ModelShippingApiship extends Model {
 
 
 		usort($all_points, function($a, $b) {
-			    return $a['cost'] > $b['cost'];
+			    return $a['cost'] <=> $b['cost'];
 		});
 
 		return ['error' => 'no_error','points' => $all_points];
@@ -760,7 +760,7 @@ class ModelShippingApiship extends Model {
 		}
 
 		usort($points_data, function($a, $b) {
-		    return $a['text'] > $b['text'];
+		    return $a['text'] <=> $b['text'];
 		});
 		
 		return $points_data;
@@ -902,11 +902,16 @@ class ModelShippingApiship extends Model {
 			if (isset($this->request->get['term'])) $search = $this->request->get['term']; else $search = "";
 			$data = $this->get_quote_list($address, true);
 			$result = [];
-			foreach($data['quote'] as $item)
+			foreach($data['quote'] as $code => $item)
 			{
 				if (($search=='')||(mb_stripos($item['title'], $search) !== false))
-					$result[] = $item;
-				if (count($result) > 50) break; 
+				{
+					if (count($result) < 10) 
+						$result[$code] = $item;
+					else
+						if (mb_stripos($code, 'door_') !== false) $result[$code] = $item;
+				}
+			
 			}
 			$data['quote'] = $result;
 			return $data;
