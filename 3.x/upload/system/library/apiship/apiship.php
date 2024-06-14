@@ -554,7 +554,7 @@ class Apiship {
 		if (($cost_dif != 0)||($order_params['placeWeight'] != $total_weight)) {
 			if ($params['places'][0]['items'][0]['quantity'] == 1) {
 				$params['places'][0]['items'][0]['cost'] -= $cost_dif;
-				$params['places'][0]['items'][0]['assessedCost'] = $params['places'][0]['items'][0]['cost'];
+				$params['places'][0]['items'][0]['assessedCost'] -= $cost_dif;
 			} else {
 
 				$params['places'][0]['items'][0]['quantity']--;

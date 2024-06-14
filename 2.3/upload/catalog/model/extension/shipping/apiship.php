@@ -304,7 +304,8 @@ class ModelExtensionShippingApiship extends Model {
 				// все ПВЗ на одной карте
 
 				usort($start_points, function($a, $b) {
-				    return $a['deliveryCost'] <=> $b['deliveryCost'];
+				    if ($a['deliveryCost'] == $b['deliveryCost']) return 0;
+				    return ($a['deliveryCost'] < $b['deliveryCost']) ? -1 : 1;
 				});
 
 				foreach($start_points as $provider_key => $element) {
@@ -443,7 +444,8 @@ class ModelExtensionShippingApiship extends Model {
 			$points_data = $this->get_points_array($country,$region,$city,$postcode,$ext_address);
 			if ($points_data['error'] == 'no_error') {
 				usort($points_data['points'], function($a, $b) {
-				    return $a['title'] <=> $b['title'];
+				    if ($a['title'] == $b['title']) return 0;
+				    return ($a['title'] < $b['title']) ? -1 : 1;
 				});
 
 				foreach($points_data['points'] as $point) {					
@@ -722,7 +724,8 @@ class ModelExtensionShippingApiship extends Model {
 
 
 		usort($all_points, function($a, $b) {
-			    return $a['cost'] <=> $b['cost'];
+			if ($a['cost'] == $b['cost']) return 0;
+			return ($a['cost'] < $b['cost']) ? -1 : 1;
 		});
 
 		return ['error' => 'no_error','points' => $all_points];
@@ -769,7 +772,8 @@ class ModelExtensionShippingApiship extends Model {
 		}
 
 		usort($points_data, function($a, $b) {
-		    return $a['text'] <=> $b['text'];
+		    if ($a['text'] == $b['text']) return 0;
+		    return ($a['text'] < $b['text']) ? -1 : 1;
 		});
 		
 		return $points_data;
