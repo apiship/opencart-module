@@ -92,6 +92,7 @@ $_['entry_shipping_apiship_cm_select']    	= 'Cm';
 
 $_['entry_shipping_apiship_tax_class'] 		= 'Tax class';
 $_['entry_shipping_apiship_geo_zone'] 		= 'Geo Zone';
+$_['entry_shipping_apiship_articul_mode']     	= 'Article for unloading';
 
 $_['entry_shipping_apiship_icon_show']    	= 'Show icon';
 $_['entry_shipping_apiship_prefix']    		= 'Order prefix';

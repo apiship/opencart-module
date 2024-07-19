@@ -490,6 +490,22 @@
           </div>
 
           <div class="form-group">
+            <label class="col-sm-4 control-label" for="input-articul-mode-class"><?php echo $entry_shipping_apiship_articul_mode; ?></label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_articul_mode" id="input-articul-mode-class" class="form-control">
+                <option value="0"><?php echo $text_none; ?></option>
+                	<?php foreach($shipping_apiship_articul_modes as $articul_mode) { ?>
+                	<?php if ($articul_mode['code'] == $shipping_apiship_articul_mode) { ?>
+                	<option value="<?php echo $articul_mode['code']; ?>" selected="selected"><?php echo $articul_mode['code_text']; ?></option>
+                	<?php } else { ?>
+                	<option value="<?php echo $articul_mode['code']; ?>"><?php echo $articul_mode['code_text']; ?></option>
+	          	<?php } ?>
+                	<?php } ?>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
             <label class="col-sm-4 control-label" for="input-tax-class"><?php echo $entry_shipping_apiship_tax_class; ?></label>
             <div class="col-sm-8">
               <select name="shipping_apiship_tax_class_id" id="input-tax-class" class="form-control">

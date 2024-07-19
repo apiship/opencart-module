@@ -564,7 +564,7 @@ class Apiship {
 					'quantity' => 1,
 					'weight' => $params['places'][0]['items'][0]['weight'],
 					'cost' => $this->format_cost($params['places'][0]['items'][0]['cost'] - $cost_dif),
-					'assessedCost' => $params['places'][0]['items'][0]['assessedCost']
+					'assessedCost' => $params['places'][0]['items'][0]['assessedCost'] - $cost_dif
 				];
 
 
@@ -811,8 +811,37 @@ class Apiship {
 			if ($height==0) $height = 1;
 			if ($weight==0) $weight = 1;
 
+			$shipping_apiship_articul_mode = $this->apiship_params['shipping_apiship_articul_mode'];
 			$articul = $product['model'];
-			if (!empty($product_info['sku'])) $articul = $product_info['sku']; 
+			switch($shipping_apiship_articul_mode)
+			{
+				case '':
+				case '0':
+				case 'sku':					
+					if (!empty($product_info['sku'])) $articul = $product_info['sku']; 
+				break;
+
+				case 'upc':
+					if (!empty($product_info['upc'])) $articul = $product_info['upc'];
+				break;
+
+				case 'ean':
+					if (!empty($product_info['ean'])) $articul = $product_info['ean'];
+				break;
+
+				case 'jan':
+					if (!empty($product_info['jan'])) $articul = $product_info['jan'];
+				break;
+
+				case 'isbn':
+					if (!empty($product_info['isbn'])) $articul = $product_info['isbn'];
+				break;
+
+				case 'mpn':
+					if (!empty($product_info['mpn'])) $articul = $product_info['mpn'];
+				break;
+
+			}
 			$articul = mb_strimwidth($articul,0,50);			
 
 			$items[] = [

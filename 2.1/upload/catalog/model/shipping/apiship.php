@@ -50,6 +50,7 @@ class ModelShippingApiship extends Model {
 	
 			'shipping_apiship_sort_order' => $this->config->get('shipping_apiship_sort_order'),
 	
+			'shipping_apiship_articul_mode' => $this->config->get('shipping_apiship_articul_mode'),
 			'shipping_apiship_tax_class_id' => $this->config->get('shipping_apiship_tax_class_id'),
 	
 			'shipping_apiship_export_status' => $this->config->get('shipping_apiship_export_status'),
