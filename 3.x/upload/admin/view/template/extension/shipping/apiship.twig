@@ -491,6 +491,22 @@
           </div>
 
           <div class="form-group">
+            <label class="col-sm-4 control-label" for="input-articul-mode-class">{{ entry_shipping_apiship_articul_mode }}</label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_articul_mode" id="input-articul-mode-class" class="form-control">
+                <option value="0">{{ text_none }}</option>
+                {% for articul_mode in shipping_apiship_articul_modes %}
+                {% if articul_mode.code == shipping_apiship_articul_mode %}
+                <option value="{{ articul_mode.code }}" selected="selected">{{ articul_mode.code_text }}</option>
+                {% else %}
+                <option value="{{ articul_mode.code }}">{{ articul_mode.code_text }}</option>
+                {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
             <label class="col-sm-4 control-label" for="input-tax-class">{{ entry_shipping_apiship_tax_class }}</label>
             <div class="col-sm-8">
               <select name="shipping_apiship_tax_class_id" id="input-tax-class" class="form-control">

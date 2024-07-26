@@ -92,6 +92,7 @@ $_['entry_shipping_apiship_cm_select']    	= 'Сантиметр';
 
 $_['entry_shipping_apiship_tax_class']    	= 'Налоговый класс';
 $_['entry_shipping_apiship_geo_zone']     	= 'Географическая зона';
+$_['entry_shipping_apiship_articul_mode']     	= 'Артикул для выгрузки';
 
 $_['entry_shipping_apiship_icon_show']    	= 'Показывать иконку';
 $_['entry_shipping_apiship_prefix']    		= 'Префикс номера заказа';

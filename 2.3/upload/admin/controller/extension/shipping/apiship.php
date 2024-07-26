@@ -47,7 +47,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.9.2 (OpenCart 2.3)';
+		$data['shipping_apiship_version'] = '0.9.3 (OpenCart 2.3)';
 		$data['shipping_apiship_version_js_mod'] = rand();
 
 		$data['button_save'] = $this->language->get('button_save');
@@ -89,6 +89,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['entry_shipping_apiship_gr_select'] = $this->language->get('entry_shipping_apiship_gr_select');
 		$data['entry_shipping_apiship_cm_select'] = $this->language->get('entry_shipping_apiship_cm_select');
 		$data['entry_shipping_apiship_tax_class'] = $this->language->get('entry_shipping_apiship_tax_class');
+		$data['entry_shipping_apiship_articul_mode'] = $this->language->get('entry_shipping_apiship_articul_mode');
 		$data['entry_shipping_apiship_geo_zone'] = $this->language->get('entry_shipping_apiship_geo_zone');
 		$data['entry_shipping_apiship_icon_show'] = $this->language->get('entry_shipping_apiship_icon_show');
 		$data['entry_shipping_apiship_error_stub_show'] = $this->language->get('entry_shipping_apiship_error_stub_show');
@@ -139,6 +140,17 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['shipping_apiship_pickup_types'] = [
 			['code'=>1, 'code_text'=>$this->language->get('entry_shipping_apiship_pickup_type1')],
 			['code'=>2, 'code_text'=>$this->language->get('entry_shipping_apiship_pickup_type2')],
+		];                
+
+		$this->load->language('catalog/product');
+		$data['shipping_apiship_articul_modes'] = [
+			['code'=>'model', 'code_text'=>$this->language->get('entry_model')],
+			['code'=>'sku', 'code_text'=>$this->language->get('entry_sku')],
+			['code'=>'upc', 'code_text'=>$this->language->get('entry_upc')],
+			['code'=>'ean', 'code_text'=>$this->language->get('entry_ean')],
+			['code'=>'jan', 'code_text'=>$this->language->get('entry_jan')],
+			['code'=>'isbn', 'code_text'=>$this->language->get('entry_isbn')],
+			['code'=>'mpn', 'code_text'=>$this->language->get('entry_mpn')]
 		];                
 
             $this->load->model('localisation/currency');
@@ -378,6 +390,12 @@ class ControllerExtensionShippingApiship extends Controller {
 		} else {
 			$data['shipping_apiship_mapping_status'] = $this->config->get('shipping_apiship_mapping_status');
 		}      
+
+		if (isset($this->request->post['shipping_apiship_articul_mode'])) {
+			$data['shipping_apiship_articul_mode'] = $this->request->post['shipping_apiship_articul_mode'];
+		} else {
+			$data['shipping_apiship_articul_mode'] = $this->config->get('shipping_apiship_articul_mode');
+		}                
 
 		if (isset($this->request->post['shipping_apiship_tax_class_id'])) {
 			$data['shipping_apiship_tax_class_id'] = $this->request->post['shipping_apiship_tax_class_id'];
