@@ -144,6 +144,7 @@ var apiship = apiship || (function () {
 						build: function () {
 							this.constructor.superclass.build.call(this);
 							cost_min = 0
+							text_min = ''
 							changeProviderKey = false
 							providerKey = ''
 							this.getData().properties.geoObjects.forEach((geoObject) => {
@@ -153,16 +154,25 @@ var apiship = apiship || (function () {
 									if (providerKey != geoObject.properties.providerKey) changeProviderKey = true
 
 								if (cost_min == 0)
+								{
 									cost_min = geoObject.properties.cost
+									text_min = geoObject.properties.text
+								}
 								else
-									if (geoObject.properties.cost < cost_min) cost_min = geoObject.properties.cost
+								{
+									if (geoObject.properties.cost < cost_min) 
+									{
+										cost_min = geoObject.properties.cost
+										text_min = geoObject.properties.text
+									}
+								}
 							})
 
 							el = this.getParentElement().getElementsByClassName('apiship_cluster')[0];
 							if (changeProviderKey == true)
-								el.innerHTML = ' от ' + cost_min + 'р.'
+								el.innerHTML = ' от ' + text_min
 							else {
-								el.innerHTML = '<img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + providerKey + '.svg">' + ' от ' + cost_min + 'р.'
+								el.innerHTML = '<img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + providerKey + '.svg">' + ' от ' + text_min
 							}
 
 						}
@@ -200,6 +210,7 @@ var apiship = apiship || (function () {
 						provider: point.provider,
 						providerKey: point.provider_key,
 						cost: point.cost,
+						text: point.text,
 						balloonContentHeader: point.tariff,
 						balloonContentBody: balloonContentBody,
 						balloonContentFooter: '<a href=# data-placemarkid="' + point.code + '" class="list_item btn btn-success">Забрать отсюда</a>',
@@ -208,7 +219,7 @@ var apiship = apiship || (function () {
 						iconLayout: 'default#imageWithContent',
 						iconImageHref: '',
 						iconContentLayout: ymaps.templateLayoutFactory.createClass(
-							'<span class="apiship_cluster"><img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + point.provider_key + '.svg"> ' + point.cost + 'р.' + '</span>'
+							'<span class="apiship_cluster"><img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + point.provider_key + '.svg"> ' + point.text + '</span>'
 						),
 						iconImageSize: [140, 40],
 						iconImageOffset: [0, 0],
