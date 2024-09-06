@@ -335,7 +335,14 @@ class Apiship {
 			];
 		}
 
-		$data_hash = md5($country.$region.$city.$postcode.$ext_address.print_r($providers,1).print_r($products,1).$total.$cash_on_delivery);
+		$extraParams = [];
+		if (is_array($this->apiship_params['shipping_apiship_provider']))
+		foreach($this->apiship_params['shipping_apiship_provider'] as $provider => $data) {
+			if (!empty($data['id'])) 
+				$extraParams[$provider . ".pointInId"] = $data['id'];
+		}
+
+		$data_hash = md5($country.$region.$city.$postcode.$ext_address.print_r($providers,1).print_r($products,1).$total.$cash_on_delivery.print_r($extraParams,1));
 		$data_key = 'apiship_calculator';
 
 		$data = $this->getData($data_key);
@@ -412,7 +419,9 @@ class Apiship {
 		];
 
 		if ($providers!=[]) $params['providerKeys'] = $providers;
-		if ($cash_on_delivery==true) $params['codCost'] = $cart_cost;
+		if ($cash_on_delivery == true) $params['codCost'] = $cart_cost;
+		if ($extraParams!=[]) $params['extraParams'] = $extraParams;
+
 
 		$output = $this->curl_post($url, $params);
 		if (isset($output['headers']['x-tracing-id'][0])) $x_tracing_id = $output['headers']['x-tracing-id'][0]; else $x_tracing_id = '?';
@@ -873,19 +882,15 @@ class Apiship {
 
 		$delta_koef = ($total_cost - $total_sum) / $total_sum;
 
+		//$this->toLog('calculate_places2', ['delta_koef' => $delta_koef, 'total_cost' => $total_cost, 'total_sum' =>$total_sum ]); 
+
 		$total_cost = $total_sum;
 		foreach($items as &$item) {
 			$item['cost'] = $this->format_cost($item['cost'] - $delta_koef*$item['cost']);	
 			$total_cost = $this->format_cost($total_cost - $item['cost']*$item['quantity']);
-		}
 
-		if ($total_cost > 0) {
-			$delta_per_item = $total_cost / $total_quantity;
+			//$this->toLog('calculate_places3', ['item_cost' => $item['cost'], 'total_cost' => $total_cost ]); 
 
-			foreach($items as &$item) {
-				$item['cost'] = $this->format_cost($item['cost'] + $delta_per_item);	
-				$total_cost = $this->format_cost($total_cost - $delta_per_item*$item['quantity']);
-			}
 		}
 
 		if ($total_cost != 0) {
