@@ -22,6 +22,7 @@
 * OpenCart 2.1
 * Модуль Simple
 * Шаблон Простор
+* Шаблон ShowCase
 * Шаблон Smartstore
 * Шаблон UltraStore
 * Шаблон UniShop
