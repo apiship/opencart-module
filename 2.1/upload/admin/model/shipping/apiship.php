@@ -54,7 +54,6 @@ class ModelShippingApiship extends Model {
 		return $this->apiship->get_integrator_statuses();
 	}
 
-
 	public function get_payment_methods() {
 
 		$payment_methods = [];
@@ -64,6 +63,17 @@ class ModelShippingApiship extends Model {
 		foreach ($results as $result_code) {
 			$this->load->language('payment/' . $result_code);
 			$payment_methods[] = ['code' => $result_code, 'name' => $this->language->get('heading_title')];
+		}
+
+		if (!$this->filterit) {
+			$filterit_payments = isset($this->config->get('filterit_payment')['created']) ? $this->config->get('filterit_payment')['created'] : [];
+
+			foreach ($filterit_payments as $code => $info) {
+				$payment_methods[] = [
+					'code' => $code,
+					'name' => !empty($info['title'][$this->config->get('config_admin_language')]) ? '[' . $code . '] ' . $info['title'][$this->config->get('config_admin_language')] : '[' . $code . ']',
+				];
+			}
 		}
 
 		return $payment_methods;

@@ -65,6 +65,17 @@ class ModelExtensionShippingApiship extends Model {
 			$payment_methods[] = ['code' => $result_code, 'name' => $this->language->get('heading_title')];
 		}
 
+		if (!$this->filterit) {
+			$filterit_payments = isset($this->config->get('filterit_payment')['created']) ? $this->config->get('filterit_payment')['created'] : [];
+
+			foreach ($filterit_payments as $code => $info) {
+				$payment_methods[] = [
+					'code' => $code,
+					'name' => !empty($info['title'][$this->config->get('config_admin_language')]) ? '[' . $code . '] ' . $info['title'][$this->config->get('config_admin_language')] : '[' . $code . ']',
+				];
+			}
+		}
+
 		return $payment_methods;
 
 	}

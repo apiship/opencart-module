@@ -56,13 +56,21 @@ class ModelExtensionShippingApiship extends Model {
 			'shipping_apiship_export_status' => $this->config->get('shipping_apiship_export_status'),
 			'shipping_apiship_cancel_export_status' => $this->config->get('shipping_apiship_cancel_export_status'),
 	
+			'shipping_apiship_group_export_status_ready' => $this->config->get('shipping_apiship_group_export_status_ready'),
+			'shipping_apiship_group_export_status_ok' => $this->config->get('shipping_apiship_group_export_status_ok'),
+			'shipping_apiship_group_export_status_error' => $this->config->get('shipping_apiship_group_export_status_error'),
+
+
 			'shipping_apiship_mode' => $this->config->get('shipping_apiship_mode'),
 			
 			'shipping_apiship_prefix' => $this->config->get('shipping_apiship_prefix'),
 			'shipping_apiship_error_stub_show' => $this->config->get('shipping_apiship_error_stub_show') ? true : false,
 	
 			'shipping_apiship_title' => $this->config->get('shipping_apiship_title'),
-			'shipping_apiship_template' => html_entity_decode($this->config->get('shipping_apiship_template')),
+			'shipping_apiship_title_point_template' => html_entity_decode($this->config->get('shipping_apiship_title_point_template')),
+			'shipping_apiship_description_point_template' => html_entity_decode($this->config->get('shipping_apiship_description_point_template')),
+			'shipping_apiship_title_door_template' => html_entity_decode($this->config->get('shipping_apiship_title_door_template')),
+			'shipping_apiship_description_door_template' => html_entity_decode($this->config->get('shipping_apiship_description_door_template')),
 			'shipping_apiship_custom_code' => $this->config->get('shipping_apiship_custom_code'),
 			'shipping_apiship_include_fees' => $this->config->get('shipping_apiship_include_fees') ? 'true' : 'false',
 			'shipping_apiship_group_points' => $this->config->get('shipping_apiship_group_points'),
@@ -78,6 +86,9 @@ class ModelExtensionShippingApiship extends Model {
 			'shipping_apiship_change_order_status_message' => $this->language->get('shipping_apiship_change_order_status_message'),	
 			'shipping_apiship_error_select_city' => $this->language->get('shipping_apiship_error_select_city'),		
 			'shipping_apiship_status' => $this->config->get('shipping_apiship_status'),
+			'shipping_apiship_add_pickup_date' => $this->config->get('shipping_apiship_add_pickup_date'),
+			'shipping_apiship_use_fix_product_assessed_cost' => $this->config->get('shipping_apiship_use_fix_product_assessed_cost'),
+			'shipping_apiship_fix_product_assessed_cost' => $this->config->get('shipping_apiship_fix_product_assessed_cost'),
 			
 			'shipping_apiship_geo_zone_id' => $this->config->get('shipping_apiship_geo_zone_id'),
 
@@ -196,6 +207,14 @@ class ModelExtensionShippingApiship extends Model {
 	}
 
 
+	private function get_image_ref($provider) {
+		if ($provider == '')
+			return '<img class="apiship_img_providers" style="width:60px;" src="' . HTTP_SERVER . 'catalog/view/theme/default/image/shipping/apiship_map.png">';
+		else
+			return "<img class='apiship_img_providers' style='width:60px;' src='https://storage.apiship.ru/icons/providers/svg/" . $provider . ".svg'> ";
+	}
+
+
   	public function get_quote_list($address, $full_list = false) {
 
 		$this->load->language('extension/shipping/apiship');
@@ -294,12 +313,14 @@ class ModelExtensionShippingApiship extends Model {
 
 /*
 			$this->apiship->toLog('get_quote_list debug', [
+				'template' => $this->apiship_params['shipping_apiship_title_point_template'],
 				'address' => $address,
 				'start_points' => $start_points,
 				'session' => $this->session->data,
 				'select_points' => $select_points,
 				'weight' => $this->cart->getWeight()
-			]);
+			], true);
+
 */
 			if ($this->apiship_params['shipping_apiship_group_points']) {
 				// все ПВЗ на одной карте
@@ -317,10 +338,12 @@ class ModelExtensionShippingApiship extends Model {
 
 						$parce_code = $this->apiship->parce_code('apiship.' . $element['key']);
 						
+						$code = 'apiship.' . $element['key'];
+
 						if ($parce_code['point_id'] != 'error') {
 							$point = $this->apiship_point($parce_code['point_id']);
-							$title = $this->get_title([
-								'template' => 'shipping_apiship_template',
+							$title = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_title_point_template'],
 								'type' => 'point', 
 								'sub_type' => $point['type'], 
 								'providerKey' => $point['providerKey'], 
@@ -329,24 +352,58 @@ class ModelExtensionShippingApiship extends Model {
 								'pointAddress' => $this->apiship->get_address($point), 
 								'daysMin' => $element['daysMin'], 
 								'daysMax' => $element['daysMax'], 
-								'tariffDescription' => $element['tariffDescription']
+								'tariffDescription' => $element['tariffDescription'],
+								'code' => $code
 							]);
+
+							$description = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_description_point_template'],
+								'type' => 'point', 
+								'sub_type' => $point['type'], 
+								'providerKey' => $point['providerKey'], 
+								'tariffName' => $element['tariffName'], 
+								'pointName' => $point['name'], 
+								'pointAddress' => $this->apiship->get_address($point), 
+								'daysMin' => $element['daysMin'], 
+								'daysMax' => $element['daysMax'], 
+								'tariffDescription' => $element['tariffDescription'],
+								'code' => $code
+							]);
+
+
 						}
-						else
-							$title = $this->get_title([
-								'template' => '',
+						else {
+							$title = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_title_point_template'], //''
 								'type' => 'point',
 								'daysMin' => $daysMinAllPoints,
-								'daysMax' => $daysMaxAllPoints
+								'daysMax' => $daysMaxAllPoints,
+								'code' => $code
 							]);
-									
+
+							$description = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_description_point_template'], //''
+								'type' => 'point',
+								'daysMin' => $daysMinAllPoints,
+								'daysMax' => $daysMaxAllPoints,
+								'code' => $code
+							]);
+
+							//$image = '<img class="apiship_img_providers" style="width:60px;" src="' . HTTP_SERVER . 'catalog/view/theme/default/image/shipping/apiship_map.png">';
+						}
+						
+						$image = "https://storage.apiship.ru/icons/providers/svg/" . $point['providerKey'] . ".svg"; //1
+
 						$quote_data[$element['key']] = [
-							'code'         => 'apiship.' . $element['key'],
+							'code'         => $code,
 							'title'        => $title, 
 							'cost'         => $this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 							'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-							'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
-						];
+							'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']),
+							'description'  => $description,
+							'image'        => $image
+						]; 
+
 
 						break;
 					}
@@ -358,10 +415,12 @@ class ModelExtensionShippingApiship extends Model {
 						
 						$parce_code = $this->apiship->parce_code('apiship.' . $element['key']);
 						
+						$code = 'apiship.' . $element['key'];
+
 						if ($parce_code['point_id'] != 'error') {
 							$point = $this->apiship_point($parce_code['point_id']);
-							$title = $this->get_title([
-								'template' => 'shipping_apiship_template',
+							$title = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_title_point_template'],
 								'type' => 'point', 
 								'sub_type' => $point['type'], 
 								'providerKey' => $point['providerKey'], 
@@ -370,24 +429,64 @@ class ModelExtensionShippingApiship extends Model {
 								'pointAddress' => $this->apiship->get_address($point), 
 								'daysMin' => $element['daysMin'], 
 								'daysMax' => $element['daysMax'], 
-								'tariffDescription' => $element['tariffDescription']
+								'tariffDescription' => $element['tariffDescription'],
+								'code' => $code
 							]);
+
+							$description = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_description_point_template'],
+								'type' => 'point', 
+								'sub_type' => $point['type'], 
+								'providerKey' => $point['providerKey'], 
+								'tariffName' => $element['tariffName'], 
+								'pointName' => $point['name'], 
+								'pointAddress' => $this->apiship->get_address($point), 
+								'daysMin' => $element['daysMin'], 
+								'daysMax' => $element['daysMax'], 
+								'tariffDescription' => $element['tariffDescription'],
+								'code' => $code
+							]);
+
+							//$image = "https://storage.apiship.ru/icons/providers/svg/" . $point['providerKey'] . ".svg";
+
+
 						}
-						else
-							$title = $this->get_title([
-								'template' => '',
+						else {
+							$title = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_title_point_template'], //'',
 								'type' => 'point',
 								'daysMin' => $daysMinAllPoints,
-								'daysMax' => $daysMaxAllPoints
+								'daysMax' => $daysMaxAllPoints,
+								'code' => $code
 							]);
-									
+
+							$description = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_description_point_template'], //''
+								'type' => 'point',
+								'daysMin' => $daysMinAllPoints,
+								'daysMax' => $daysMaxAllPoints,
+								'code' => $code
+							]);
+
+							//$image = '<img class="apiship_img_providers" style="width:60px;" src="' . HTTP_SERVER . 'catalog/view/theme/default/image/shipping/apiship_map.png">';
+
+
+						}
+						
+						//$image = "https://storage.apiship.ru/icons/providers/svg/" . $point['providerKey'] . ".svg2";
+
+						$image = HTTP_SERVER . "catalog/view/theme/default/image/shipping/apiship_map.png";
+
 						$quote_data[$element['key']] = [
-							'code'         => 'apiship.' . $element['key'],
+							'code'         => $code,
 							'title'        => $title, 
 							'cost'         => $this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 							'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-							'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
+							'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']),
+							'description'  => $description,
+							'image'        => $image
 						];
+
 
 						break;
 						
@@ -402,10 +501,12 @@ class ModelExtensionShippingApiship extends Model {
 	
 					$parce_code = $this->apiship->parce_code('apiship.' . $element['key']);
 					
+					$code = 'apiship.' . $element['key'];
+
 					if ($parce_code['point_id'] != 'error') {
 						$point = $this->apiship_point($parce_code['point_id']);
-						$title = $this->get_title([
-							'template' => 'shipping_apiship_template',
+						$title = $this->fill_template([
+							'template' => $this->apiship_params['shipping_apiship_title_point_template'],
 							'type' => 'point', 
 							'sub_type' => $point['type'], 
 							'providerKey' => $point['providerKey'], 
@@ -414,25 +515,63 @@ class ModelExtensionShippingApiship extends Model {
 							'pointAddress' => $this->apiship->get_address($point), 
 							'daysMin' => $element['daysMin'], 
 							'daysMax' => $element['daysMax'], 
-							'tariffDescription' => $element['tariffDescription']
+							'tariffDescription' => $element['tariffDescription'],
+							'code' => $code
 						]);
+
+						$description = $this->fill_template([
+							'template' => $this->apiship_params['shipping_apiship_description_point_template'],
+							'type' => 'point', 
+							'sub_type' => $point['type'], 
+							'providerKey' => $point['providerKey'], 
+							'tariffName' => $element['tariffName'], 
+							'pointName' => $point['name'], 
+							'pointAddress' => $this->apiship->get_address($point), 
+							'daysMin' => $element['daysMin'], 
+							'daysMax' => $element['daysMax'], 
+							'tariffDescription' => $element['tariffDescription'],
+							'code' => $code
+						]);
+							
+						//$image = "https://storage.apiship.ru/icons/providers/svg/" . $point['providerKey'] . ".svg";
+
+
 					}
-					else
-						$title = $this->get_title([
-							'template' => '',
+					else {
+						$title = $this->fill_template([
+							'template' => $this->apiship_params['shipping_apiship_title_point_template'], //'',
 							'type' => 'point', 
 							'providerKey' => $provider_key, 
 							'daysMin' => $daysMin[$provider_key], 
-							'daysMax' => $daysMax[$provider_key]
+							'daysMax' => $daysMax[$provider_key],
+							'code' => $code
 						]);
-								
+
+						$description = $this->fill_template([
+							'template' => $this->apiship_params['shipping_apiship_description_point_template'], //'',
+							'type' => 'point', 
+							'providerKey' => $provider_key, 
+							'daysMin' => $daysMin[$provider_key], 
+							'daysMax' => $daysMax[$provider_key],
+							'code' => $code
+						]);
+
+						//$image = '<img class="apiship_img_providers" style="width:60px;" src="' . HTTP_SERVER . 'catalog/view/theme/default/image/shipping/apiship_map.png">';
+
+					}
+
+					$image = "https://storage.apiship.ru/icons/providers/svg/" . $provider_key . ".svg";
+
 					$quote_data[$element['key']] = [
-						'code'         => 'apiship.' . $element['key'],
+						'code'         => $code,
 						'title'        => $title, 
 						'cost'         => $this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 						'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-						'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
+						'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($element['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']),
+						'description'  => $description,
+						'image'        => $image
 					];
+
 	
 				}
 			}			
@@ -479,21 +618,42 @@ class ModelExtensionShippingApiship extends Model {
 					if (!isset($tariff['tariffDescription'])) $tariff['tariffDescription'] = '';
 		
 					$key = 'door_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . $pickup_type;
-					$quote_data[$key] = [
-						'code'         => 'apiship.' . $key,
-						'title'        => $this->get_title([
-										'template' => 'shipping_apiship_template',
+
+					$code = 'apiship.' . $key;
+
+					$title = $this->fill_template([
+						'template' => $this->apiship_params['shipping_apiship_title_door_template'],
 										'type' => 'door',
 										'providerKey' => $provider['providerKey'], 
 										'tariffName' => $tariff['tariffName'], 
 										'daysMin' => $tariff['daysMin'], 
 										'daysMax' => $tariff['daysMax'], 
-										'tariffDescription' => $tariff['tariffDescription']
-									]), 
+						'tariffDescription' => $tariff['tariffDescription'],
+						'code' => $code
+					]); 
+
+					$description = $this->fill_template([
+						'template' => $this->apiship_params['shipping_apiship_description_door_template'],
+						'type' => 'door',
+						'providerKey' => $provider['providerKey'], 
+						'tariffName' => $tariff['tariffName'], 
+						'daysMin' => $tariff['daysMin'], 
+						'daysMax' => $tariff['daysMax'], 
+						'tariffDescription' => $tariff['tariffDescription'],
+						'code' => $code
+					]); 
+
+					$quote_data[$key] = [
+						'code'         => $code,
+						'title'        => $title, 
 						'cost'         => $this->currency->convert($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')),
 						'tax_class_id' => $this->apiship_params['shipping_apiship_tax_class_id'],
-						'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'])
+						'text'         => $this->currency->format($this->tax->calculate($this->currency->convert($tariff['deliveryCost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']),
+						'description'  => $description,
+						'image'	   => "https://storage.apiship.ru/icons/providers/svg/" . $provider['providerKey'] . ".svg"
+
 					];
+
 				}
 
 			}
@@ -529,11 +689,186 @@ class ModelExtensionShippingApiship extends Model {
 		    }
 		}
 		
+    		$providers = $this->model_extension_shipping_apiship->get_providers();
+		$shipping_apiship_providers_keys = json_encode(array_keys($providers));
+		
+			
+		$shipping_apiship_version_js_mod = ($this->config->get('shipping_apiship_version_js_mod') !== null)?$this->config->get('shipping_apiship_version_js_mod'):'0.5';
+		$shipping_apiship_yandex_api_key = $this->config->get('shipping_apiship_yandex_api_key');;
+		$shipping_apiship_get_last_tracing_id_url = $this->url->link('extension/shipping/apiship/get_last_tracing_id', '', 'SSL');
+		$shipping_apiship_select_point = $this->language->get('shipping_apiship_select_point');
+		$shipping_apiship_change_point = $this->language->get('shipping_apiship_change_point');
+		$shipping_apiship_get_points_url = $this->url->link('extension/shipping/apiship/get_points', '', 'SSL');
+		$shipping_apiship_set_point_url = $this->url->link('extension/shipping/apiship/set_point', '', 'SSL');
+		$shipping_apiship_group_points = $this->config->get('shipping_apiship_group_points') ? 'true' : 'false';
+		$shipping_apiship_title_from = $this->language->get('shipping_apiship_title_from');
+		$shipping_apiship_icon_show = $this->config->get('shipping_apiship_icon_show') ? 'true' : 'false'; 
+		$shipping_apiship_hide_link = $this->config->get('shipping_apiship_hide_link') ? 'true' : 'false'; 
+		$standart_checkout = (strpos($this->request->get['route'], 'shipping_method') !== false) ? 'true' : 'false';
+
+		$ext = <<<EOT
+				<link rel="stylesheet" href="catalog/view/javascript/apiship.css?v=$shipping_apiship_version_js_mod type="text/css" />
+
+				<script type="text/javascript">
+					function get_yandex_api_key() {
+						return '$shipping_apiship_yandex_api_key';
+					}		                
+				</script>
+
+				<script type="text/javascript" src="catalog/view/javascript/apiship.js?v=$shipping_apiship_version_js_mod"></script>
+
+				<script type="text/javascript">
+
+					function get_last_tracing_id() {
+						$.ajax({
+							url: '$shipping_apiship_get_last_tracing_id_url',
+								success: function(id) {
+									console.log(id)	
+								},
+						});
+					}
+
+					function get_image_ref(provider) {
+						return "<img class='apiship_img_providers' style='width:60px;' src='https://storage.apiship.ru/icons/providers/svg/"+ provider +".svg'> ";
+					}
+
+					function apiship_prepare_ref(is_select) {
+						if (is_select)
+							return '<a class="apiship_points" href="#" onclick="apiship_open(\$(this).siblings(\'input\').val());return false;"> $shipping_apiship_select_point </a>';
+						else
+							return '<a class="apiship_points" href="#" onclick="apiship_open(\$(this).siblings(\'input\').val());return false;"> $shipping_apiship_change_point </a>';
+					}
+
+					function show_icons() {
+						const providers = $shipping_apiship_providers_keys
+						providers.forEach(provider => {
+							var el = `input:not([type=hidden]):not([value*='error'])[value*="_\${provider}_"]`;
+							for(var i=0; i<document.querySelectorAll(el).length; i++) {
+								el2 = get_image_ref(provider);
+								document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
+							}
+
+							el = `input:not([type=hidden])[value*='error'][value*="_\${provider}_"]`;
+							for(var i=0; i<document.querySelectorAll(el).length; i++) {
+								if ($shipping_apiship_group_points)
+									el2 = "<img class='apiship_img_providers' style='width:60px;' src='catalog/view/theme/default/image/shipping/apiship_map.png'>";
+								else
+									el2 = get_image_ref(provider);
+								document.querySelectorAll(el)[i].insertAdjacentHTML('afterend',el2);
+							}
+						});	
+					}
+
+
+					$(document).ready(function(){
+
+						el = 'input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]';
+						for(var i=0; i<document.querySelectorAll(el).length; i++) {
+							text = document.querySelectorAll(el)[i].nextSibling.textContent;	
+							text = text.replace(' - ', ' $shipping_apiship_title_from ');
+							document.querySelectorAll(el)[i].nextSibling.textContent = text;
+						}
+
+
+						if (!$shipping_apiship_hide_link) {				
+							el_select = apiship_prepare_ref(true);
+							el_change = apiship_prepare_ref(false);
+	
+							$('input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]').parent().append(el_select);
+							$('input:not([type=hidden])[value^="apiship"][value*="point"]:not([value*="error"])').parent().append(el_change);
+						}
+
+						if ($shipping_apiship_icon_show)					
+							show_icons();
+
+						get_last_tracing_id();
+					});
+
+
+					function apiship_open(code) {
+						$.ajax({
+							url: '$shipping_apiship_get_points_url',
+							type: 'post',
+							dataType: 'json',
+							data: {'code':code},
+							beforeSend: function() {
+								$('input:not([type=hidden])[value="'+ code +'"]').parent().append('<div class="apiship_loading"></div>');
+							},
+							complete: function() {
+								$(".apiship_loading").remove();
+							},
+							success: function(data_points) {
+								if (data_points['error']=='no_error') {
+									apiship.open(apiship_function, data_points['points'], code)	
+									return
+								}
+
+								if (data_points['error']=='no_products') {
+									window.location.reload();
+									return
+								}
+
+								if (data_points['error']=='no_city') {
+									window.location.reload();
+									return
+								}
+
+								alert(data_points['error']);
+							},
+							error: function(xhr, ajaxOptions, thrownError) {
+								alert(thrownError + '\\r\\n' + xhr.statusText + '\\r\\n' + xhr.responseText);
+							}
+						});
+					}
+					function apiship_function(result, code){	
+						$.ajax({
+							url: '$shipping_apiship_set_point_url',
+							type: 'post',
+							data: {shipping_apiship_point:result},
+							dataType: 'json',
+							success: function(data) {								
+
+								$(".apiship_loading").remove();
+								if (typeof data.error === 'undefined')
+								{	
+									if ($standart_checkout)
+									{
+										provider_items = data.code.split('_');
+										provider = provider_items[1]
+										el_img = ($shipping_apiship_icon_show)?get_image_ref(provider):'';
+										el = "<input type='radio' checked='checked' value='" + data.code + "' name='shipping_method'> "+ el_img + data.title + ' - ' + data.text + apiship_prepare_ref();
+										$('input[value="'+ code +'"]').parent().html(el);
+									}
+									else
+									{
+										$("input[value='" + code + "']").val(data.code);
+										if ($("input[value='" + data.code + "']").attr("checked") == "checked")
+										{
+		                                          		if (typeof simplecheckout_reload !== "undefined") {
+		                                            			simplecheckout_reload("shipping");
+		                                          		} else if (typeof reloadAll !== "undefined") {
+		                                            			reloadAll();
+		                                          		}
+										}
+										else
+											$("input[value='" + data.code + "']").click();
+									}
+								}
+								else
+									alert(data.error);
+								
+							}
+						});
+					}
+
+				</script>
+		EOT;
+
 
 		if(!empty($quote_data)) 
       	$method_data = array(
 	      	'code'       => 'apiship',
-	      	'title'      => $this->apiship_params['shipping_apiship_title'], 
+	      	'title'      => $this->apiship_params['shipping_apiship_title'] . $ext, 
 	      	'quote'      => $quote_data,
 			'sort_order' => $this->apiship_params['shipping_apiship_sort_order'],
         		'error'      => false
@@ -545,23 +880,22 @@ class ModelExtensionShippingApiship extends Model {
   	}
 
 
-	private function get_title($params) {
+	private function fill_template($params) {
 		//template, type, sub_type, providerKey, tariffName, pointName, pointAddress, daysMin, daysMax, tariffDescription 
 
 		if (isset($params['type'])) $type = $params['type']; else $type = '';
 		if (isset($params['sub_type'])) $sub_type = $params['sub_type']; else $sub_type = '';
 		if (isset($params['providerKey'])) $providerKey = $params['providerKey']; else $providerKey = '';
-		if (isset($params['tariffName'])) $tariffName = $params['tariffName']; else $tariffName = '';
+		if (isset($params['tariffName'])) $tariffName = sprintf($this->language->get('shipping_apiship_tariff_template'), $params['tariffName']); else $tariffName = '';
 		if (isset($params['pointName'])) $pointName = $params['pointName']; else $pointName = '';
 		if (isset($params['pointAddress'])) $pointAddress = $params['pointAddress']; else $pointAddress = '';
 		if (isset($params['daysMin'])) $daysMin = $params['daysMin']; else $daysMin = '';
 		if (isset($params['daysMax'])) $daysMax = $params['daysMax']; else $daysMax = '';
 		if (isset($params['tariffDescription'])) $tariffDescription = $params['tariffDescription']; else $tariffDescription = '';
+		if (isset($params['code'])) $code = $params['code']; else $code = '';
 
-		$template = '%type %company';
-		if (strpos($this->apiship_params['shipping_apiship_template'],'%time')!==false) $template = $template . ' %time';
 
-		if ($params['template'] == 'shipping_apiship_template') $template = $this->apiship_params['shipping_apiship_template'];
+		$template = $params['template'];
 
 		$type_name = '';
 		if ($type == 'door') $type_name = $this->language->get('shipping_apiship_door');
@@ -583,12 +917,17 @@ class ModelExtensionShippingApiship extends Model {
 			'%address' => $pointAddress,
 			'%tariff' => $tariffName,
 			'%time' => $time,
-			'%description' => $tariffDescription
+			'%description' => $tariffDescription,
+			'%logo' => $this->get_image_ref($providerKey),
+			'%link' => '<a class="apiship_points" href="#" onclick="apiship_open(\''.$code.'\');return false;"> выбрать ПВЗ</a>'
 		];
 
 		foreach($template_ar as $teplate_key => $teplate_value) {
 			$template = str_replace($teplate_key, $teplate_value, $template);
 		}
+
+
+
 
 		return $template;
 
@@ -697,8 +1036,8 @@ class ModelExtensionShippingApiship extends Model {
 							'text' => $this->currency->format($this->tax->calculate($this->currency->convert($cost, $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']),
 							'cost' => $this->currency->format($this->tax->calculate($this->currency->convert($cost, $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'], '', false),						
 	
-							'title' => $this->get_title([
-								'template' => 'shipping_apiship_template',
+							'title' => $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_title_point_template'],
 								'type' => 'point',
 								'sub_type' => $point['type'], 
 								'providerKey' => $provider['providerKey'], 
@@ -707,7 +1046,8 @@ class ModelExtensionShippingApiship extends Model {
 								'pointAddress' => $point['address'], 
 								'daysMin' => $tariff['daysMin'], 
 								'daysMax' => $tariff['daysMax'], 
-								'tariffDescription' => $tariff['tariffDescription']
+								'tariffDescription' => $tariff['tariffDescription'],
+								'code' => 'apiship.' . $code
 							]),
 				
 							'type' => $apiship_point_types[$point['type']-1],
@@ -748,29 +1088,24 @@ class ModelExtensionShippingApiship extends Model {
 		else
 			return [];
 
-		$search_list = [
-			'code%'
-		];
-
-		$points_data = [];
-		$point_data = [];
 		$operations = '[1,3]';
 
-		foreach($search_list as $search_item) {
+		if (trim($search)=='')
+			$points = $this->apiship->apiship_point_by_params([
+				'providerKey='.$type,
+				'availableOperation='. $operations
+			]);
+		else
 			$points = $this->apiship->apiship_point_by_params([
 				'providerKey='.$type,
 				'availableOperation='. $operations,
-				$search_item.$search
+				'code%'.$search
 			]);
 	
+		$points_data = [];	
 			foreach($points as $point) {
-				if (!in_array($point['id'],$point_data)) {
-					$point_data[] = $point['id'];
 					$points_data[] = ['id' => $point['id'],'text' => $this->apiship->get_address($point), 'code' => $point['code']];
 				}
-			}
-
-		}
 
 		usort($points_data, function($a, $b) {
 		    if ($a['text'] == $b['text']) return 0;
@@ -856,8 +1191,8 @@ class ModelExtensionShippingApiship extends Model {
 	
 							$postcode = $point['postIndex'];
 							$address1 = $this->apiship->get_address($point);
-							$title = $this->get_title([
-								'template' => 'shipping_apiship_template',
+							$title = $this->fill_template([
+								'template' => $this->apiship_params['shipping_apiship_title_point_template'],
 								'type' => 'point', 
 								'sub_type' => $point['type'], 
 								'providerKey' => $provider['providerKey'], 
@@ -1017,6 +1352,15 @@ class ModelExtensionShippingApiship extends Model {
 		if (isset($this->request->get['shipping_apiship_comment'])) $shipping_apiship_comment = $this->request->get['shipping_apiship_comment']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
 		if (isset($this->request->get['shipping_apiship_pickup_date'])) $shipping_apiship_pickup_date = $this->request->get['shipping_apiship_pickup_date']; else return array('error' => $this->apiship_params['shipping_apiship_error_params']);		
 
+		return $this->export_order_value($order_id, $shipping_apiship_pickup_type, $shipping_apiship_place_length, 
+			$shipping_apiship_place_width, $shipping_apiship_place_height, $shipping_apiship_place_weight, $shipping_apiship_comment, $shipping_apiship_pickup_date,
+			$this->apiship_params['shipping_apiship_export_status'], '');
+	}
+
+	private function export_order_value($order_id, $shipping_apiship_pickup_type, $shipping_apiship_place_length, $shipping_apiship_place_width, 
+		$shipping_apiship_place_height, $shipping_apiship_place_weight, $shipping_apiship_comment, $shipping_apiship_pickup_date, $shipping_apiship_export_status_ok,
+		$shipping_apiship_export_status_error) {
+
 		$text = '';
 	
 		$order_products = $this->getOrderProducts($order_id);
@@ -1037,6 +1381,7 @@ class ModelExtensionShippingApiship extends Model {
 		$total_height = $shipping_apiship_place_height; 
 		$total_weight = $shipping_apiship_place_weight; 
 		$total_cost = $calculate_data['total_cost'];
+		$assessed_cost = $calculate_data['assessed_cost'];
 
 		$this->load->model('checkout/order');
 		$order = $this->model_checkout_order->getOrder($order_id);
@@ -1091,7 +1436,7 @@ class ModelExtensionShippingApiship extends Model {
 		$order_params['costCodCost'] = ($paid_orders==false) ? $this->apiship->format_cost($order['total']) : 0;
 		$order_params['costDeliveryCost'] =  ($paid_orders==false) ? $this->apiship->format_cost($order_totals['shipping']) : 0;
 		$order_params['sub_total_cost'] = $this->apiship->format_cost($total_cost);
-
+		$order_params['assessed_cost'] = $this->apiship->format_cost($assessed_cost); 
 
 		$order_params['recipientPhone'] =  $order['telephone'];  
 		$order_params['recipientEmail'] =  $order['email'];  
@@ -1119,7 +1464,8 @@ class ModelExtensionShippingApiship extends Model {
 			if (isset($output_data['providerNumber'])) $track_number = $output_data['providerNumber']; else $track_number = '';
 
 			$text = sprintf($this->apiship_params['shipping_apiship_success_export_message'], $output_data['orderId'], $track_number, $status_name);
-			$this->model_checkout_order->addOrderHistory($order['order_id'], $this->apiship_params['shipping_apiship_export_status'], $text, FALSE);
+			
+			$this->model_checkout_order->addOrderHistory($order['order_id'], $shipping_apiship_export_status_ok, $text, FALSE);
 			
 			$this->bind_apiship_order($order['order_id'], $output_data['orderId']);
 			$this->change_order_str_field($order['order_id'], 'tracking', $track_number);
@@ -1138,6 +1484,10 @@ class ModelExtensionShippingApiship extends Model {
 				$text = $this->apiship_params['shipping_apiship_error_timeout'];
 
 			$this->log->write('shipping_apiship export error ' . print_r($output_data,1));
+
+			if ($shipping_apiship_export_status_error!='')
+				$this->model_checkout_order->addOrderHistory($order['order_id'], $shipping_apiship_export_status_error, $text, FALSE);
+
 			return array('error' => $text);
 		}	
 			
@@ -1180,6 +1530,33 @@ class ModelExtensionShippingApiship extends Model {
 			return array('error' => $text);
 		}	
 		
+	}
+
+
+	public function export_orders() {
+
+		$orders = $this->get_apaiship_orders();
+				
+		$export_result = [];
+
+		foreach ($orders as $order) {
+			$order_id = $order['order_id'];
+			$order_params = $this->get_order_params_value($order_id);
+			$export_result[] = $this->export_order_value(
+				$order_id, 
+				$order_params['pickup_type'], 
+				$order_params['place_length'], 
+				$order_params['place_width'], 
+				$order_params['place_height'], 
+				$order_params['place_weight'], 
+				$order_params['comment'], 
+				$order_params['pickup_date'],
+				$this->apiship_params['shipping_apiship_group_export_status_ok'],
+				$this->apiship_params['shipping_apiship_group_export_status_error']
+			);
+		}
+		
+		return ['status' => 'ok', 'export_result'  => $export_result];
 	}
 
 	public function import_orders() {
@@ -1275,9 +1652,9 @@ class ModelExtensionShippingApiship extends Model {
 			$data['last_import_date'] = date("Y-m-d H:i:s");
 		}
 		else {
-			echo "time_out ". $time;
+			$ret_text = "time_out ". $time;
 			$this->log->write('import time_out');
-			return;
+			//return;
 		}
 
 		// save_data
@@ -1289,7 +1666,10 @@ class ModelExtensionShippingApiship extends Model {
 		flock($fp, LOCK_UN);
 		fclose($fp);
 
-		echo $ret_text;
+		//echo $ret_text;
+
+		return ['status' => 'ok', 'import_result'  => $ret_text];
+
 		die;
 	}
 
@@ -1399,6 +1779,10 @@ class ModelExtensionShippingApiship extends Model {
 	public function get_order_params() {
 
 		if (isset($this->request->get['id'])) $order_id = $this->request->get['id']; else return array('text' => $this->apiship_params['shipping_apiship_error_params']);
+		return $this->get_order_params_value($order_id);
+	}
+
+	private function get_order_params_value($order_id) {
 
 		$this->load->model('checkout/order');
 		$order_info = $this->model_checkout_order->getOrder($order_id);
@@ -1427,7 +1811,9 @@ class ModelExtensionShippingApiship extends Model {
 		$apiship_order_status = '';
 		$apiship_comment = $order_info['comment'];
 
-		$pickup_date = date("Y-m-d", strtotime("+1 day"));
+		$add_pickup_date = 1;
+		if ($this->apiship_params['shipping_apiship_add_pickup_date'] === '0') $add_pickup_date = 0;
+		$pickup_date = date("Y-m-d", strtotime("+". $add_pickup_date ." day"));
 
 		if ($apiship_export == true) {
 			$apiship_order = $this->get_apiship_order_by_oc_number($order_id);
@@ -1554,5 +1940,15 @@ class ModelExtensionShippingApiship extends Model {
 			'delivery_cost_original' => $delivery_cost_original
 		];
 	}
+
+	public function get_apaiship_orders() {
+		if (empty($this->apiship_params['shipping_apiship_group_export_status_ready'])) return [];
+		$sql = "SELECT order_id, shipping_code FROM `" . DB_PREFIX . "order` where shipping_code like '%apiship%' and order_status_id = ". $this->apiship_params['shipping_apiship_group_export_status_ready'];
+
+		$query = $this->db->query($sql);
+
+		return $query->rows;
+	}
+
 
 }

@@ -401,19 +401,3 @@ var apiship = apiship || (function () {
 
 apiship.getInstance()
 
-function apishipInsertImage(el, i, el2) {
-	document.querySelectorAll(el)[i].insertAdjacentHTML('afterend', el2)
-}
-
-function apishipInsertLink(el_select, el_change) {
-	$('input:not([type=hidden])[value^="apiship"][value*="point"][value*="error"]').parent().append(el_select);
-	$('input:not([type=hidden])[value^="apiship"][value*="point"]:not([value*="error"])').parent().append(el_change);
-}
-
-function apishipGetCode(el) {
-	return el.siblings("input").val()
-}
-
-function apishipInsertLoader(code) {
-	$('input:not([type=hidden])[value="' + code + '"]').parent().append('<div class="apiship_loading"></div>');
-}
