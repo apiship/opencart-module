@@ -362,7 +362,8 @@ class Apiship {
 		$cart_height = $calculate_data['total_height'];
 		$cart_weight = $calculate_data['total_weight'];
 
-		$cart_cost = $calculate_data['total_cost'];
+		$items_cost = $calculate_data['total_cost'];
+		$assessed_cost = $calculate_data['assessed_cost'];
 		
 		$url = $this->apiship_params['shipping_apiship_url'] . 'calculator';
 
@@ -414,12 +415,12 @@ class Apiship {
 			],
 			'places' => $places,
 			'customCode' => $this->apiship_params['shipping_apiship_custom_code'],
-		  	'assessedCost' => $cart_cost,
+		  	'assessedCost' => $assessed_cost,
 			'includeFees' => $this->apiship_params['shipping_apiship_include_fees']
 		];
 
 		if ($providers!=[]) $params['providerKeys'] = $providers;
-		if ($cash_on_delivery == true) $params['codCost'] = $cart_cost;
+		if ($cash_on_delivery == true) $params['codCost'] = $items_cost;
 		if ($extraParams!=[]) $params['extraParams'] = $extraParams;
 
 
@@ -464,7 +465,7 @@ class Apiship {
 				'pickupDate' => $order_params['orderPickupDate']
 		  	],
 		  	'cost' => [
-		    		'assessedCost' => $order_params['sub_total_cost'], // Оценочная стоимость / сумма страховки (в рублях)
+		    		'assessedCost' => $order_params['assessed_cost'], // Оценочная стоимость / сумма страховки (в рублях)
 		    		'codCost' => $order_params['costCodCost'], // Сумма наложенного платежа с учетом НДС (в рублях)
 				'deliveryCost' => $order_params['costDeliveryCost']
 		  	],
@@ -516,7 +517,12 @@ class Apiship {
 		$pointInId = $this->get_pickup_id($order_params['orderProviderKey']);
 		if ($pointInId != '') $params['order']['pointInId'] = $pointInId;
 
-		$koef = $order_params['costAssessedCost']/$order_params['sub_total_cost'];
+		if ($order_params['sub_total_cost'] != 0) {
+			$koef = $order_params['costAssessedCost']/$order_params['sub_total_cost'];
+		} else {
+			$koef = 0;
+		}
+
 		$total_cost = 0;
 
 		$total_weight = 0;
@@ -525,7 +531,6 @@ class Apiship {
 		foreach($order_params['items'] as $item) {
 			
 			$cost = $this->format_cost(($order_params['costCodCost']==0)?0:$item['cost']*$koef);
-			$assessed_cost = $item['cost'];
 			$total_cost = $total_cost + $cost*$item['quantity'];
 			
 			$weight = $this->format_weight($item['weight']);
@@ -538,7 +543,7 @@ class Apiship {
 				'quantity' => $item['quantity'],
 				'weight' => $weight,
 				'cost' => $cost,
-				'assessedCost' => $assessed_cost
+				'assessedCost' => $item['assessed_cost']
 			];
 
 		}
@@ -803,23 +808,13 @@ class Apiship {
 
 			$product_info = $this->model_catalog_product->getProduct($product['product_id']);
 
-			$length = (isset($product['length'])) ? intval($this->length->convert($product['length'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
-			$width = (isset($product['width'])) ? intval($this->length->convert($product['width'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
-			$height = (isset($product['height'])) ? intval($this->length->convert($product['height'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : 0; 
-			$weight = (isset($product['weight'])) ? intval($this->weight->convert($product['weight'] / $product['quantity'], $product['weight_class_id'], $this->apiship_params['shipping_apiship_gr_select'])) : 0;
+			$length = (isset($product['length'])) ? ($this->length->convert($product['length'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_length']); 
+			$width = (isset($product['width'])) ? ($this->length->convert($product['width'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_width']); 
+			$height = (isset($product['height'])) ? ($this->length->convert($product['height'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_height']); 
+			$weight = (isset($product['weight'])) ? ($this->weight->convert($product['weight'] / $product['quantity'], $product['weight_class_id'], $this->apiship_params['shipping_apiship_gr_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_weight']);
 
 			$cost = $this->format_cost($this->currency->convert($product['price'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency'))); 
-
-			if ($length==0) $length = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_length']);
-			if ($width==0) $width = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_width']);
-			if ($height==0) $height = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_height']);
-			if ($weight==0) $weight = $this->format_dimension($this->apiship_params['shipping_apiship_parcel_weight']);
 			
-			if ($length==0) $length = 1;
-			if ($width==0) $width = 1;
-			if ($height==0) $height = 1;
-			if ($weight==0) $weight = 1;
-
 			$shipping_apiship_articul_mode = $this->apiship_params['shipping_apiship_articul_mode'];
 			$articul = $product['model'];
 			switch($shipping_apiship_articul_mode)
@@ -861,7 +856,7 @@ class Apiship {
 				'height' => $height,
 				'length' => $length,
 				'width' => $width,
-				'cost' => $cost				
+				'cost' => $cost
 			];
 
 			$total_quantity = $total_quantity + intval($product['quantity']);
@@ -879,20 +874,19 @@ class Apiship {
 				$total_height = $total_height + $item_ar[2];
 			}
 		}
-
-		$delta_koef = ($total_cost - $total_sum) / $total_sum;
-
-		//$this->toLog('calculate_places2', ['delta_koef' => $delta_koef, 'total_cost' => $total_cost, 'total_sum' =>$total_sum ]); 
+		
+		if ($total_sum != 0) {
+		   $delta_koef = $total_sum / $total_cost;
+		} else {
+		   $delta_koef = 0;
+		}
 
 		$total_cost = $total_sum;
 		foreach($items as &$item) {
-			$item['cost'] = $this->format_cost($item['cost'] - $delta_koef*$item['cost']);	
+			$item['cost'] = $this->format_cost($delta_koef*$item['cost']);	
 			$total_cost = $this->format_cost($total_cost - $item['cost']*$item['quantity']);
-
-			//$this->toLog('calculate_places3', ['item_cost' => $item['cost'], 'total_cost' => $total_cost ]); 
-
 		}
-
+		rsort($items);
 		if ($total_cost != 0) {
 			if ($items[count($items)-1]['quantity'] > 1) {
 				$items[] = end($items);			
@@ -902,6 +896,20 @@ class Apiship {
 			} else {
 				$items[count($items)-1]['cost'] = $items[count($items)-1]['cost'] + $total_cost;
 			}
+		}
+
+		$assessed_sum = 0;
+		$cost = $this->format_cost($this->currency->convert($product['price'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency'))); 
+
+		foreach($items as &$item) {
+			if ($this->apiship_params['shipping_apiship_use_fix_product_assessed_cost']) {
+				$item['assessed_cost'] = $this->format_cost($this->currency->convert($this->apiship_params['shipping_apiship_fix_product_assessed_cost'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency'))); 
+			} else {
+				$item['assessed_cost'] = $item['cost'];			
+			}
+
+			$assessed_sum = $assessed_sum + $this->format_cost($item['assessed_cost']*$item['quantity']);
+
 		}
 
 		$place_params_length = $this->apiship_params['shipping_apiship_place_length'];
@@ -916,13 +924,25 @@ class Apiship {
 		if (!empty($place_params_weight)) $total_weight = $place_params_weight;
 		if (!empty($package_params_weight)) $total_weight = $total_weight + $package_params_weight;
 
+		$total_length = intval($total_length);
+		$total_width = intval($total_width);
+		$total_height = intval($total_height); 
+		$total_weight = intval($total_weight);
+
+		if ($total_length < 1) $total_length = 1;
+		if ($total_width < 1) $total_width = 1;
+		if ($total_height < 1) $total_height = 1;
+		if ($total_weight < 1) $total_weight = 1;
+
 		return [
 			'items' => $items,
 			'total_length' => $total_length,
 			'total_width' => $total_width,
 			'total_height' => $total_height,
 			'total_weight' => $total_weight,
-			'total_cost' => $total_sum //$total_cost
+			'total_cost' => $total_sum, 
+			'assessed_cost' => $assessed_sum 
+
 		];
 	}
 

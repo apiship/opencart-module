@@ -30,13 +30,27 @@
 	<div>
 		<img style="border: 0px solid #EEEEEE;" title="apiship" alt="apiship" src="view/image/shipping/apiship.png">
 	</div>
+<br>
+<div class="container-fluid">
+	<ul class="nav nav-tabs">
+	  <li class="active">
+	    <a href="#tab_main_settings" data-toggle="tab"><?php echo $entry_main_settings; ?></a>
+	  </li>
+	  <li>
+	    <a href="#tab_providers_points" data-toggle="tab"><?php echo $entry_providers_points; ?></a>
+	  </li>
+	  <li>
+	    <a href="#tab_events_mapping" data-toggle="tab"><?php echo $entry_events_mapping; ?></a>
+	  </li>
+	  <li>
+	    <a href="#tab_cash_on_delivery" data-toggle="tab"><?php echo $entry_cash_on_delivery; ?></a>
+	  </li>
 
-          <div class="form-group">
-            <label class="col-sm-4 control-label" ></label>
-            <div class="col-sm-8">
-			<b><?php echo $entry_main_settings; ?></b>
-            </div>
-          </div>
+	</ul>
+
+
+	<div class="tab-content">
+	  <div class="tab-pane active" id="tab_main_settings">
 
           <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_rub_select"><?php echo $entry_shipping_apiship_rub_select; ?></label>
@@ -110,13 +124,6 @@
           </div>
 
           <div class="form-group">
-            <label class="col-sm-4 control-label" for="shipping_apiship_template"><?php echo $entry_shipping_apiship_template; ?></label>
-            <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_template" value="<?php echo $shipping_apiship_template; ?>" placeholder="<?php echo $entry_shipping_apiship_template; ?>" id="shipping_apiship_template" class="form-control" />
-            </div>
-          </div>
-
-          <div class="form-group">
             <label class="col-sm-4 control-label" for="shipping_apiship_custom_code"><?php echo $entry_shipping_apiship_custom_code; ?></label>
             <div class="col-sm-8">
               <input type="text" name="shipping_apiship_custom_code" value="<?php echo $shipping_apiship_custom_code; ?>" placeholder="" id="shipping_apiship_custom_code" class="form-control" />
@@ -153,6 +160,77 @@
 		</div>
           </div>
 
+
+          <div class="form-group">
+		<label class="col-sm-4 control-label"></label>
+            <div class="col-sm-8">
+			<b><?php echo $entry_shipping_apiship_template; ?></b>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_title_point_template"><?php echo $entry_shipping_apiship_title_point_template; ?></label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_title_point_template" value="<?php echo $shipping_apiship_title_point_template; ?>" placeholder="<?php echo $entry_shipping_apiship_title_point_template; ?>" id="shipping_apiship_title_point_template" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_description_point_template"><?php echo $entry_shipping_apiship_description_point_template; ?></label>
+            <div class="col-sm-8">
+              <textarea rows="4" name="shipping_apiship_description_point_template" placeholder="<?php echo $entry_shipping_apiship_description_point_template; ?>" id="shipping_apiship_description_point_template" class="form-control"><?php echo $shipping_apiship_description_point_template; ?></textarea>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_title_door_template"><?php echo $entry_shipping_apiship_title_door_template; ?></label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_title_door_template" value="<?php echo $shipping_apiship_title_door_template; ?>" placeholder="<?php echo $entry_shipping_apiship_title_door_template; ?>" id="shipping_apiship_title_door_template" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_description_door_template"><?php echo $entry_shipping_apiship_description_door_template; ?></label>
+            <div class="col-sm-8">
+              <textarea rows="4" name="shipping_apiship_description_door_template" placeholder="<?php echo $entry_shipping_apiship_description_door_template; ?>" id="shipping_apiship_description_door_template" class="form-control"><?php echo $shipping_apiship_description_door_template; ?></textarea>
+            </div>
+          </div>
+
+
+          <div class="form-group">
+	    	<label class="col-sm-12 control-label"><?php echo $entry_shipping_apiship_template_desc; ?></label>
+          </div>
+
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_icon_show"><?php echo $entry_shipping_apiship_icon_show; ?></label>
+            <div class="col-sm-8">
+			<div class="checkbox">
+				<label>
+		                  <?php if ($shipping_apiship_icon_show) { ?>
+		                  <input type="checkbox" name="shipping_apiship_icon_show" id="shipping_apiship_icon_show" value="1" checked="checked" />
+		                  <?php } else { ?>
+		                  <input type="checkbox" name="shipping_apiship_icon_show" id="shipping_apiship_icon_show" value="1" />
+		                  <?php } ?>
+      		      </label>
+			</div>
+		</div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_hide_link"><?php echo $entry_shipping_apiship_hide_link; ?></label>
+            <div class="col-sm-8">
+			<div class="checkbox">
+				<label>
+		                  <?php if ($shipping_apiship_hide_link) { ?>
+		                  <input type="checkbox" name="shipping_apiship_hide_link" id="shipping_apiship_hide_link" value="1" checked="checked" />
+		                  <?php } else { ?>
+		                  <input type="checkbox" name="shipping_apiship_hide_link" id="shipping_apiship_hide_link" value="1" />
+		                  <?php } ?>
+      		      </label>
+			</div>
+		</div>
+          </div>
 
          <div class="form-group">
             <label class="col-sm-4 control-label" ></label>
@@ -377,111 +455,6 @@
           </div>
 
 
-         <div class="form-group">
-            <label class="col-sm-4 control-label" ></label>
-            <div class="col-sm-8">
-			<b><?php echo $entry_providers_points; ?></b>
-            </div>
-          </div>
-
-	    <?php foreach($shipping_apiship_providers as $provider) { ?>
-          <div class="form-group">
-		<div class="col-sm-12">    
-
-			<div class="row">
-
-				<label class="col-sm-4 control-label" for="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]"><?php echo $entry_providers_point; ?> <?php echo $provider['name']; ?></label>
-				<div class="checkbox col-sm-1">
-					<label>
-			                  <?php if (isset($shipping_apiship_provider[$provider['key']]['pickup_type'])) { ?>
-			                  <input class="shipping_apiship_provider_point" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" value="1" checked="checked" />
-			                  <?php } else { ?>
-			                  <input class="shipping_apiship_provider_point" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" value="1" />
-			                  <?php } ?>
-	      		      </label>
-				</div>
-
-	            	<div class="col-sm-7">
-	              		<select class="shipping_apiship_provider" data-id="<?php echo $provider['key']; ?>" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][id]" id="shipping_apiship_provider_<?php echo $provider['key']; ?>" class="form-control">
-					<option value="<?php if (isset($shipping_apiship_providers_points[$provider['key']]['id'])) echo $shipping_apiship_providers_points[$provider['key']]['id']; else echo ''; ?>"><?php if (isset($shipping_apiship_providers_points[$provider['key']]['address'])) echo $shipping_apiship_providers_points[$provider['key']]['address']; else echo ''; ?></option>
-					</select>
-	            	</div>
-			</div>
-
-			<div class="row">
-
-				<label class="col-sm-4 control-label" for="shipping_apiship_provider[<?php echo $provider['key'];?>][courier_type]"><?php echo $entry_providers_courier; ?> <?php echo $provider['name']; ?></label>
-				<div class="checkbox col-sm-1">
-					<label>
-			                  <?php if (isset($shipping_apiship_provider[$provider['key']]['courier_type'])) { ?>
-			                  <input class="shipping_apiship_provider_courier" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" value="1" checked="checked" />
-			                  <?php } else { ?>
-			                  <input class="shipping_apiship_provider_courier" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" value="1" />
-			                  <?php } ?>
-	      		      </label>
-				</div>
-			</div>
-
-            </div>
-	    </div>
-	    <?php } ?>
-
-          <div class="form-group">
-            <label class="col-sm-4 control-label" ></label>
-            <div class="col-sm-8">
-			<b><?php echo $entry_events_mapping; ?></b>
-            </div>
-          </div>
-
-	    <?php foreach($shipping_apiship_integrator_statuses as $status) { ?>
-          <div class="form-group">
-		<div class="col-sm-12">    
-
-			<div class="row">
-
-				<label class="col-sm-4 control-label" for="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]"><?php echo $status['name']; ?></label>
-				<div class="checkbox col-sm-1">
-					<label>
-			                  <?php if (isset($shipping_apiship_mapping_status[$status['key']]['use'])) { ?>
-			                  <input class="shipping_apiship_mapping_checkbox_use" data-id="<?php echo $status['key']; ?>" type="checkbox" name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]" id="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]" value="1" checked="checked" />
-			                  <?php } else { ?>
-			                  <input class="shipping_apiship_mapping_checkbox_use" data-id="<?php echo $status['key']; ?>" type="checkbox" name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]" id="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]" value="1" />
-			                  <?php } ?>
-	      		      </label>
-				</div>
-	            	<div class="col-sm-4">
-	              		<select name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][order_status_id]" data-id="<?php echo $status['key']; ?>" id="shipping_apiship_mapping_use_<?php echo $status['key']; ?>" class="form-control">
-					<?php foreach($order_statuses as $order_status) { ?>
-		                  <?php if (isset($shipping_apiship_mapping_status[$status['key']]['order_status_id']) && $order_status['order_status_id'] == $shipping_apiship_mapping_status[$status['key']]['order_status_id']) { ?>
-		                  <option value="<?php echo $order_status['order_status_id']; ?>" selected="selected"><?php echo $order_status['name']; ?></option>
-		                  <?php } else { ?>
-		                  <option value="<?php echo $order_status['order_status_id']; ?>"><?php echo $order_status['name']; ?></option>
-		                  <?php } ?>
-		                  <?php } ?>
-					</select>
-	            	</div>
-
-				<div class="checkbox col-sm-2">
-					<label><?php echo $entry_events_mapping_notify; ?>
-					</label>
-				</div>
-
-				<div class="checkbox col-sm-1">
-					<label>
-			                  <?php if (isset($shipping_apiship_mapping_status[$status['key']]['notify'])) { ?>
-			                  <input class="shipping_apiship_mapping_checkbox_notify" data-id="<?php echo $status['key']; ?>" type="checkbox" name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][notify]" id="shipping_apiship_mapping_notify_<?php echo $status['key']; ?>" value="1" checked="checked" />
-			                  <?php } else { ?>
-			                  <input class="shipping_apiship_mapping_checkbox_notify" data-id="<?php echo $status['key']; ?>" type="checkbox" name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][notify]" id="shipping_apiship_mapping_notify_<?php echo $status['key']; ?>" value="1" />
-			                  <?php } ?>
-	      		      </label>
-				</div>
-
-			</div>
-            </div>
-	    </div>
-	    <?php } ?>
-
-
           <div class="form-group">
             <label class="col-sm-4 control-label" ></label>
             <div class="col-sm-8">
@@ -539,21 +512,6 @@
           </div>
 
           <div class="form-group">
-            <label class="col-sm-4 control-label" for="shipping_apiship_icon_show"><?php echo $entry_shipping_apiship_icon_show; ?></label>
-            <div class="col-sm-8">
-			<div class="checkbox">
-				<label>
-		                  <?php if ($shipping_apiship_icon_show) { ?>
-		                  <input type="checkbox" name="shipping_apiship_icon_show" id="shipping_apiship_icon_show" value="1" checked="checked" />
-		                  <?php } else { ?>
-		                  <input type="checkbox" name="shipping_apiship_icon_show" id="shipping_apiship_icon_show" value="1" />
-		                  <?php } ?>
-      		      </label>
-			</div>
-		</div>
-          </div>
-
-          <div class="form-group">
             <label class="col-sm-4 control-label" for="shipping_apiship_prefix"><?php echo $entry_shipping_apiship_prefix; ?></label>
             <div class="col-sm-8">
               <input type="text" name="shipping_apiship_prefix" value="<?php echo $shipping_apiship_prefix; ?>" placeholder="" id="shipping_apiship_prefix" class="form-control" />
@@ -576,6 +534,47 @@
           </div>
 
           <div class="form-group">
+		<div class="col-sm-12">    
+
+			<div class="row">
+
+				<label class="col-sm-4 control-label" for="shipping_apiship_use_fix_product_assessed_cost"><?php echo $entry_shipping_apiship_use_fix_product_assessed_cost; ?></label>
+				<div class="checkbox col-sm-1">
+					<label>
+
+			                  <?php if ($shipping_apiship_use_fix_product_assessed_cost) { ?>
+			                  <input class="shipping_apiship_use_fix_product_assessed_cost" data-id="" type="checkbox" name="shipping_apiship_use_fix_product_assessed_cost" id="shipping_apiship_use_fix_product_assessed_cost" value="1" checked="checked" />
+			                  <?php } else { ?>
+			                  <input class="shipping_apiship_use_fix_product_assessed_cost" data-id="" type="checkbox" name="shipping_apiship_use_fix_product_assessed_cost" id="shipping_apiship_use_fix_product_assessed_cost" value="1"  />
+			                  <?php } ?>
+
+	      		      </label>
+				</div>
+
+		            <div class="col-sm-7">
+		              <input type="number" name="shipping_apiship_fix_product_assessed_cost" value="<?php echo $shipping_apiship_fix_product_assessed_cost; ?>" placeholder="" id="shipping_apiship_fix_product_assessed_cost" class="form-control" />
+		            </div>
+			</div>
+		</div>
+	    </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_add_pickup_date"><?php echo $entry_shipping_apiship_add_pickup_date; ?></label>
+            <div class="col-sm-8">
+		<select name="shipping_apiship_add_pickup_date" class="form-control">
+              	<?php foreach($shipping_apiship_pickup_dates as $mode) { ?>
+              	<?php if ($mode['code'] == $shipping_apiship_add_pickup_date) { ?>
+              	<option value="<?php echo $mode['code']; ?>" selected="selected"><?php echo $mode['code_text']; ?></option>
+              	<?php } else { ?>
+              	<option value="<?php echo $mode['code']; ?>"><?php echo $mode['code_text']; ?></option>
+	        	<?php } ?>
+              	<?php } ?>
+            </select>
+            </div>
+          </div>
+
+
+          <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_export_status"><?php echo $entry_shipping_apiship_export_status; ?></label>
             <div class="col-sm-8">
               <select name="shipping_apiship_export_status" id="shipping_apiship_export_status" class="form-control">
@@ -587,10 +586,13 @@
 	        	<?php } ?>
               	<?php } ?>
               </select>
+			<?php if ($error_shipping_apiship_export_status) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_export_status; ?></div>
+              	<?php } ?>
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group required">
             <label class="col-sm-4 control-label" for="shipping_apiship_cancel_export_status"><?php echo $entry_shipping_apiship_cancel_export_status; ?></label>
             <div class="col-sm-8">
               <select name="shipping_apiship_cancel_export_status" id="shipping_apiship_cancel_export_status" class="form-control">
@@ -602,8 +604,236 @@
 	        	<?php } ?>
               	<?php } ?>
               </select>
+			<?php if ($error_shipping_apiship_cancel_export_status) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_cancel_export_status; ?></div>
+              	<?php } ?>
             </div>
           </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_group_export_status_ready"><?php echo $entry_shipping_apiship_group_export_status_ready; ?></label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_group_export_status_ready" id="shipping_apiship_group_export_status_ready" class="form-control">
+                  <?php foreach($order_statuses as $order_status) { ?>
+                  <?php if ($order_status['order_status_id'] == $shipping_apiship_group_export_status_ready) { ?>
+                  <option value="<?php echo $order_status['order_status_id']; ?>" selected="selected"><?php echo $order_status['name']; ?></option>
+                  <?php } else { ?>
+                  <option value="<?php echo $order_status['order_status_id']; ?>"><?php echo $order_status['name']; ?></option>
+	        	<?php } ?>
+              	<?php } ?>
+              </select>
+			<?php if ($error_shipping_apiship_group_export_status_ready) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_group_export_status_ready; ?></div>
+              	<?php } ?>
+            </div>
+          </div>
+
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_group_export_status_ok"><?php echo $entry_shipping_apiship_group_export_status_ok; ?></label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_group_export_status_ok" id="shipping_apiship_group_export_status_ok" class="form-control">
+                  <?php foreach($order_statuses as $order_status) { ?>
+                  <?php if ($order_status['order_status_id'] == $shipping_apiship_group_export_status_ok) { ?>
+                  <option value="<?php echo $order_status['order_status_id']; ?>" selected="selected"><?php echo $order_status['name']; ?></option>
+                  <?php } else { ?>
+                  <option value="<?php echo $order_status['order_status_id']; ?>"><?php echo $order_status['name']; ?></option>
+	        	<?php } ?>
+              	<?php } ?>
+              </select>
+			<?php if ($error_shipping_apiship_group_export_status_ok) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_group_export_status_ok; ?></div>
+              	<?php } ?>
+            </div>
+          </div>
+
+          <div class="form-group required">
+            <label class="col-sm-4 control-label" for="shipping_apiship_group_export_status_error"><?php echo $entry_shipping_apiship_group_export_status_error; ?></label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_group_export_status_error" id="shipping_apiship_group_export_status_error" class="form-control">
+                  <?php foreach($order_statuses as $order_status) { ?>
+                  <?php if ($order_status['order_status_id'] == $shipping_apiship_group_export_status_error) { ?>
+                  <option value="<?php echo $order_status['order_status_id']; ?>" selected="selected"><?php echo $order_status['name']; ?></option>
+                  <?php } else { ?>
+                  <option value="<?php echo $order_status['order_status_id']; ?>"><?php echo $order_status['name']; ?></option>
+	        	<?php } ?>
+              	<?php } ?>
+              </select>
+			<?php if ($error_shipping_apiship_group_export_status_error) { ?>
+              		<div class="text-danger"><?php echo $error_shipping_apiship_group_export_status_error; ?></div>
+              	<?php } ?>
+            </div>
+          </div>
+
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_cron_key"><?php echo $entry_shipping_apiship_cron_key; ?> </label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_cron_key" value="<?php echo $shipping_apiship_cron_key; ?>" placeholder="" id="shipping_apiship_cron_key" class="form-control" />
+            </div>
+          </div>	
+
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_export_cron_url"><?php echo $entry_shipping_apiship_export_cron_url; ?></label>
+            <div class="col-sm-8" style='display:flex;'>
+		  	<input type="text" id="shipping_apiship_export_cron_url" value="<?php echo $shipping_apiship_export_cron_url; ?>&key=<?php echo $shipping_apiship_cron_key; ?>" class="form-control" />
+			<button id="shipping_apiship_export_cron_url_copy_button" title="<?php echo $text_shipping_apiship_cron_url_copy; ?>"><i class="fa fa-clipboard"></i></button>
+            </div>
+          </div>	
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_import_cron_url"><?php echo $entry_shipping_apiship_import_cron_url; ?></label>
+            <div class="col-sm-8" style='display:flex;'>
+		  	<input type="text" id="shipping_apiship_import_cron_url" value="<?php echo $shipping_apiship_import_cron_url; ?>&key=<?php echo $shipping_apiship_cron_key; ?>" class="form-control" />
+			<button id="shipping_apiship_import_cron_url_copy_button" title="<?php echo $text_shipping_apiship_cron_url_copy; ?>"><i class="fa fa-clipboard"></i></button>
+            </div>
+          </div>	
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_yandex_api_key"><?php echo $entry_shipping_apiship_yandex_api_key; ?></label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_yandex_api_key" value="<?php echo $shipping_apiship_yandex_api_key; ?>" placeholder="" id="shipping_apiship_yandex_api_key" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_sort_order"><?php echo $entry_shipping_apiship_sort_order; ?></label>
+            <div class="col-sm-8">
+              <input type="text" name="shipping_apiship_sort_order" value="<?php echo $shipping_apiship_sort_order; ?>" placeholder="" id="shipping_apiship_sort_order" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_mode"><?php echo $entry_shipping_apiship_mode; ?></label>
+            <div class="col-sm-8">
+		<select name="shipping_apiship_mode" class="form-control">
+              <?php foreach($shipping_apiship_modes as $mode) { ?>
+              <?php if ($mode['code'] == $shipping_apiship_mode) { ?>
+              <option value="<?php echo $mode['code']; ?>" selected="selected"><?php echo $mode['code_text']; ?></option>
+              <?php } else { ?>
+              <option value="<?php echo $mode['code']; ?>"><?php echo $mode['code_text']; ?></option>
+              <?php } ?>
+              <?php } ?>
+            </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_status"><?php echo $entry_shipping_apiship_status; ?></label>
+            <div class="col-sm-8">
+              <select name="shipping_apiship_status" id="shipping_apiship_status" class="form-control">
+                  <?php if ($shipping_apiship_status) { ?>
+                  <option value="1" selected="selected"><?php echo $text_enabled; ?></option>
+                  <option value="0"><?php echo $text_disabled; ?></option>
+                  <?php } else { ?>
+                  <option value="1"><?php echo $text_enabled; ?></option>
+                  <option value="0" selected="selected"><?php echo $text_disabled; ?></option>
+                  <?php } ?>
+              </select>
+            </div>
+          </div>						
+
+
+
+	</div>
+	<div class="tab-pane" id="tab_providers_points">
+
+	    <?php foreach($shipping_apiship_providers as $provider) { ?>
+          <div class="form-group">
+		<div class="col-sm-12">    
+
+			<div class="row">
+
+				<label class="col-sm-4 control-label" for="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]"><?php echo $entry_providers_point; ?> <?php echo $provider['name']; ?></label>
+				<div class="checkbox col-sm-1">
+					<label>
+			                  <?php if (isset($shipping_apiship_provider[$provider['key']]['pickup_type'])) { ?>
+			                  <input class="shipping_apiship_provider_point" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" value="1" checked="checked" />
+			                  <?php } else { ?>
+			                  <input class="shipping_apiship_provider_point" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][pickup_type]" value="1" />
+			                  <?php } ?>
+	      		      </label>
+				</div>
+
+	            	<div class="col-sm-7">
+	              		<select class="shipping_apiship_provider" data-id="<?php echo $provider['key']; ?>" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][id]" id="shipping_apiship_provider_<?php echo $provider['key']; ?>" class="form-control">
+					<option value="<?php if (isset($shipping_apiship_providers_points[$provider['key']]['id'])) echo $shipping_apiship_providers_points[$provider['key']]['id']; else echo ''; ?>"><?php if (isset($shipping_apiship_providers_points[$provider['key']]['address'])) echo $shipping_apiship_providers_points[$provider['key']]['address']; else echo ''; ?></option>
+					</select>
+	            	</div>
+			</div>
+
+			<div class="row">
+
+				<label class="col-sm-4 control-label" for="shipping_apiship_provider[<?php echo $provider['key'];?>][courier_type]"><?php echo $entry_providers_courier; ?> <?php echo $provider['name']; ?></label>
+				<div class="checkbox col-sm-1">
+					<label>
+			                  <?php if (isset($shipping_apiship_provider[$provider['key']]['courier_type'])) { ?>
+			                  <input class="shipping_apiship_provider_courier" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" value="1" checked="checked" />
+			                  <?php } else { ?>
+			                  <input class="shipping_apiship_provider_courier" data-id="<?php echo $provider['key']; ?>" type="checkbox" name="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" id="shipping_apiship_provider[<?php echo $provider['key']; ?>][courier_type]" value="1" />
+			                  <?php } ?>
+	      		      </label>
+				</div>
+			</div>
+
+            </div>
+	    </div>
+	    <?php } ?>
+
+	</div>
+	<div class="tab-pane" id="tab_events_mapping">
+
+	    <?php foreach($shipping_apiship_integrator_statuses as $status) { ?>
+          <div class="form-group">
+		<div class="col-sm-12">    
+
+			<div class="row">
+
+				<label class="col-sm-4 control-label" for="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]"><?php echo $status['name']; ?></label>
+				<div class="checkbox col-sm-1">
+					<label>
+			                  <?php if (isset($shipping_apiship_mapping_status[$status['key']]['use'])) { ?>
+			                  <input class="shipping_apiship_mapping_checkbox_use" data-id="<?php echo $status['key']; ?>" type="checkbox" name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]" id="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]" value="1" checked="checked" />
+			                  <?php } else { ?>
+			                  <input class="shipping_apiship_mapping_checkbox_use" data-id="<?php echo $status['key']; ?>" type="checkbox" name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]" id="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][use]" value="1" />
+			                  <?php } ?>
+	      		      </label>
+				</div>
+	            	<div class="col-sm-4">
+	              		<select name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][order_status_id]" data-id="<?php echo $status['key']; ?>" id="shipping_apiship_mapping_use_<?php echo $status['key']; ?>" class="form-control">
+					<?php foreach($order_statuses as $order_status) { ?>
+		                  <?php if (isset($shipping_apiship_mapping_status[$status['key']]['order_status_id']) && $order_status['order_status_id'] == $shipping_apiship_mapping_status[$status['key']]['order_status_id']) { ?>
+		                  <option value="<?php echo $order_status['order_status_id']; ?>" selected="selected"><?php echo $order_status['name']; ?></option>
+		                  <?php } else { ?>
+		                  <option value="<?php echo $order_status['order_status_id']; ?>"><?php echo $order_status['name']; ?></option>
+		                  <?php } ?>
+		                  <?php } ?>
+					</select>
+	            	</div>
+
+				<div class="checkbox col-sm-2">
+					<label><?php echo $entry_events_mapping_notify; ?>
+					</label>
+				</div>
+
+				<div class="checkbox col-sm-1">
+					<label>
+			                  <?php if (isset($shipping_apiship_mapping_status[$status['key']]['notify'])) { ?>
+			                  <input class="shipping_apiship_mapping_checkbox_notify" data-id="<?php echo $status['key']; ?>" type="checkbox" name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][notify]" id="shipping_apiship_mapping_notify_<?php echo $status['key']; ?>" value="1" checked="checked" />
+			                  <?php } else { ?>
+			                  <input class="shipping_apiship_mapping_checkbox_notify" data-id="<?php echo $status['key']; ?>" type="checkbox" name="shipping_apiship_mapping_status[<?php echo $status['key']; ?>][notify]" id="shipping_apiship_mapping_notify_<?php echo $status['key']; ?>" value="1" />
+			                  <?php } ?>
+	      		      </label>
+				</div>
+
+			</div>
+            </div>
+	    </div>
+	    <?php } ?>
+
+	</div>
+	<div class="tab-pane" id="tab_cash_on_delivery">
 
           <div class="form-group">
             <label class="col-sm-4 control-label" for="shipping_apiship_paid_orders"><?php echo $entry_shipping_apiship_paid_orders; ?></label>
@@ -639,55 +869,9 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="col-sm-4 control-label" for="shipping_apiship_sort_order"><?php echo $entry_shipping_apiship_sort_order; ?></label>
-            <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_sort_order" value="<?php echo $shipping_apiship_sort_order; ?>" placeholder="" id="shipping_apiship_sort_order" class="form-control" />
-            </div>
-          </div>
 
-          <div class="form-group">
-            <label class="col-sm-4 control-label" for="shipping_apiship_mode"><?php echo $entry_shipping_apiship_mode; ?></label>
-            <div class="col-sm-8">
-		<select name="shipping_apiship_mode" class="form-control">
-              	<?php foreach($shipping_apiship_modes as $mode) { ?>
-              	<?php if ($mode['code'] == $shipping_apiship_mode) { ?>
-              	<option value="<?php echo $mode['code']; ?>" selected="selected"><?php echo $mode['code_text']; ?></option>
-              	<?php } else { ?>
-              	<option value="<?php echo $mode['code']; ?>"><?php echo $mode['code_text']; ?></option>
-              	<?php } ?>
-              	<?php } ?>
-            </select>
-            </div>
-          </div>
+	</div>
 
-          <div class="form-group">
-            <label class="col-sm-4 control-label" for="shipping_apiship_cron_url"><?php echo $entry_shipping_apiship_cron_url; ?></label>
-            <div class="col-sm-8" style='display:flex;'>
-		  	<input type="text" id="shipping_apiship_cron_url" value="<?php echo $shipping_apiship_cron_url; ?>" class="form-control" />
-			<button id="shipping_apiship_cron_url_copy_button" title="<?php echo $text_shipping_apiship_cron_url_copy; ?>"><i class="fa fa-clipboard"></i></button>
-            </div>
-          </div>	
-
-          <div class="form-group">
-            <label class="col-sm-4 control-label" for="shipping_apiship_yandex_api_key"><?php echo $entry_shipping_apiship_yandex_api_key; ?></label>
-            <div class="col-sm-8">
-              <input type="text" name="shipping_apiship_yandex_api_key" value="<?php echo $shipping_apiship_yandex_api_key; ?>" placeholder="" id="shipping_apiship_yandex_api_key" class="form-control" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="col-sm-4 control-label" for="shipping_apiship_status"><?php echo $entry_shipping_apiship_status; ?></label>
-            <div class="col-sm-8">
-              <select name="shipping_apiship_status" id="shipping_apiship_status" class="form-control">
-                  <?php if ($shipping_apiship_status) { ?>
-                  <option value="1" selected="selected"><?php echo $text_enabled; ?></option>
-                  <option value="0"><?php echo $text_disabled; ?></option>
-                  <?php } else { ?>
-                  <option value="1"><?php echo $text_enabled; ?></option>
-                  <option value="0" selected="selected"><?php echo $text_disabled; ?></option>
-                  <?php } ?>
-              </select>
             </div>
           </div>						
 
@@ -713,8 +897,18 @@
 
 <script>
 
-$('#shipping_apiship_cron_url_copy_button').click(function() {
-	var copyText = document.getElementById("shipping_apiship_cron_url");
+$('#shipping_apiship_import_cron_url_copy_button').click(function() {
+	var copyText = document.getElementById("shipping_apiship_import_cron_url");
+	copyText.select();
+	document.execCommand("copy");
+	$('#shipping_apiship_cron_url_copy_button').tooltip('enable')
+	$('#shipping_apiship_cron_url_copy_button').tooltip('show');
+	$('#shipping_apiship_cron_url_copy_button').tooltip('disable')
+	return false;
+
+});
+$('#shipping_apiship_export_cron_url_copy_button').click(function() {
+	var copyText = document.getElementById("shipping_apiship_export_cron_url");
 	copyText.select();
 	document.execCommand("copy");
 	$('#shipping_apiship_cron_url_copy_button').tooltip('enable')
@@ -800,6 +994,13 @@ jQuery('.shipping_apiship_mapping_checkbox_use').each(function() {
 	status = $(this).attr('data-id')
 	set_status_checkbox(this.checked, status)
 });
+
+var input = document.getElementById('shipping_apiship_cron_key'); 
+
+input.oninput = function() {
+    document.getElementById('shipping_apiship_export_cron_url').value = '<?php echo $shipping_apiship_export_cron_url; ?>&key=' + input.value;
+    document.getElementById('shipping_apiship_import_cron_url').value = '<?php echo $shipping_apiship_import_cron_url; ?>&key=' + input.value;
+};
 
 </script>
 

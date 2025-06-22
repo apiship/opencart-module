@@ -46,7 +46,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '0.9.4 (OpenCart 3.x)';
+		$data['shipping_apiship_version'] = '1.0 (OpenCart 3.x)';
 		$data['shipping_apiship_version_js_mod'] = rand();
 
 		$data['button_save'] = $this->language->get('button_save');
@@ -55,6 +55,11 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['entry_shipping_apiship_token'] = $this->language->get('entry_shipping_apiship_token');
 		$data['entry_shipping_apiship_title'] = $this->language->get('entry_shipping_apiship_title');
 		$data['entry_shipping_apiship_template'] = $this->language->get('entry_shipping_apiship_template');
+		$data['entry_shipping_apiship_template_desc'] = $this->language->get('entry_shipping_apiship_template_desc');
+		$data['entry_shipping_apiship_title_point_template'] = $this->language->get('entry_shipping_apiship_title_point_template');
+		$data['entry_shipping_apiship_description_point_template'] = $this->language->get('entry_shipping_apiship_description_point_template');
+		$data['entry_shipping_apiship_title_door_template'] = $this->language->get('entry_shipping_apiship_title_door_template');
+		$data['entry_shipping_apiship_description_door_template'] = $this->language->get('entry_shipping_apiship_description_door_template');
 		$data['entry_shipping_apiship_custom_code'] = $this->language->get('entry_shipping_apiship_custom_code');
 		$data['entry_shipping_apiship_sending_country_code'] = $this->language->get('entry_shipping_apiship_sending_country_code');
 		$data['entry_shipping_apiship_sending_region'] = $this->language->get('entry_shipping_apiship_sending_region');
@@ -91,18 +96,27 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['entry_shipping_apiship_articul_mode'] = $this->language->get('entry_shipping_apiship_articul_mode');
 		$data['entry_shipping_apiship_geo_zone'] = $this->language->get('entry_shipping_apiship_geo_zone');
 		$data['entry_shipping_apiship_icon_show'] = $this->language->get('entry_shipping_apiship_icon_show');
+		$data['entry_shipping_apiship_hide_link'] = $this->language->get('entry_shipping_apiship_hide_link');
 		$data['entry_shipping_apiship_error_stub_show'] = $this->language->get('entry_shipping_apiship_error_stub_show');
 		$data['entry_shipping_apiship_group_points'] = $this->language->get('entry_shipping_apiship_group_points');
 		$data['entry_shipping_apiship_prefix'] = $this->language->get('entry_shipping_apiship_prefix');
+		$data['entry_shipping_apiship_use_fix_product_assessed_cost'] = $this->language->get('entry_shipping_apiship_use_fix_product_assessed_cost');
+		$data['entry_shipping_apiship_add_pickup_date'] = $this->language->get('entry_shipping_apiship_add_pickup_date');
 		$data['entry_shipping_apiship_export_status'] = $this->language->get('entry_shipping_apiship_export_status');
+		$data['entry_shipping_apiship_group_export_status_ready'] = $this->language->get('entry_shipping_apiship_group_export_status_ready');
+		$data['entry_shipping_apiship_group_export_status_ok'] = $this->language->get('entry_shipping_apiship_group_export_status_ok');
+		$data['entry_shipping_apiship_group_export_status_error'] = $this->language->get('entry_shipping_apiship_group_export_status_error');
 		$data['entry_shipping_apiship_cancel_export_status'] = $this->language->get('entry_shipping_apiship_cancel_export_status');
 		$data['entry_shipping_apiship_mode'] = $this->language->get('entry_shipping_apiship_mode');
 		$data['entry_shipping_apiship_include_fees'] = $this->language->get('entry_shipping_apiship_include_fees');
 
 		$data['entry_shipping_apiship_paid_orders'] = $this->language->get('entry_shipping_apiship_paid_orders');
 		$data['entry_shipping_apiship_cash_on_delivery_payment_methods'] = $this->language->get('entry_shipping_apiship_cash_on_delivery_payment_methods');
+		$data['entry_cash_on_delivery'] = $this->language->get('entry_cash_on_delivery');
 
-		$data['entry_shipping_apiship_cron_url'] = $this->language->get('entry_shipping_apiship_cron_url');
+		$data['entry_shipping_apiship_import_cron_url'] = $this->language->get('entry_shipping_apiship_import_cron_url');
+		$data['entry_shipping_apiship_export_cron_url'] = $this->language->get('entry_shipping_apiship_export_cron_url');
+		$data['entry_shipping_apiship_cron_key'] = $this->language->get('entry_shipping_apiship_cron_key');
 
 		$data['entry_main_settings'] = $this->language->get('entry_main_settings');
 		$data['entry_sending_address'] = $this->language->get('entry_sending_address');
@@ -139,6 +153,11 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['shipping_apiship_pickup_types'] = [
 			['code'=>1, 'code_text'=>$this->language->get('entry_shipping_apiship_pickup_type1')],
 			['code'=>2, 'code_text'=>$this->language->get('entry_shipping_apiship_pickup_type2')],
+		];          
+
+		$data['shipping_apiship_pickup_dates'] = [
+			['code'=>0, 'code_text'=>$this->language->get('entry_shipping_apiship_add_pickup_date0')],
+			['code'=>1, 'code_text'=>$this->language->get('entry_shipping_apiship_add_pickup_date1')]
 		];                
 
 		$this->load->language('catalog/product');
@@ -168,7 +187,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['length_classes'] = ['' => ['length_class_id' => '', 'title' => '']] + $this->model_localisation_length_class->getLengthClasses(); 
 
 		$this->load->model('localisation/order_status');	
-		$data['order_statuses'] = $this->model_localisation_order_status->getOrderStatuses();
+		$data['order_statuses'] = ['' => ['order_status_id' => '', 'name' => '']] + $this->model_localisation_order_status->getOrderStatuses();
 
 		$data['payment_methods'] = $this->model_extension_shipping_apiship->get_payment_methods();
 
@@ -217,13 +236,35 @@ class ControllerExtensionShippingApiship extends Controller {
 				$data['shipping_apiship_title'] = 'ApiShip';
 		} 
 
-		if (isset($this->request->post['shipping_apiship_template'])) {
-			$data['shipping_apiship_template'] = $this->request->post['shipping_apiship_template'];
+		if (isset($this->request->post['shipping_apiship_title_point_template'])) {
+			$data['shipping_apiship_title_point_template'] = $this->request->post['shipping_apiship_title_point_template'];
 		} else {
-			$data['shipping_apiship_template'] = $this->config->get('shipping_apiship_template');
+			$data['shipping_apiship_title_point_template'] = $this->config->get('shipping_apiship_title_point_template');
 		} 
 
-		if ($data['shipping_apiship_template'] == '') $data['shipping_apiship_template'] = $this->language->get('text_shipping_apiship_template');
+		if ($data['shipping_apiship_title_point_template'] == '') $data['shipping_apiship_title_point_template'] = $this->language->get('text_shipping_apiship_title_point_template');
+
+		if (isset($this->request->post['shipping_apiship_description_point_template'])) {
+			$data['shipping_apiship_description_point_template'] = $this->request->post['shipping_apiship_description_point_template'];
+		} else {
+			$data['shipping_apiship_description_point_template'] = $this->config->get('shipping_apiship_description_point_template');
+		} 
+
+
+		if (isset($this->request->post['shipping_apiship_title_door_template'])) {
+			$data['shipping_apiship_title_door_template'] = $this->request->post['shipping_apiship_title_door_template'];
+		} else {
+			$data['shipping_apiship_title_door_template'] = $this->config->get('shipping_apiship_title_door_template');
+		} 
+
+		if ($data['shipping_apiship_title_door_template'] == '') $data['shipping_apiship_title_door_template'] = $this->language->get('text_shipping_apiship_title_door_template');
+
+		if (isset($this->request->post['shipping_apiship_description_door_template'])) {
+			$data['shipping_apiship_description_door_template'] = $this->request->post['shipping_apiship_description_door_template'];
+		} else {
+			$data['shipping_apiship_description_door_template'] = $this->config->get('shipping_apiship_description_door_template');
+		} 
+
 
 		if (isset($this->request->post['shipping_apiship_custom_code'])) {
 			$data['shipping_apiship_custom_code'] = $this->request->post['shipping_apiship_custom_code'];
@@ -432,16 +473,40 @@ class ControllerExtensionShippingApiship extends Controller {
 			$data['shipping_apiship_cancel_export_status'] = $this->config->get('shipping_apiship_cancel_export_status');
 		} 
                 
+		if (isset($this->request->post['shipping_apiship_group_export_status_ready'])) {
+			$data['shipping_apiship_group_export_status_ready'] = $this->request->post['shipping_apiship_group_export_status_ready'];
+		} else {
+			$data['shipping_apiship_group_export_status_ready'] = $this->config->get('shipping_apiship_group_export_status_ready');
+		} 
+
+		if (isset($this->request->post['shipping_apiship_group_export_status_ok'])) {
+			$data['shipping_apiship_group_export_status_ok'] = $this->request->post['shipping_apiship_group_export_status_ok'];
+		} else {
+			$data['shipping_apiship_group_export_status_ok'] = $this->config->get('shipping_apiship_group_export_status_ok');
+		} 
+
+		if (isset($this->request->post['shipping_apiship_group_export_status_error'])) {
+			$data['shipping_apiship_group_export_status_error'] = $this->request->post['shipping_apiship_group_export_status_error'];
+		} else {
+			$data['shipping_apiship_group_export_status_error'] = $this->config->get('shipping_apiship_group_export_status_error');
+		} 
+
 		if (isset($this->request->post['shipping_apiship_status'])) {
 			$data['shipping_apiship_status'] = $this->request->post['shipping_apiship_status'];
 		} else {
 			$data['shipping_apiship_status'] = $this->config->get('shipping_apiship_status');
 		}
-
+       
 		if (isset($this->request->post['shipping_apiship_icon_show'])) {
 			$data['shipping_apiship_icon_show'] = $this->request->post['shipping_apiship_icon_show'];
 		} else {
 			$data['shipping_apiship_icon_show'] = $this->config->get('shipping_apiship_icon_show');
+		} 
+
+		if (isset($this->request->post['shipping_apiship_hide_link'])) {
+			$data['shipping_apiship_hide_link'] = $this->request->post['shipping_apiship_hide_link'];
+		} else {
+			$data['shipping_apiship_hide_link'] = $this->config->get('shipping_apiship_hide_link');
 		} 
        
 		if (isset($this->request->post['shipping_apiship_prefix'])) {
@@ -468,6 +533,27 @@ class ControllerExtensionShippingApiship extends Controller {
 			$data['shipping_apiship_pickup_type'] = $this->config->get('shipping_apiship_pickup_type');
 		}  
 
+		if (isset($this->request->post['shipping_apiship_use_fix_product_assessed_cost'])) {
+			$data['shipping_apiship_use_fix_product_assessed_cost'] = $this->request->post['shipping_apiship_use_fix_product_assessed_cost'];
+		} else {
+			$data['shipping_apiship_use_fix_product_assessed_cost'] = $this->config->get('shipping_apiship_use_fix_product_assessed_cost');
+		}  
+
+		if (isset($this->request->post['shipping_apiship_fix_product_assessed_cost'])) {
+			$data['shipping_apiship_fix_product_assessed_cost'] = $this->request->post['shipping_apiship_fix_product_assessed_cost'];
+		} else {
+			$data['shipping_apiship_fix_product_assessed_cost'] = $this->config->get('shipping_apiship_fix_product_assessed_cost');
+		}  
+
+		if (isset($this->request->post['shipping_apiship_add_pickup_date'])) {
+			$data['shipping_apiship_add_pickup_date'] = $this->request->post['shipping_apiship_add_pickup_date'];
+		} elseif (null !== $this->config->get('shipping_apiship_add_pickup_date')) {
+			$data['shipping_apiship_add_pickup_date'] = $this->config->get('shipping_apiship_add_pickup_date');
+		} else {
+			$data['shipping_apiship_add_pickup_date'] = 1;
+		}  
+
+
 		if (isset($this->request->post['shipping_apiship_paid_orders'])) {
 			$data['shipping_apiship_paid_orders'] = $this->request->post['shipping_apiship_paid_orders'];
 		} elseif ($this->config->get('shipping_apiship_paid_orders')) {
@@ -482,6 +568,13 @@ class ControllerExtensionShippingApiship extends Controller {
 		} else
 			$data['shipping_apiship_cash_on_delivery_payment_methods'] = [];
 
+		if (isset($this->request->post['shipping_apiship_cron_key'])) {
+			$data['shipping_apiship_cron_key'] = $this->request->post['shipping_apiship_cron_key'];
+		} elseif ( $this->config->get('shipping_apiship_cron_key') ) {
+			$data['shipping_apiship_cron_key'] = $this->config->get('shipping_apiship_cron_key');
+		} else {
+			$data['shipping_apiship_cron_key'] = $this->generateRandomString();
+		} 
 
             // errors
 		if (isset($this->error['warning'])) {
@@ -591,13 +684,43 @@ class ControllerExtensionShippingApiship extends Controller {
 		} else {
 			$data['error_shipping_apiship_parcel_weight'] = '';
 		}
+
+		if (isset($this->error['error_shipping_apiship_export_status'])) {
+			$data['error_shipping_apiship_export_status'] = $this->error['error_shipping_apiship_export_status'];
+		} else {
+			$data['error_shipping_apiship_export_status'] = '';
+		}
+
+		if (isset($this->error['error_shipping_apiship_cancel_export_status'])) {
+			$data['error_shipping_apiship_cancel_export_status'] = $this->error['error_shipping_apiship_cancel_export_status'];
+		} else {
+			$data['error_shipping_apiship_cancel_export_status'] = '';
+		}
+
+		if (isset($this->error['error_shipping_apiship_group_export_status_ready'])) {
+			$data['error_shipping_apiship_group_export_status_ready'] = $this->error['error_shipping_apiship_group_export_status_ready'];
+		} else {
+			$data['error_shipping_apiship_group_export_status_ready'] = '';
+		}
+
+		if (isset($this->error['error_shipping_apiship_group_export_status_ok'])) {
+			$data['error_shipping_apiship_group_export_status_ok'] = $this->error['error_shipping_apiship_group_export_status_ok'];
+		} else {
+			$data['error_shipping_apiship_group_export_status_ok'] = '';
+		}
+
+		if (isset($this->error['error_shipping_apiship_group_export_status_error'])) {
+			$data['error_shipping_apiship_group_export_status_error'] = $this->error['error_shipping_apiship_group_export_status_error'];
+		} else {
+			$data['error_shipping_apiship_group_export_status_error'] = '';
+		}
 		
 		$data['action'] = $this->url->link('extension/shipping/apiship', 'user_token=' . $this->session->data['user_token'], true);
 		
 		$data['cancel'] = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=shipping', true);
 
-		$data['shipping_apiship_cron_url'] = (($this->request->server['HTTPS'])?HTTPS_CATALOG:HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/import_orders";
-
+		$data['shipping_apiship_import_cron_url'] = (($this->request->server['HTTPS'])?HTTPS_CATALOG:HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/import_orders";
+		$data['shipping_apiship_export_cron_url'] = (($this->request->server['HTTPS'])?HTTPS_CATALOG:HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/export_orders";
 
 
 		$data['header'] = $this->load->controller('common/header');
@@ -681,9 +804,34 @@ class ControllerExtensionShippingApiship extends Controller {
 			$this->error['error_shipping_apiship_parcel_weight'] = $this->language->get('error_shipping_apiship_parcel_weight');
 		}
 
+		if (empty($this->request->post['shipping_apiship_export_status'])) {
+			$this->error['error_shipping_apiship_export_status'] = $this->language->get('error_shipping_apiship_export_status');
+		}
+
+		if (empty($this->request->post['shipping_apiship_cancel_export_status'])) {
+			$this->error['error_shipping_apiship_cancel_export_status'] = $this->language->get('error_shipping_apiship_cancel_export_status');
+		}
+
+		if (empty($this->request->post['shipping_apiship_group_export_status_ready'])) {
+			$this->error['error_shipping_apiship_group_export_status_ready'] = $this->language->get('error_shipping_apiship_group_export_status_ready');
+		}
+
+		if (empty($this->request->post['shipping_apiship_group_export_status_ok'])) {
+			$this->error['error_shipping_apiship_group_export_status_ok'] = $this->language->get('error_shipping_apiship_group_export_status_ok');
+		}
+
+		if (empty($this->request->post['shipping_apiship_group_export_status_error'])) {
+			$this->error['error_shipping_apiship_group_export_status_error'] = $this->language->get('error_shipping_apiship_group_export_status_error');
+		}
+
 		if (!$this->error) {
 			return true;
 		} else {
+
+			foreach($this->error as $error) {
+				$this->error['warning'] = $error;
+				break;
+			}
 			return false;
 		}	
 	}
@@ -693,5 +841,13 @@ class ControllerExtensionShippingApiship extends Controller {
 		$this->model_extension_shipping_apiship->install();
 	}
 
-
+	private function generateRandomString($length = 10) {
+	    	$characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+	    	$charactersLength = strlen($characters);
+	    	$randomString = '';
+	    	for ($i = 0; $i < $length; $i++) {
+	        	$randomString .= $characters[rand(0, $charactersLength - 1)];
+	    	}
+	    	return $randomString;
+	}
 }

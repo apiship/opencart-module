@@ -1,12 +1,26 @@
 <?php
 class ControllerShippingApiship extends Controller {
 
-	public function __construct($params) {
-		parent::__construct($params);
+	//public function __construct($params) {
+	//	parent::__construct($params);
 
-		$this->shipping_apiship_mode = $this->config->get('shipping_apiship_mode');
+	//	$this->shipping_apiship_mode = $this->config->get('shipping_apiship_mode');
 
+	//}
+
+	private function check_key() {
+		$this->load->language('extension/shipping/apiship');
+		$results = 	['status' => 'error', 'error' => 'Invalid key'];
+		if (isset($this->request->get['key'])) 
+		{
+			if ($this->request->get['key'] == $this->config->get('shipping_apiship_cron_key'))
+			{
+				$results['status'] = 'ok';				
+			}
+		} 
+		return $results;
 	}
+
 
 	public function set_point() {
 		$this->load->model('shipping/apiship');
@@ -19,22 +33,48 @@ class ControllerShippingApiship extends Controller {
 	}
 
 	public function export_order() {
-		$this->load->model('shipping/apiship');
-		$results = $this->model_shipping_apiship->export_order(); 
+		$results = $this->check_key();
+		if ($results['status'] == 'ok') 
+		{
+			$this->load->model('shipping/apiship');
+			$results = $this->model_shipping_apiship->export_order(); 
+		}
+
 		$this->response->addHeader('Content-Type: application/json');		
 		$this->response->setOutput(json_encode($results)); 
 	}
 
 	public function cancel_order() {
-		$this->load->model('shipping/apiship');
-		$results = $this->model_shipping_apiship->cancel_order(); 
+		$results = $this->check_key();
+		if ($results['status'] == 'ok') 
+		{
+			$this->load->model('shipping/apiship');
+			$results = $this->model_shipping_apiship->cancel_order(); 
+		}
 		$this->response->addHeader('Content-Type: application/json');		
 		$this->response->setOutput(json_encode($results)); 
 	}
 
 	public function import_orders() {
-		$this->load->model('shipping/apiship');
-		$results = $this->model_shipping_apiship->import_orders(); 
+		$results = $this->check_key();
+		if ($results['status'] == 'ok') 
+		{
+			$this->load->model('shipping/apiship');
+			$results = $this->model_shipping_apiship->import_orders(); 
+		}
+
+		$this->response->addHeader('Content-Type: application/json');		
+		$this->response->setOutput(json_encode($results)); 
+	}
+
+	public function export_orders() {
+		$results = $this->check_key();
+		if ($results['status'] == 'ok') 
+		{
+			$this->load->model('shipping/apiship');
+			$results = $this->model_shipping_apiship->export_orders(); 
+		}
+
 		$this->response->addHeader('Content-Type: application/json');		
 		$this->response->setOutput(json_encode($results)); 
 	}
