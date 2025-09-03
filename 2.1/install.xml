@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>1.0 (OpenCart 2.0 - 2.2)</version>
+	<version>1.1 (OpenCart 2.0 - 2.2)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -625,6 +625,39 @@
         </operation>
     </file>
 
+  	<file path="catalog/view/theme/*/template/checkout/simplecheckout_shipping.tpl">
+        <operation error="skip">
+            <search trim="true"><![CDATA[<?php foreach ($shipping_methods as $shipping_method) { ?>]]></search>
+            <add position="after"><![CDATA[
+            <!-- apiship start -->
+            <?php if (!empty($shipping_method['script'])) {  
+	        echo $shipping_method['script'];
+			} ?>
+            <!-- apiship end -->
+            ]]></add>
+        </operation>
+        <operation error="skip">
+            <search trim="true"><![CDATA[<?php echo !empty($quote['title']) ? $quote['title'] : ''; ?><?php echo !empty($quote['text']) ? ' - ' . $quote['text'] : ''; ?>]]></search>
+            <add position="before"><![CDATA[
+            <!-- apiship start -->
+          <?php if(!empty($quote['apiship_image'])) { ?>
+          <img src="<?php echo $quote['apiship_image'];?>" <?php echo (!empty($quote['apiship_image_class'])) ? 'class="' . $quote['apiship_image_class'] . '"' : ''; ?>
+          <?php } ?>
+            <!-- apiship end -->
+            ]]></add>
+        </operation>
+
+        <operation error="skip">
+            <search trim="true"><![CDATA[<?php echo !empty($quote['title']) ? $quote['title'] : ''; ?><?php echo !empty($quote['text']) ? ' - ' . $quote['text'] : ''; ?>]]></search>
+            <add position="after"><![CDATA[
+            <!-- apiship start -->
+          <?php if (!empty($quote['apiship_link'])) { ?>
+              <a class="<?php echo $quote['apiship_link_class']; ?>" href="#" onclick="<?php echo $quote['apiship_link']; ?>"> <?php echo $quote['apiship_link_text']; ?> <div id="apiship_loading_<?php echo $quote['code']; ?>" class="apiship_loading" style="visibility:hidden;"></div></a>
+	      <?php } ?>
+            <!-- apiship end -->
+            ]]></add>            
+        </operation>
+    </file>
 
   	<file path="catalog/controller/checkout/shipping_method.php">
       	<operation>
@@ -644,9 +677,55 @@
 
 			]]></add>
 		</operation>
+      	<operation>
+			<search error="skip" ><![CDATA[$method_data[$result['code']] = array(]]></search>
+			<add position="after"><![CDATA[  
+
+			// apiship start
+            'script'      => (isset($quote['script'])) ? $quote['script'] : '',
+			// apiship end
+
+			]]></add>
+		</operation>
+
 	</file>
 	
-  
+  	<file path="catalog/view/theme/*/template/checkout/shipping_method.tpl">
+      	<operation>
+			<search error="skip" ><![CDATA[<?php foreach ($shipping_methods as $shipping_method) { ?>]]></search>
+			<add position="after"><![CDATA[  
+
+            <!-- apiship start -->
+            <?php if (!empty($shipping_method['script'])) {  
+	        echo $shipping_method['script'];
+			} ?>
+            <!-- apiship end -->
+
+			]]></add>
+		</operation>
+		<operation>
+			<search error="skip" ><![CDATA[<?php echo $quote['title']; ?> - <?php echo $quote['text']; ?>]]></search>
+			<add position="replace"><![CDATA[  
+
+            <!-- apiship start -->
+          <?php if(!empty($quote['apiship_image'])) { ?>
+          <img src="<?php echo $quote['apiship_image'];?>" <?php echo (!empty($quote['apiship_image_class'])) ? 'class="' . $quote['apiship_image_class'] . '"' : ''; ?>
+          <?php } ?>
+            <!-- apiship end -->
+
+          <?php echo $quote['title']; ?> - <?php echo $quote['text']; ?>
+
+            <!-- apiship start -->
+          <?php if (!empty($quote['apiship_link'])) { ?>
+              <a class="<?php echo $quote['apiship_link_class']; ?>" href="#" onclick="<?php echo $quote['apiship_link']; ?>"> <?php echo $quote['apiship_link_text']; ?> <div id="apiship_loading_<?php echo $quote['code']; ?>" class="apiship_loading" style="visibility:hidden;"></div></a>
+	      <?php } ?>
+            <!-- apiship end -->
+
+
+			]]></add>
+		</operation>
+	</file>
+
 	<file path="catalog/model/checkout/order.php">
 		<operation>
 
