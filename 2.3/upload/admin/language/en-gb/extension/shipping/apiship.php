@@ -37,6 +37,8 @@ $_['entry_shipping_apiship_template_desc']                        = '
 <b>%tariff</b> - tariff name<br>
 <b>%time</b> - delivery terms<br>
 <b>%description</b> - tariff description<br>
+<b>%logo</b> - logo<br>
+<b>%link</b> - link<br>
 </div>';
 
 $_['entry_shipping_apiship_custom_code']                          = 'customCode for the rate calculator';
