@@ -217,21 +217,6 @@
 		</div>
           </div>
 
-          <div class="form-group">
-            <label class="col-sm-4 control-label" for="shipping_apiship_hide_link"><?php echo $entry_shipping_apiship_hide_link; ?></label>
-            <div class="col-sm-8">
-			<div class="checkbox">
-				<label>
-		                  <?php if ($shipping_apiship_hide_link) { ?>
-		                  <input type="checkbox" name="shipping_apiship_hide_link" id="shipping_apiship_hide_link" value="1" checked="checked" />
-		                  <?php } else { ?>
-		                  <input type="checkbox" name="shipping_apiship_hide_link" id="shipping_apiship_hide_link" value="1" />
-		                  <?php } ?>
-      		      </label>
-			</div>
-		</div>
-          </div>
-
          <div class="form-group">
             <label class="col-sm-4 control-label" ></label>
             <div class="col-sm-8">

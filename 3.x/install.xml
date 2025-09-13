@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>1.0 (OpenCart 3.x)</version>
+	<version>1.1 (OpenCart 3.x)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -609,11 +609,11 @@
             <add position="after"><![CDATA[
             /* apiship start */
 
-		if ((strpos($shippingMethod, 'apiship')!==false) && (strpos($shippingMethod, 'error')!==false))
-		{
-			$this->load->language('extension/shipping/apiship');
-			return $this->language->get('shipping_apiship_error_select_point');
-		}
+		    if ((strpos($shippingMethod, 'apiship')!==false) && (strpos($shippingMethod, 'error')!==false))
+		    {
+			    $this->load->language('extension/shipping/apiship');
+			    return $this->language->get('shipping_apiship_error_select_point');
+		    }
 
             /* apiship end */
 
@@ -621,7 +621,64 @@
         </operation>
     </file>
 
+  	<file path="catalog/view/theme/*/template/checkout/simplecheckout_shipping.twig">
+        <operation error="skip">
+            <search trim="true"><![CDATA[{% for shipping_method in shipping_methods %}]]></search>
+            <add position="after"><![CDATA[
+            <!-- apiship start -->
+            {% if shipping_method['script'] is not empty %}
+	        {{ shipping_method['script'] }}
+			{% endif %}
+            <!-- apiship end -->
+            ]]></add>
+        </operation>
+        <operation error="skip">
+            <search trim="true"><![CDATA[{{ quote['title'] }}{{ quote['text'] is not empty ? ' - ' ~ quote['text'] : '' }}]]></search>
+            <add position="before"><![CDATA[
+            <!-- apiship start -->
+          {% if quote.apiship_image is not empty %}
+          <img src="{{ quote.apiship_image }}" {{ quote.apiship_image_class is not empty ? 'class="' ~ quote.apiship_image_class ~ '"' : '' }}>
+          {% endif %}
+            <!-- apiship end -->
+            ]]></add>
+        </operation>
 
+        <operation error="skip">
+            <search trim="true"><![CDATA[{{ quote['title'] }}{{ quote['text'] is not empty ? ' - ' ~ quote['text'] : '' }}]]></search>
+            <add position="after"><![CDATA[
+            <!-- apiship start -->
+          {% if quote.apiship_link is not empty %}
+          <a class="{{ quote.apiship_link_class }}" href="#" onclick="{{ quote.apiship_link }}">{{ quote.apiship_link_text }} <div id='apiship_loading_{{quote['code']}}' class='apiship_loading' style='visibility:hidden;'></div> </a>
+	      {% endif %}
+            <!-- apiship end -->
+            ]]></add>            
+        </operation>
+        
+        <operation error="skip">
+            <search trim="true"><![CDATA[{{ quote['title'] is not empty ? quote['title'] : '' }}{{ quote['text'] is not empty ? ' - ' ~ quote['text'] : '' }}]]></search>
+            <add position="after"><![CDATA[
+            <!-- apiship start -->
+          {% if quote.apiship_link is not empty %}
+          <a class="{{ quote.apiship_link_class }}" href="#" onclick="{{ quote.apiship_link }}">{{ quote.apiship_link_text }} <div id='apiship_loading_{{quote['code']}}' class='apiship_loading' style='visibility:hidden;'></div> </a>
+	      {% endif %}
+            <!-- apiship end -->
+            ]]></add>            
+        </operation>
+        
+        <operation error="skip">
+            <search trim="true"><![CDATA[{{ quote['title'] is not empty ? quote['title'] : '' }}{{ quote['text'] is not empty ? ' - ' ~ quote['text'] : '' }}]]></search>
+            <add position="before"><![CDATA[
+            <!-- apiship start -->
+          {% if quote.apiship_image is not empty %}
+          <img src="{{ quote.apiship_image }}" {{ quote.apiship_image_class is not empty ? 'class="' ~ quote.apiship_image_class ~ '"' : '' }}>
+          {% endif %}
+            <!-- apiship end -->
+            ]]></add>
+        </operation>
+                  
+
+    </file>
+    
   	<file path="catalog/controller/checkout/shipping_method.php">
       	<operation>
 			<search error="skip" ><![CDATA[$this->response->addHeader('Content-Type: application/json');]]></search>
@@ -637,6 +694,54 @@
                     $json['error']['warning'] = $this->language->get('shipping_apiship_error_select_point');
                 }
 			// apiship end
+
+			]]></add>
+		</operation>
+      	<operation>
+			<search error="skip" ><![CDATA[$method_data[$result['code']] = array(]]></search>
+			<add position="after"><![CDATA[  
+
+			// apiship start
+            'script'      => (isset($quote['script'])) ? $quote['script'] : '',
+			// apiship end
+
+			]]></add>
+		</operation>
+
+	</file>
+
+  	<file path="catalog/view/theme/*/template/checkout/shipping_method.twig">
+      	<operation>
+			<search error="skip" ><![CDATA[{% for shipping_method in shipping_methods %}]]></search>
+			<add position="after"><![CDATA[  
+
+            <!-- apiship start -->
+            {% if shipping_method.script is not empty %}
+	        {{ shipping_method.script }}
+			{% endif %}
+            <!-- apiship end -->
+
+			]]></add>
+		</operation>
+		<operation>
+			<search error="skip" ><![CDATA[{{ quote.title }} - {{ quote.text }}</label>]]></search>
+			<add position="replace"><![CDATA[  
+
+            <!-- apiship start -->
+          {% if quote.apiship_image is not empty %}
+          <img src="{{ quote.apiship_image }}" {{ quote.apiship_image_class is not empty ? 'class="' ~ quote.apiship_image_class ~ '"' : '' }}>
+          {% endif %}
+            <!-- apiship end -->
+
+          {{ quote.title }} - {{ quote.text }}
+
+            <!-- apiship start -->
+          {% if quote.apiship_link is not empty %}
+          <a class="{{ quote.apiship_link_class }}" href="#" onclick="{{ quote.apiship_link }}">{{ quote.apiship_link_text }} <div id='apiship_loading_{{quote['code']}}' class='apiship_loading' style='visibility:hidden;'></div> </a>
+	      {% endif %}
+            <!-- apiship end -->
+
+            </label>
 
 			]]></add>
 		</operation>
