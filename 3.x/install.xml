@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>1.1 (OpenCart 3.x)</version>
+	<version>1.2 (OpenCart 3.x)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -22,6 +22,9 @@
             $data['entry_shipping_apiship_paid'] = $this->language->get('entry_shipping_apiship_paid');
             $data['entry_shipping_apiship_place_dimensions'] = $this->language->get('entry_shipping_apiship_place_dimensions');
             $data['entry_shipping_apiship_order_status'] = $this->language->get('entry_shipping_apiship_order_status');
+            $data['entry_shipping_apiship_tracking_url'] = $this->language->get('entry_shipping_apiship_tracking_url');
+            $data['entry_shipping_apiship_tracking_url_not_found'] = $this->language->get('entry_shipping_apiship_tracking_url_not_found');
+            $data['entry_shipping_apiship_order_status_not_export'] = $this->language->get('entry_shipping_apiship_order_status_not_export');
 
             $data['shipping_apiship_get_order_params_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_order_params&id=".$order_id;
 
@@ -228,9 +231,15 @@
                 </td>
             </tr>
 
-		<tr>
+		    <tr>
                 <td><label>{{ entry_shipping_apiship_order_status }}</label><br>
-                <div id='shipping_apiship_order_status'></div>
+                <div id='shipping_apiship_order_status'>{{ entry_shipping_apiship_order_status_not_export }}</div>
+                </td>
+            </tr>
+            
+            <tr>
+                <td><label>{{ entry_shipping_apiship_tracking_url  }}</label><br>
+                <div id='shipping_apiship_tracking_url'>{{ entry_shipping_apiship_tracking_url_not_found }}</div>
                 </td>
             </tr>
 
@@ -363,8 +372,25 @@
 	                        $('#shipping_apiship_place_weight').val(json['place_weight']);
 	                       
                             $('#shipping_apiship_pickup_type').val(json['pickup_type']);
-	                        $('#shipping_apiship_order_status').html(json['order_status']);
-	
+	                        if (json['order_status'].length > 0) {
+	                            $('#shipping_apiship_order_status').html(json['order_status']);
+	                        } else {
+	                            $('#shipping_apiship_order_status').html('{{ entry_shipping_apiship_order_status_not_export }}');
+	                        }
+	                            
+	                        if (json['tracking_url'].length > 0) {
+	                            const link = $('<a>', {
+                                    href: json['tracking_url'],
+                                    text: json['tracking_url'],
+                                    target: '_blank',
+                                    rel: 'noopener noreferrer'
+                                });
+
+                                $('#shipping_apiship_tracking_url').empty().append(link);
+	                        } else {
+	                            $('#shipping_apiship_tracking_url').html('{{ entry_shipping_apiship_tracking_url_not_found }}');
+	                        }
+
 	                        $('#shipping_apiship_comment').val(json['comment']);
 	
 	                        $('#shipping_apiship_shipping_date').val(json['pickup_date']);

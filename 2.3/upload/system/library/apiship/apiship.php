@@ -534,6 +534,10 @@ class Apiship {
 			$total_cost = $total_cost + $cost*$item['quantity'];
 			
 			$weight = $this->format_weight($item['weight']);
+			$width = $this->format_dimension($item['width']);
+			$length = $this->format_dimension($item['length']);
+			$height = $this->format_dimension($item['height']);
+
 			$total_weight = $total_weight + $weight*$item['quantity'];
 			$total_count = $total_count + $item['quantity'];
 
@@ -542,6 +546,9 @@ class Apiship {
 				'description' => $item['description'],
 				'quantity' => $item['quantity'],
 				'weight' => $weight,
+				'width' => $width,
+				'length' => $length,
+				'height' => $height,
 				'cost' => $cost,
 				'assessedCost' => $item['assessed_cost']
 			];
@@ -577,6 +584,9 @@ class Apiship {
 					'description' => $params['places'][0]['items'][0]['description'],
 					'quantity' => 1,
 					'weight' => $params['places'][0]['items'][0]['weight'],
+					'width' => $params['places'][0]['items'][0]['width'],
+					'length' => $params['places'][0]['items'][0]['length'],
+					'height' => $params['places'][0]['items'][0]['height'],
 					'cost' => $this->format_cost($params['places'][0]['items'][0]['cost'] - $cost_dif),
 					'assessedCost' => $params['places'][0]['items'][0]['assessedCost'] - $cost_dif
 				];
@@ -808,10 +818,10 @@ class Apiship {
 
 			$product_info = $this->model_catalog_product->getProduct($product['product_id']);
 
-			$length = (isset($product['length'])) ? ($this->length->convert($product['length'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_length']); 
-			$width = (isset($product['width'])) ? ($this->length->convert($product['width'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_width']); 
-			$height = (isset($product['height'])) ? ($this->length->convert($product['height'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_height']); 
-			$weight = (isset($product['weight'])) ? ($this->weight->convert($product['weight'] / $product['quantity'], $product['weight_class_id'], $this->apiship_params['shipping_apiship_gr_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_weight']);
+			$length = (isset($product['length']) && (float)$product['length'] != 0) ? ($this->length->convert($product['length'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_length']); 
+			$width = (isset($product['width']) && (float)$product['width'] != 0) ? ($this->length->convert($product['width'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_width']); 
+			$height = (isset($product['height']) && (float)$product['height'] != 0) ? ($this->length->convert($product['height'], $product['length_class_id'], $this->apiship_params['shipping_apiship_cm_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_height']); 
+			$weight = (isset($product['weight']) && (float)$product['weight'] != 0) ? ($this->weight->convert($product['weight'] / $product['quantity'], $product['weight_class_id'], $this->apiship_params['shipping_apiship_gr_select'])) : $this->format_dimension($this->apiship_params['shipping_apiship_parcel_weight']);
 
 			$cost = $this->format_cost($this->currency->convert($product['price'], $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency'))); 
 			
@@ -875,7 +885,7 @@ class Apiship {
 			}
 		}
 		
-		if ($total_sum != 0) {
+		if ($total_cost != 0) {
 		   $delta_koef = $total_sum / $total_cost;
 		} else {
 		   $delta_koef = 0;

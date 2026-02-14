@@ -101,6 +101,9 @@ $_['entry_shipping_apiship_shipping_date']                        = 'Shipping da
 $_['entry_shipping_apiship_place_dimensions']                     = 'Place dimensions (cm)';
 $_['entry_shipping_apiship_place_weight']                         = 'Place weight (gr)';
 $_['entry_shipping_apiship_order_status']                         = 'Order status';
+$_['entry_shipping_apiship_tracking_url']           			= 'Tracking link';
+$_['entry_shipping_apiship_tracking_url_not_found']           	= 'Not found';
+$_['entry_shipping_apiship_order_status_not_export']           	= 'The order has not yet been uploaded to Apiship';
 $_['entry_shipping_apiship_delivery_cost_original']               = 'Shipping cost without rules';
 
 $_['entry_shipping_apiship_comment']                              = 'Export comment';

@@ -101,6 +101,9 @@ $_['entry_shipping_apiship_shipping_date']                        = 'Дата о
 $_['entry_shipping_apiship_place_dimensions']                     = 'Габариты места (см)';
 $_['entry_shipping_apiship_place_weight']                         = 'Вес места (гр)';
 $_['entry_shipping_apiship_order_status']                         = 'Статус заказа';
+$_['entry_shipping_apiship_tracking_url']           			= 'Cсылка для отслеживания';
+$_['entry_shipping_apiship_tracking_url_not_found']           	= 'Не найдена';
+$_['entry_shipping_apiship_order_status_not_export']           	= 'Заказ еще не выгружен в Apiship';
 $_['entry_shipping_apiship_delivery_cost_original']               = 'Стоимость доставки без учета правил';
 
 $_['entry_shipping_apiship_comment']                              = 'Комментарий экспорта';

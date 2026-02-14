@@ -780,7 +780,8 @@ $apiship_script = <<<EOT
 							},
 							success: function(data_points) {
 								if (data_points['error']=='no_error') {
-									apiship.open(apiship_function, data_points['points'], code)	
+									const apiship = new ApishipMap;
+									apiship.open(data_points['points'], apiship_function, code);
 									return
 								}
 
@@ -986,7 +987,8 @@ EOT;
 				'type' => $point['type'],
 				'phone' => $point['phone'],
 				'workTime' => $point['timetable'],
-
+				'paymentCash' => $point['paymentCash'],
+                                'paymentCard' => $point['paymentCard']
 
 			];
 			
@@ -1022,6 +1024,7 @@ EOT;
 							'text' => $this->currency->format($this->tax->calculate($this->currency->convert($cost, $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']),
 							'cost' => $this->currency->format($this->tax->calculate($this->currency->convert($cost, $this->apiship_params['shipping_apiship_rub_select'], $this->config->get('config_currency')), $this->apiship_params['shipping_apiship_tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency'], '', false),						
 	
+							/*
 							'title' => $this->fill_template([
 								'template' => $this->apiship_params['shipping_apiship_title_point_template'],
 								'type' => 'point',
@@ -1034,11 +1037,14 @@ EOT;
 								'daysMax' => $tariff['daysMax'], 
 								'tariffDescription' => $tariff['tariffDescription']
 							]),
+							*/
 				
 							'type' => $apiship_point_types[$point['type']-1],
 							'provider' => $apiship_providers[$provider['providerKey']],
 							'provider_key' => $provider['providerKey'],
-	
+							'address' => $point['address'],
+                                                        'paymentCash' => $point['paymentCash'],
+							'paymentCard' => $point['paymentCard']
 							//'phones'	=> $point['phone'],
 							//'workTime'	=> $point['workTime'],
 							
@@ -1806,6 +1812,7 @@ EOT;
 
 		$apiship_order_status = '';
 		$apiship_comment = $order_info['comment'];
+		$apiship_tracking_url = '';
 
 		$add_pickup_date = 1;
 		if ($this->apiship_params['shipping_apiship_add_pickup_date'] === '0') $add_pickup_date = 0;
@@ -1819,9 +1826,12 @@ EOT;
 	
 				if (isset($order_status['status']['name'])) $apiship_order_status = $order_status['status']['name'];
 			
+				if (isset($order_status['orderInfo']['trackingUrl'])) {
+					$apiship_tracking_url = $order_status['orderInfo']['trackingUrl'];
+				}
+
 				if (isset($order_status['orderInfo']['orderId'])) {
 					$order_info = $this->apiship->apiship_order_info($order_status['orderInfo']['orderId']);
-	
 					if (isset($order_info['body']['order']['pickupType'])) $apiship_pickup_type = $order_info['body']['order']['pickupType'];
 					if (isset($order_info['body']['order']['pickupDate'])) $pickup_date = date("Y-m-d", strtotime($order_info['body']['order']['pickupDate']));
 					
@@ -1835,6 +1845,7 @@ EOT;
 			}
 		}
 
+
 		return [
 			'export' => $apiship_export,
 			'paid' => $apiship_paid,//!$cash_on_delivery, 
@@ -1845,7 +1856,8 @@ EOT;
 			'place_weight' => $apiship_place_weight,
 			'order_status' => $apiship_order_status,
 			'comment' => $apiship_comment,
-			'pickup_date' => $pickup_date
+			'pickup_date' => $pickup_date,
+			'tracking_url' => $apiship_tracking_url
 		];
 	}
 
