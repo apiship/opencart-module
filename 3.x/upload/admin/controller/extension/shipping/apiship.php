@@ -49,6 +49,11 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['shipping_apiship_version'] = '1.2 (OpenCart 3.x)';
 		$data['shipping_apiship_version_js_mod'] = rand();
 
+		$data['text_apiship_lk'] = $this->language->get('text_apiship_lk');
+		$data['text_apiship_lk_url'] = $this->language->get('text_apiship_lk_url');
+		$data['text_apiship_documentation'] = $this->language->get('text_apiship_documentation');
+		$data['text_apiship_documentation_url'] = $this->language->get('text_apiship_documentation_url');
+
 		$data['button_save'] = $this->language->get('button_save');
 		$data['button_cancel'] = $this->language->get('button_cancel');
 
