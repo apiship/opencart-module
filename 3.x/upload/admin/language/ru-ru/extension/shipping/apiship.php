@@ -2,6 +2,10 @@
 // Heading
 $_['heading_title']                                               = 'Расчет доставки ApiShip';
 $_['text_apiship']                                                = 'ApiShip';
+$_['text_apiship_lk']                                             = 'Личный кабинет';
+$_['text_apiship_lk_url']                                         = '//a.apiship.ru';
+$_['text_apiship_documentation']                                  = 'Документация';
+$_['text_apiship_documentation_url']                              = '//docs.apiship.ru/docs/integrations-marketplaces/opencart/';
 
 // Text
 $_['text_extension']                                              = 'Расширения';
