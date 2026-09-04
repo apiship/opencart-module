@@ -1,0 +1,56 @@
+# Стенд для пакета 4.x: OpenCart 4.1.0.4 + PHP 8.3 + MariaDB + mock API ApiShip
+# Запуск: make oc4-up (или docker compose -f dev/oc4/docker-compose.yml up -d --build)
+# Магазин: http://localhost:8080/  Админка: http://localhost:8080/admin/ (admin / admin1234)
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: opencart
+      MARIADB_USER: opencart
+      MARIADB_PASSWORD: opencart
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      args:
+        OC_VERSION: ${OC_VERSION:-4.1.0.4}
+    ports:
+      - "8080:80"
+    environment:
+      OC_HTTP_SERVER: http://localhost:8080/
+      OC_DB_HOST: db
+      OC_DB_NAME: opencart
+      OC_DB_USER: opencart
+      OC_DB_PASS: opencart
+      OC_ADMIN_USER: admin
+      OC_ADMIN_PASS: admin1234
+      OC_ADMIN_EMAIL: admin@example.com
+      # Модуль ходит в mock API вместо api.apiship.ru (константа APISHIP_API_URL в config.php)
+      APISHIP_API_URL: http://mock-api:8085/v1/
+    volumes:
+      - oc-data:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+      mock-api:
+        condition: service_started
+
+  mock-api:
+    image: python:3-alpine
+    command: ["python3", "/app/server.py", "8085"]
+    volumes:
+      - ./mock-api:/app:ro
+    ports:
+      - "8085:8085"
+
+volumes:
+  db-data:
+  oc-data:

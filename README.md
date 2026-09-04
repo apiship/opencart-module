@@ -2,6 +2,7 @@
 
 # Официальный модуль [ApiShip](https://apiship.ru) для OpenCart
 
+[![OpenCart v4.1](https://img.shields.io/badge/OpenCart-v4.1-green.svg)](https://www.opencart.com/)
 [![OpenCart v3.x](https://img.shields.io/badge/OpenCart-v3.x-green.svg)](https://www.opencart.com/)
 [![OpenCart v2.3](https://img.shields.io/badge/OpenCart-v2.3-green.svg)](https://www.opencart.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -17,6 +18,7 @@
 Один модуль для **40+ служб доставки** вместо индивидуального модуля для каждого. Это существенно ускоряет работу сайта, разгружает сервер, исключает конфликт разных модулей между собой.
 
 # Совместимость
+* OpenCart 4.1.x — пакет `4.x` (архив `apiship.ocmod.zip`, штатный чекаут OpenCart 4)
 * OpenCart 3.x
 * OpenCart 2.3
 * OpenCart 2.1
@@ -26,6 +28,16 @@
 * Шаблон Smartstore
 * Шаблон UltraStore
 * Шаблон UniShop
+
+Моды для сторонних шаблонов (Simple, Простор, ShowCase, Smartstore, UltraStore, UniShop) относятся к пакетам 2.x/3.x.
+
+# Установка на OpenCart 4.1.x
+
+1. `make build-oc4` (или скачать релиз) — файл `apiship.ocmod.zip`. Имя файла менять нельзя: установщик OpenCart 4 берёт код расширения из имени архива.
+2. Админка → Расширения → Установщик → загрузить архив → «Установить».
+3. Расширения → Расширения → Доставка → ApiShip → «Установить» → «Редактировать».
+
+Стенд для разработки и приёмки под OpenCart 4.1 — `dev/oc4/README.md` (`make oc4-up`).
 
 # Список служб доставки
 

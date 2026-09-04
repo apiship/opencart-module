@@ -1,0 +1,279 @@
+<div id="apiship-order" class="row">
+  <div class="col-md-4">
+    <div class="mb-3">
+      <label class="form-label" for="shipping_apiship_pickup_type">{{ entry_shipping_apiship_pickup_type }}</label>
+      <select id="shipping_apiship_pickup_type" class="form-select">
+        <option value="1">{{ entry_shipping_apiship_pickup_type1 }}</option>
+        <option value="2">{{ entry_shipping_apiship_pickup_type2 }}</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">{{ entry_shipping_apiship_place_dimensions }}</label>
+      <div class="input-group">
+        <input type="number" id="shipping_apiship_place_length" value="" class="form-control"/>
+        <input type="number" id="shipping_apiship_place_width" value="" class="form-control"/>
+        <input type="number" id="shipping_apiship_place_height" value="" class="form-control"/>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="shipping_apiship_place_weight">{{ entry_shipping_apiship_place_weight }}</label>
+      <input type="number" id="shipping_apiship_place_weight" value="" class="form-control"/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="shipping_apiship_shipping_date">{{ entry_shipping_apiship_shipping_date }}</label>
+      <input type="date" id="shipping_apiship_shipping_date" value="" class="form-control"/>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="mb-3">
+      <label class="form-label" for="shipping_apiship_comment">{{ entry_shipping_apiship_comment }}</label>
+      <textarea rows="4" id="shipping_apiship_comment" class="form-control"></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">{{ entry_shipping_apiship_order_status }}</label>
+      <div id="shipping_apiship_order_status" class="form-control-plaintext">{{ entry_shipping_apiship_order_status_not_export }}</div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">{{ entry_shipping_apiship_tracking_url }}</label>
+      <div id="shipping_apiship_tracking_url" class="form-control-plaintext">{{ entry_shipping_apiship_tracking_url_not_found }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">{{ entry_shipping_apiship_control }}</label>
+    <div class="d-grid gap-2" id="shipping_apiship_control_span" style="display:none;">
+      <button type="button" id="shipping_apiship_export" class="btn btn-success text-start" style="display:none;"><i class="fa-solid fa-truck"></i> {{ entry_shipping_apiship_export_title }}</button>
+      <button type="button" id="shipping_apiship_export_cancel" class="btn btn-danger text-start" style="display:none;"><i class="fa-solid fa-truck"></i> {{ entry_shipping_apiship_cancel_export_title }}</button>
+      <button type="button" id="shipping_apiship_label" class="btn btn-info text-start" style="display:none;"><i class="fa-solid fa-tags"></i> {{ entry_shipping_apiship_label_title }}</button>
+      <button type="button" id="shipping_apiship_waybill" class="btn btn-info text-start" style="display:none;"><i class="fa-solid fa-file-lines"></i> {{ entry_shipping_apiship_waybill_title }}</button>
+    </div>
+  </div>
+</div>
+<script type="text/javascript"><!--
+(function() {
+    var apiship_is_export = false;
+
+    function apiship_alert(type, text) {
+        $('#alert').prepend('<div class="alert alert-' + type + ' alert-dismissible"><i class="fa-solid fa-circle-' + (type == 'danger' ? 'exclamation' : 'check') + '"></i> ' + text + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+    }
+
+    function apiship_files(json, key, title) {
+        var html = [];
+
+        for (var index = 0; index < (json[key] || []).length; ++index) {
+            html.push('<a target="_blank" href="' + json[key][index]['url'] + '">' + json[key][index]['name'] + '</a>');
+        }
+
+        if (json['error']) {
+            apiship_alert('danger', json['error']);
+        }
+
+        if (html.length) {
+            apiship_alert('success', title + ': ' + html.join(', '));
+        }
+    }
+
+    function init_apiship_export_button() {
+        $.ajax({
+            url: '{{ get_order_params_url }}',
+            dataType: 'json',
+            success: function(json) {
+                if (json['error']) {
+                    apiship_alert('danger', json['error']);
+
+                    return;
+                }
+
+                $('#shipping_apiship_place_length').val(json['place_length']);
+                $('#shipping_apiship_place_width').val(json['place_width']);
+                $('#shipping_apiship_place_height').val(json['place_height']);
+                $('#shipping_apiship_place_weight').val(json['place_weight']);
+                $('#shipping_apiship_pickup_type').val(json['pickup_type']);
+
+                if (json['order_status'] && json['order_status'].length > 0) {
+                    $('#shipping_apiship_order_status').text(json['order_status']);
+                } else {
+                    $('#shipping_apiship_order_status').text('{{ entry_shipping_apiship_order_status_not_export|escape('js') }}');
+                }
+
+                if (json['tracking_url'] && json['tracking_url'].length > 0) {
+                    var link = $('<a>', {
+                        href: json['tracking_url'],
+                        text: json['tracking_url'],
+                        target: '_blank',
+                        rel: 'noopener noreferrer'
+                    });
+
+                    $('#shipping_apiship_tracking_url').empty().append(link);
+                } else {
+                    $('#shipping_apiship_tracking_url').text('{{ entry_shipping_apiship_tracking_url_not_found|escape('js') }}');
+                }
+
+                $('#shipping_apiship_comment').val(json['comment']);
+                $('#shipping_apiship_shipping_date').val(json['pickup_date']);
+
+                $('#shipping_apiship_control_span').show();
+
+                apiship_is_export = (json['export'] == true);
+
+                if (apiship_is_export) {
+                    $('#shipping_apiship_export').hide();
+                    $('#shipping_apiship_export_cancel').show();
+
+                    if (json['paid']) {
+                        $('#shipping_apiship_export_cancel').html('<i class="fa-solid fa-truck"></i> {{ entry_shipping_apiship_cancel_export_title|escape('js') }}{{ entry_shipping_apiship_paid|escape('js') }}');
+                    }
+
+                    $('#shipping_apiship_label').show();
+                    $('#shipping_apiship_waybill').show();
+                } else {
+                    $('#shipping_apiship_export').show();
+                    $('#shipping_apiship_export_cancel').hide();
+
+                    if (json['paid']) {
+                        $('#shipping_apiship_export').html('<i class="fa-solid fa-truck"></i> {{ entry_shipping_apiship_export_title|escape('js') }}{{ entry_shipping_apiship_paid|escape('js') }}');
+                    }
+
+                    $('#shipping_apiship_label').hide();
+                    $('#shipping_apiship_waybill').hide();
+                }
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                console.log(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+            }
+        });
+    }
+
+    $('#shipping_apiship_export').on('click', function() {
+        var element = this;
+
+        $.ajax({
+            url: '{{ export_url }}',
+            dataType: 'json',
+            data: {
+                shipping_apiship_pickup_type: $('#shipping_apiship_pickup_type').val(),
+                shipping_apiship_place_length: $('#shipping_apiship_place_length').val(),
+                shipping_apiship_place_width: $('#shipping_apiship_place_width').val(),
+                shipping_apiship_place_height: $('#shipping_apiship_place_height').val(),
+                shipping_apiship_place_weight: $('#shipping_apiship_place_weight').val(),
+                shipping_apiship_comment: $('#shipping_apiship_comment').val(),
+                shipping_apiship_pickup_date: $('#shipping_apiship_shipping_date').val()
+            },
+            beforeSend: function() {
+                $(element).button('loading');
+            },
+            complete: function() {
+                $(element).button('reset');
+            },
+            success: function(json) {
+                $('.alert-dismissible').remove();
+
+                if (json['error']) {
+                    apiship_alert('danger', json['error']);
+                }
+
+                if (json['success']) {
+                    apiship_alert('success', json['success']);
+                }
+
+                $('#history').load('{{ history_url }}');
+
+                init_apiship_export_button();
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                console.log(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+            }
+        });
+    });
+
+    $('#shipping_apiship_export_cancel').on('click', function() {
+        var element = this;
+
+        if (!confirm('{{ entry_shipping_apiship_cancel_confirm|escape('js') }}')) {
+            return;
+        }
+
+        $.ajax({
+            url: '{{ export_cancel_url }}',
+            dataType: 'json',
+            beforeSend: function() {
+                $(element).button('loading');
+            },
+            complete: function() {
+                $(element).button('reset');
+            },
+            success: function(json) {
+                $('.alert-dismissible').remove();
+
+                if (json['error']) {
+                    apiship_alert('danger', json['error']);
+                }
+
+                if (json['success']) {
+                    apiship_alert('success', json['success']);
+                }
+
+                $('#history').load('{{ history_url }}');
+
+                init_apiship_export_button();
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                console.log(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+            }
+        });
+    });
+
+    $('#shipping_apiship_label').on('click', function() {
+        var element = this;
+
+        $.ajax({
+            url: '{{ label_url }}',
+            dataType: 'json',
+            type: 'post',
+            data: {'id': '{{ order_id }}'},
+            beforeSend: function() {
+                $(element).button('loading');
+            },
+            complete: function() {
+                $(element).button('reset');
+            },
+            success: function(json) {
+                $('.alert-dismissible').remove();
+
+                apiship_files(json, 'labels', '{{ entry_shipping_apiship_label_title|escape('js') }}');
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                console.log(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+            }
+        });
+    });
+
+    $('#shipping_apiship_waybill').on('click', function() {
+        var element = this;
+
+        $.ajax({
+            url: '{{ waybill_url }}',
+            dataType: 'json',
+            type: 'post',
+            data: {'id': '{{ order_id }}'},
+            beforeSend: function() {
+                $(element).button('loading');
+            },
+            complete: function() {
+                $(element).button('reset');
+            },
+            success: function(json) {
+                $('.alert-dismissible').remove();
+
+                apiship_files(json, 'waybills', '{{ entry_shipping_apiship_waybill_title|escape('js') }}');
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                console.log(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+            }
+        });
+    });
+
+    $(document).ready(function() {
+        init_apiship_export_button();
+    });
+})();
+//--></script>
