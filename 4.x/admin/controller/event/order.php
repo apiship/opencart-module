@@ -20,7 +20,8 @@ class Order extends \Opencart\System\Engine\Controller {
 	 * @return void
 	 */
 	public function info(string &$route, array &$data, string &$code, string &$output): void {
-		if (!$this->config->get('shipping_apiship_status')) {
+		// Вкладка содержит cron-ключ, которым выполняются экспорт и отмена: только для пользователей с правом изменять заказы
+		if (!$this->config->get('shipping_apiship_status') || !$this->user->hasPermission('modify', 'sale/order')) {
 			return;
 		}
 
@@ -79,7 +80,7 @@ class Order extends \Opencart\System\Engine\Controller {
 	 * @return void
 	 */
 	public function infoAfter(string &$route, array &$data, string &$output): void {
-		if (!$this->config->get('shipping_apiship_status')) {
+		if (!$this->config->get('shipping_apiship_status') || !$this->user->hasPermission('modify', 'sale/order')) {
 			return;
 		}
 
@@ -100,7 +101,8 @@ class Order extends \Opencart\System\Engine\Controller {
 	 * @return void
 	 */
 	public function list(string &$route, array &$data, string &$output): void {
-		if (!$this->config->get('shipping_apiship_status')) {
+		// Кнопки ярлыков и актов содержат cron-ключ: только для пользователей с правом изменять заказы
+		if (!$this->config->get('shipping_apiship_status') || !$this->user->hasPermission('modify', 'sale/order')) {
 			return;
 		}
 

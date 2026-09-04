@@ -395,8 +395,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 		$ext_address = isset($address['address_1']) ? trim((string)$address['address_1']) : '';
 		$country = isset($address['iso_code_2']) ? trim((string)$address['iso_code_2']) : '';
 
-		$payment_method_code = $this->session->data['payment_method']['code'] ?? '';
-		$cash_on_delivery = in_array($payment_method_code, $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
+		$cash_on_delivery = $this->is_cash_on_delivery();
 
 		$apiship_calculator_data = $this->apiship->apiship_calculator($country, $region, $city, $postcode, $ext_address, [], $this->cart->getProducts(), $this->getCartTotal(), $cash_on_delivery);
 
@@ -422,14 +421,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 				foreach ($tariffs as $tariff) {
 					foreach ($tariff['pointIds'] as $point_id) {
-						foreach ([1, 2] as $pickup_type) {
-							if (!in_array($pickup_type, $tariff['pickupTypes'])) {
-								continue;
-							}
-
-							if (!in_array($pickup_type, $this->get_pickup_types($provider['providerKey']))) {
-								continue;
-							}
+						foreach ($this->tariff_pickup_types($tariff, $provider['providerKey']) as $pickup_type) {
 
 							if (!isset($tariff['tariffDescription'])) {
 								$tariff['tariffDescription'] = '';
@@ -570,14 +562,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 			$tariffs = $provider['tariffs'] ?? [];
 
 			foreach ($tariffs as $tariff) {
-				foreach ([1, 2] as $pickup_type) {
-					if (!in_array($pickup_type, $tariff['pickupTypes'])) {
-						continue;
-					}
-
-					if (!in_array($pickup_type, $this->get_pickup_types($provider['providerKey']))) {
-						continue;
-					}
+				foreach ($this->tariff_pickup_types($tariff, $provider['providerKey']) as $pickup_type) {
 
 					if (!isset($tariff['tariffDescription'])) {
 						$tariff['tariffDescription'] = '';
@@ -776,8 +761,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 			4 => $this->language->get('shipping_apiship_map_type_4')
 		];
 
-		$payment_method_code = $this->session->data['payment_method']['code'] ?? '';
-		$cash_on_delivery = in_array($payment_method_code, $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
+		$cash_on_delivery = $this->is_cash_on_delivery();
 
 		$apiship_calculator_data = $this->apiship->apiship_calculator($country, $region, $city, $postcode, $ext_address, $provider, $products, $this->getCartTotal(), $cash_on_delivery);
 
@@ -791,14 +775,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 			$tariffs = $provider['tariffs'] ?? [];
 
 			foreach ($tariffs as $tariff) {
-				foreach ([1, 2] as $pickup_type) {
-					if (!in_array($pickup_type, $tariff['pickupTypes'])) {
-						continue;
-					}
-
-					if (!in_array($pickup_type, $this->get_pickup_types($provider['providerKey']))) {
-						continue;
-					}
+				foreach ($this->tariff_pickup_types($tariff, $provider['providerKey']) as $pickup_type) {
 
 					foreach ($tariff['pointIds'] as $point_id) {
 						if (!in_array($point_id, $points_ids)) {
@@ -810,6 +787,11 @@ class Apiship extends \Opencart\System\Engine\Model {
 		}
 
 		$points = $this->apiship->apiship_points($points_ids);
+
+		// Калькулятор вернул ПВЗ, а справочник точек — нет (ошибка или таймаут lists/points): это ошибка, а не пустая карта
+		if ($points_ids && !$points) {
+			return ['error' => $this->language->get('shipping_apiship_error_no_points'), 'points' => []];
+		}
 
 		foreach ($points as $point) {
 			$description = str_replace(["\r\n", "\r", "\n"], '', strip_tags((string)($point['description'] ?? '')));
@@ -839,14 +821,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 				}
 
 				foreach ($tariff['pointIds'] as $point_id) {
-					foreach ([1, 2] as $pickup_type) {
-						if (!in_array($pickup_type, $tariff['pickupTypes'])) {
-							continue;
-						}
-
-						if (!in_array($pickup_type, $this->get_pickup_types($provider['providerKey']))) {
-							continue;
-						}
+					foreach ($this->tariff_pickup_types($tariff, $provider['providerKey']) as $pickup_type) {
 
 						$code = 'point_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . $point_id . '_' . $pickup_type;
 
@@ -936,6 +911,10 @@ class Apiship extends \Opencart\System\Engine\Model {
 			}
 		}
 
+		if ($data['error'] == 'no_error' && !$points) {
+			return ['error' => $this->language->get('shipping_apiship_error_no_points'), 'points' => []];
+		}
+
 		return ['error' => $data['error'], 'points' => $points];
 	}
 
@@ -966,8 +945,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 		$name = '';
 		$image = '';
 
-		$payment_method_code = $this->session->data['payment_method']['code'] ?? '';
-		$cash_on_delivery = in_array($payment_method_code, $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
+		$cash_on_delivery = $this->is_cash_on_delivery();
 
 		$apiship_calculator_data = $this->apiship->apiship_calculator($country, $region, $city, $postcode, $ext_address, [], $this->cart->getProducts(), $this->getCartTotal(), $cash_on_delivery);
 
@@ -984,14 +962,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 				}
 
 				foreach ($tariff['pointIds'] as $point_id) {
-					foreach ([1, 2] as $pickup_type) {
-						if (!in_array($pickup_type, $tariff['pickupTypes'])) {
-							continue;
-						}
-
-						if (!in_array($pickup_type, $this->get_pickup_types($provider['providerKey']))) {
-							continue;
-						}
+					foreach ($this->tariff_pickup_types($tariff, $provider['providerKey']) as $pickup_type) {
 
 						$key = $delivery_type . '_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . $point_id . '_' . $pickup_type;
 
@@ -1285,6 +1256,9 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 		$shipping_total = (float)($order_totals['shipping'] ?? 0);
 
+		// Сумма заказа в валюте ApiShip (get_order_totals уже конвертирует итоги)
+		$order_total = (float)($order_totals['total'] ?? $this->currency->convert((float)$order['total'], (string)$this->config->get('config_currency'), (string)$this->apiship_params['shipping_apiship_rub_select']));
+
 		$paid_orders = in_array($order['order_status_id'], $this->apiship_params['shipping_apiship_paid_orders']);
 
 		$order_params = [];
@@ -1298,8 +1272,8 @@ class Apiship extends \Opencart\System\Engine\Model {
 		$order_params['orderTariffId'] = $tariff_id;
 		$order_params['orderPointOutId'] = $point_id;
 
-		$order_params['costAssessedCost'] = $this->apiship->format_cost((float)$order['total'] - $shipping_total);
-		$order_params['costCodCost'] = !$paid_orders ? $this->apiship->format_cost((float)$order['total']) : 0;
+		$order_params['costAssessedCost'] = $this->apiship->format_cost($order_total - $shipping_total);
+		$order_params['costCodCost'] = !$paid_orders ? $this->apiship->format_cost($order_total) : 0;
 		$order_params['costDeliveryCost'] = !$paid_orders ? $this->apiship->format_cost($shipping_total) : 0;
 		$order_params['sub_total_cost'] = $this->apiship->format_cost($total_cost);
 		$order_params['assessed_cost'] = $this->apiship->format_cost($assessed_cost);
@@ -1515,8 +1489,6 @@ class Apiship extends \Opencart\System\Engine\Model {
 				$key = $status['key'];
 
 				if ($current_status_id != $status_id) {
-					$this->set_apiship_order_status((int)$apiship_order['apiship_order_id'], (int)$status_id);
-
 					$text = sprintf($this->apiship_params['shipping_apiship_change_order_status_message'], $apiship_order['apiship_order_id'], $status_name);
 
 					$this->load->model('checkout/order');
@@ -1539,7 +1511,11 @@ class Apiship extends \Opencart\System\Engine\Model {
 						$order_text = '';
 					}
 
+					// Сначала история заказа OpenCart, затем фиксация статуса ApiShip: при сбое истории статус останется
+					// прежним и запись будет обработана повторно на следующем запуске
 					$this->model_checkout_order->addHistory($order_id, $order_new_status, $order_text, $order_notify);
+
+					$this->set_apiship_order_status((int)$apiship_order['apiship_order_id'], (int)$status_id);
 
 					$this->log->write($text);
 
@@ -1647,6 +1623,119 @@ class Apiship extends \Opencart\System\Engine\Model {
 	 */
 	private function set_apiship_order_status(int $apiship_order_id, int $status_id): void {
 		$this->db->query("UPDATE `" . DB_PREFIX . "apiship_order` SET `status` = '" . (int)$status_id . "' WHERE `apiship_order_id` = '" . (int)$apiship_order_id . "'");
+	}
+
+	/**
+	 * Типы забора, доступные и по тарифу, и по настройкам службы доставки
+	 *
+	 * @param array<string, mixed> $tariff
+	 * @param string               $provider_key
+	 *
+	 * @return array<int, int>
+	 */
+	private function tariff_pickup_types(array $tariff, string $provider_key): array {
+		$tariff_types = is_array($tariff['pickupTypes'] ?? null) ? $tariff['pickupTypes'] : [];
+
+		$result = [];
+
+		foreach ([1, 2] as $pickup_type) {
+			if (in_array($pickup_type, $tariff_types) && in_array($pickup_type, $this->get_pickup_types($provider_key))) {
+				$result[] = $pickup_type;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Наложенный платёж по текущему (или переданному) способу оплаты
+	 *
+	 * @param string|null $payment_code null — код из сессии чекаута
+	 *
+	 * @return bool
+	 */
+	private function is_cash_on_delivery(?string $payment_code = null): bool {
+		if ($payment_code === null) {
+			$payment_code = (string)($this->session->data['payment_method']['code'] ?? '');
+		}
+
+		return $this->apiship->is_cash_on_delivery($payment_code, $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
+	}
+
+	/**
+	 * Пересчёт выбранного варианта доставки (после выбора способа оплаты меняется наложенный платёж)
+	 *
+	 * @param string $code apiship.point_… или apiship.door_…
+	 *
+	 * @return array<string, mixed> обновлённый quote либо [] если вариант больше недоступен
+	 */
+	public function refresh_quote(string $code): array {
+		$parce_code = $this->apiship->parce_code($code);
+
+		if ($parce_code['delivery_type'] == 'point') {
+			if ($parce_code['point_id'] == 'error' || $parce_code['point_id'] == '') {
+				return [];
+			}
+
+			$quote = $this->set_point($code);
+
+			if (isset($quote['error'])) {
+				return [];
+			}
+
+			unset($quote['postcode'], $quote['address1']);
+		} elseif ($parce_code['delivery_type'] == 'door') {
+			$region = (string)$this->apiship->getData('shipping_apiship_region');
+			$city = (string)$this->apiship->getData('shipping_apiship_city');
+			$postcode = (string)$this->apiship->getData('shipping_apiship_postcode');
+			$ext_address = (string)$this->apiship->getData('shipping_apiship_ext_address');
+			$country = (string)$this->apiship->getData('shipping_apiship_country');
+
+			$apiship_calculator_data = $this->apiship->apiship_calculator($country, $region, $city, $postcode, $ext_address, [], $this->cart->getProducts(), $this->getCartTotal(), $this->is_cash_on_delivery());
+
+			$quote = [];
+
+			foreach ($apiship_calculator_data['body']['deliveryToDoor'] ?? [] as $provider) {
+				if ($provider['providerKey'] != $parce_code['provider']) {
+					continue;
+				}
+
+				foreach ($provider['tariffs'] ?? [] as $tariff) {
+					if ((string)$tariff['tariffId'] != $parce_code['tariff_id'] || !in_array((int)$parce_code['pickup_type'], $this->tariff_pickup_types($tariff, $provider['providerKey']))) {
+						continue;
+					}
+
+					$params = [
+						'type'              => 'door',
+						'providerKey'       => $provider['providerKey'],
+						'tariffName'        => $tariff['tariffName'],
+						'daysMin'           => $tariff['daysMin'],
+						'daysMax'           => $tariff['daysMax'],
+						'tariffDescription' => $tariff['tariffDescription'] ?? '',
+						'code'              => $code
+					];
+
+					$name = $this->fill_template($params + ['template' => $this->apiship_params['shipping_apiship_title_door_template']]);
+					$description = $this->fill_template($params + ['template' => $this->apiship_params['shipping_apiship_description_door_template']]);
+
+					$quote = $this->build_quote($parce_code['short_code'], $name, (float)$tariff['deliveryCost'], $description, 'https://storage.apiship.ru/icons/providers/svg/' . $provider['providerKey'] . '.svg', false);
+
+					break 2;
+				}
+			}
+
+			if (!$quote) {
+				return [];
+			}
+
+			$this->session->data['shipping_methods']['apiship']['quote'][$parce_code['short_code']] = $quote;
+		} else {
+			return [];
+		}
+
+		$this->session->data['shipping_method'] = $quote;
+
+		return $quote;
 	}
 
 	/**
@@ -1901,16 +1990,19 @@ class Apiship extends \Opencart\System\Engine\Model {
 		$shipping_cost = 0;
 		$order_totals = [];
 
+		// Итоги заказа хранятся в базовой валюте магазина, ApiShip ждёт суммы в валюте «рубль» из настроек
 		foreach ($totals as $total_item) {
+			$value = $this->currency->convert((float)$total_item['value'], (string)$this->config->get('config_currency'), (string)$this->apiship_params['shipping_apiship_rub_select']);
+
 			if ($total_item['code'] != 'total' && $total_item['code'] != 'shipping') {
-				$total_sum += $total_item['value'];
+				$total_sum += $value;
 			}
 
 			if ($total_item['code'] == 'shipping') {
-				$shipping_cost = $total_item['value'];
+				$shipping_cost = $value;
 			}
 
-			$order_totals[$total_item['code']] = $total_item['value'];
+			$order_totals[$total_item['code']] = $value;
 		}
 
 		if ($total_sum < 0) {
@@ -1958,7 +2050,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 		$total_sum = $this->get_order_totals($order_id)['total_sum'];
 
-		$cash_on_delivery = in_array((string)($order_info['payment_method']['code'] ?? ''), $this->apiship_params['shipping_apiship_cash_on_delivery_payment_methods']);
+		$cash_on_delivery = $this->is_cash_on_delivery((string)($order_info['payment_method']['code'] ?? ''));
 
 		$apiship_calculator_data = $this->apiship->apiship_calculator((string)$order_info['shipping_iso_code_2'], (string)$order_info['shipping_zone'], (string)$order_info['shipping_city'], (string)$order_info['shipping_postcode'], (string)$order_info['shipping_address_1'], [], $order_products, (float)$total_sum, $cash_on_delivery);
 

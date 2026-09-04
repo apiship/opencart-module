@@ -30,6 +30,7 @@ class Checkout extends \Opencart\System\Engine\Controller {
 			'get_points_url'     => $this->url->link('extension/apiship/shipping/apiship.get_points', $language, true),
 			'set_point_url'      => $this->url->link('extension/apiship/shipping/apiship.set_point', $language, true),
 			'tracing_url'        => $this->url->link('extension/apiship/shipping/apiship.get_last_tracing_id', $language, true),
+			'selected_url'       => $this->url->link('extension/apiship/shipping/apiship.get_selected', $language, true),
 			'yandex_api_key'     => (string)$this->config->get('shipping_apiship_yandex_api_key'),
 			'version'            => (string)($this->config->get('shipping_apiship_version_js_mod') ?: '1.3'),
 			'image_path'         => 'extension/apiship/catalog/view/image/',
@@ -42,10 +43,38 @@ class Checkout extends \Opencart\System\Engine\Controller {
 			'text_map_type'      => $this->language->get('shipping_apiship_map_point_type'),
 			'text_map_provider'  => $this->language->get('shipping_apiship_map_provider'),
 			'text_map_cash'      => $this->language->get('shipping_apiship_map_payment_cash'),
-			'text_map_card'      => $this->language->get('shipping_apiship_map_payment_card')
+			'text_map_card'      => $this->language->get('shipping_apiship_map_payment_card'),
+			'text_map_no_points' => $this->language->get('shipping_apiship_error_no_points'),
+			'text_map_load'      => $this->language->get('shipping_apiship_error_map_load')
 		];
 
 		$output .= $this->load->view('extension/apiship/event/checkout_script', $script_data);
+	}
+
+	/**
+	 * После выбора способа оплаты пересчитывает выбранный вариант ApiShip: наложенный платёж меняет стоимость,
+	 * а в чекауте OC4 оплата выбирается после доставки
+	 *
+	 * @param string       $route
+	 * @param array<mixed> $args
+	 * @param mixed        $output
+	 *
+	 * @return void
+	 */
+	public function paymentMethodSave(string &$route, array &$args, &$output): void {
+		if (!$this->config->get('shipping_apiship_status') || !isset($this->session->data['payment_method'])) {
+			return;
+		}
+
+		$code = (string)($this->session->data['shipping_method']['code'] ?? '');
+
+		if (!str_starts_with($code, 'apiship.')) {
+			return;
+		}
+
+		$this->load->model('extension/apiship/shipping/apiship');
+
+		$this->model_extension_apiship_shipping_apiship->refresh_quote($code);
 	}
 
 	/**

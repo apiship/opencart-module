@@ -76,6 +76,16 @@ else
 	done
 fi
 
+if [ "${REINSTALL:-0}" = "1" ] && [ -n "$(db "SELECT extension_id FROM oc_extension WHERE type='shipping' AND code='apiship'")" ]; then
+	echo "4a. Uninstall shipping extension (REINSTALL=1)"
+	RESP=$(curl -s -c "$JAR" -b "$JAR" "${ADMIN}extension/shipping.uninstall&extension=apiship&code=apiship")
+
+	if [ -n "$(echo "$RESP" | json_get error)" ]; then
+		echo "Shipping uninstall failed: $RESP" >&2
+		exit 1
+	fi
+fi
+
 if [ -n "$(db "SELECT extension_id FROM oc_extension WHERE type='shipping' AND code='apiship'")" ]; then
 	echo "4. Enable shipping extension: skipped, already installed"
 else
@@ -129,6 +139,7 @@ RESP=$(curl -s -c "$JAR" -b "$JAR" -X POST "${ADMIN}extension/apiship/shipping/a
 	--data-urlencode "shipping_apiship_group_export_status_ok=${ST_PROCESSING}" \
 	--data-urlencode "shipping_apiship_group_export_status_error=${ST_FAILED}" \
 	--data-urlencode "shipping_apiship_paid_orders[]=${ST_PROCESSING}" \
+	--data-urlencode "shipping_apiship_cash_on_delivery_payment_methods[]=cod" \
 	--data-urlencode "shipping_apiship_add_pickup_date=1" \
 	--data-urlencode "shipping_apiship_cron_key=${APISHIP_CRON_KEY:-devkey123}" \
 	--data-urlencode "shipping_apiship_mode=shipping_apiship_mode_debug" \

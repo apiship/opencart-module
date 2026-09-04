@@ -17,13 +17,17 @@ class ApishipMap {
 			map_type: 'Тип точки',
 			map_provider: 'СД',
 			map_cash: 'Оплата наличными',
-			map_card: 'Оплата картой'
+			map_card: 'Оплата картой',
+			map_no_points: 'Пункты выдачи не найдены',
+			map_load: 'Не удалось загрузить карту. Обновите страницу'
 		}, this.config.texts || {});
 		this.image_path = this.config.image_path || 'extension/apiship/catalog/view/image/';
 
 		this.callback_function = null;
 		this.callback_code = null;
 		this.Mymap = null;
+		this.checkYmaps = null;
+		this.loadFailed = false;
 
 		this.modal = {
 			initLayout: {
@@ -87,6 +91,10 @@ class ApishipMap {
 				script.setAttribute('src', script_src);
 				script.setAttribute('defer', '');
 				script.setAttribute('data-apiship-ymaps', '1');
+				script.onerror = () => {
+					this.loadFailed = true;
+					script.remove();
+				};
 				document.head.appendChild(script);
 			},
 			createContainer: () => {
@@ -281,22 +289,21 @@ class ApishipMap {
 					listBoxControlProviders.state.set('filters', filters);
 				});
 
-				// Мониторинг фильтров
-				let filterMonitorTypes = new ymaps.Monitor(listBoxControlTypes.state);
-				filterMonitorTypes.add('filters', (filters) => {
+				// Мониторинг фильтров: у ObjectManager одна функция фильтра, поэтому оба условия применяются вместе
+				const applyFilters = () => {
+					const types = listBoxControlTypes.state.get('filters');
+					const providerFilters = listBoxControlProviders.state.get('filters');
+
 					objectManager.setFilter((obj) => {
-						let content = obj.properties.type;
-						return filters[content];
+						return types[obj.properties.type] && providerFilters[obj.properties.provider];
 					});
-				});
+				};
+
+				let filterMonitorTypes = new ymaps.Monitor(listBoxControlTypes.state);
+				filterMonitorTypes.add('filters', applyFilters);
 
 				let filterMonitorProviders = new ymaps.Monitor(listBoxControlProviders.state);
-				filterMonitorProviders.add('filters', (filters) => {
-					objectManager.setFilter((obj) => {
-						let content = obj.properties.provider;
-						return filters[content];
-					});
-				});
+				filterMonitorProviders.add('filters', applyFilters);
 
 				// Обработчик клика по кнопке выбора
 				$(document).off('click', 'a.list_item');
@@ -325,7 +332,15 @@ class ApishipMap {
 	}
 
 	onCloseModal() {
+		this.stopWaiting();
 		this.yandexMaps.destroyMap();
+	}
+
+	stopWaiting() {
+		if (this.checkYmaps !== null) {
+			clearInterval(this.checkYmaps);
+			this.checkYmaps = null;
+		}
 	}
 
 	init() {
@@ -342,6 +357,11 @@ class ApishipMap {
 	}
 
 	open(points, callback, code) {
+		if (!Array.isArray(points) || points.length === 0) {
+			alert(this.texts.map_no_points);
+			return;
+		}
+
 		// Удаляем предыдущую модалку если есть
 		let existingModal = document.getElementById(this.ID_MODAL);
 		if (existingModal) {
@@ -356,15 +376,22 @@ class ApishipMap {
 		this.yandexMaps.createContainer();
 		this.yandexMaps.points = points;
 
-		// Ожидаем загрузку Яндекс.Карт
+		// Ожидаем загрузку Яндекс.Карт: не дольше 15 секунд, иначе закрываем модалку с сообщением
 		if (typeof ymaps !== 'undefined') {
 			ymaps.ready(() => this.yandexMaps.initMap());
 		} else {
-			// Если карты еще не загружены, ждем их загрузку
-			let checkYmaps = setInterval(() => {
+			let attempts = 0;
+
+			this.checkYmaps = setInterval(() => {
+				attempts++;
+
 				if (typeof ymaps !== 'undefined') {
-					clearInterval(checkYmaps);
+					this.stopWaiting();
 					ymaps.ready(() => this.yandexMaps.initMap());
+				} else if (this.loadFailed || attempts >= 150) {
+					this.stopWaiting();
+					this.modal.close();
+					alert(this.texts.map_load);
 				}
 			}, 100);
 		}

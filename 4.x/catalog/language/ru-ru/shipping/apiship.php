@@ -38,3 +38,5 @@ $_['shipping_apiship_map_type_1']                   = 'Пункт выдачи �
 $_['shipping_apiship_map_type_2']                   = 'Постамат';
 $_['shipping_apiship_map_type_3']                   = 'Отделение Почты России';
 $_['shipping_apiship_map_type_4']                   = 'Терминал';
+$_['shipping_apiship_error_no_points']              = 'Пункты выдачи не найдены. Попробуйте ещё раз или выберите другой способ доставки';
+$_['shipping_apiship_error_map_load']               = 'Не удалось загрузить карту. Обновите страницу';

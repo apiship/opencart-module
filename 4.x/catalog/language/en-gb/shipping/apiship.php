@@ -38,3 +38,5 @@ $_['shipping_apiship_map_type_1']                   = 'Pickup point';
 $_['shipping_apiship_map_type_2']                   = 'Parcel locker';
 $_['shipping_apiship_map_type_3']                   = 'Russian Post office';
 $_['shipping_apiship_map_type_4']                   = 'Terminal';
+$_['shipping_apiship_error_no_points']              = 'No pickup points found. Try again or choose another shipping method';
+$_['shipping_apiship_error_map_load']               = 'Could not load the map. Reload the page';

@@ -230,6 +230,113 @@ namespace ApishipTests {
 
 	check('place dimensions override', $dims['total_length'] == 50 && $dims['total_width'] == 40 && $dims['total_height'] == 30, $dims['total_length'] . 'x' . $dims['total_width'] . 'x' . $dims['total_height']);
 
+	echo "currency direction\n";
+
+	// Базовая валюта USD, «рубль» в настройках RUB, курс 1 USD = 2 RUB: суммы для ApiShip должны удвоиться
+	$registry_rate = registry();
+
+	$registry_rate->set('config', new class {
+		public function get(string $key) {
+			return $key == 'config_currency' ? 'USD' : null;
+		}
+	});
+
+	$registry_rate->set('currency', new class {
+		public function convert(float $value, string $from, string $to): float {
+			if ($from == 'USD' && $to == 'RUB') {
+				return $value * 2;
+			}
+
+			if ($from == 'RUB' && $to == 'USD') {
+				return $value / 2;
+			}
+
+			return $value;
+		}
+	});
+
+	$lib_rate = new Apiship($registry_rate, [
+		'shipping_apiship_rub_select'    => 'RUB',
+		'shipping_apiship_gr_select'     => 1,
+		'shipping_apiship_cm_select'     => 1,
+		'shipping_apiship_token'         => 'test',
+		'shipping_apiship_mode'          => 'shipping_apiship_mode_normal',
+		'shipping_apiship_provider'      => [],
+		'shipping_apiship_articul_mode'  => 'sku',
+		'shipping_apiship_parcel_length' => 10,
+		'shipping_apiship_parcel_width'  => 10,
+		'shipping_apiship_parcel_height' => 10,
+		'shipping_apiship_parcel_weight' => 500
+	], $registry_rate->get('log'));
+
+	$rate = $lib_rate->calculate_places($products, 400.0);
+
+	$rate_items_total = 0;
+
+	foreach ($rate['items'] as $item) {
+		$rate_items_total += $item['cost'] * $item['quantity'];
+	}
+
+	check('item costs converted store currency → rub_select (USD 250 → RUB 500 before discount, then scaled to 400)', abs($rate_items_total - 400.0) < 0.01, (string)$rate_items_total);
+	check('assessed cost in rub_select', abs($rate['assessed_cost'] - 400.0) < 0.01, (string)$rate['assessed_cost']);
+
+	$fixed_rate = new Apiship($registry_rate, [
+		'shipping_apiship_rub_select'                    => 'RUB',
+		'shipping_apiship_gr_select'                     => 1,
+		'shipping_apiship_cm_select'                     => 1,
+		'shipping_apiship_token'                         => 'test',
+		'shipping_apiship_mode'                          => 'shipping_apiship_mode_normal',
+		'shipping_apiship_provider'                      => [],
+		'shipping_apiship_use_fix_product_assessed_cost' => 1,
+		'shipping_apiship_fix_product_assessed_cost'     => 10,
+		'shipping_apiship_parcel_length'                 => 10,
+		'shipping_apiship_parcel_width'                  => 10,
+		'shipping_apiship_parcel_height'                 => 10,
+		'shipping_apiship_parcel_weight'                 => 500
+	], $registry_rate->get('log'));
+
+	$fixed_assessed = $fixed_rate->calculate_places($products, 400.0)['assessed_cost'];
+
+	check('fixed assessed cost converted to rub_select (10 USD → 20 RUB × 3 items)', abs($fixed_assessed - 60.0) < 0.01, (string)$fixed_assessed);
+
+	echo "cash on delivery\n";
+
+	check('exact code match', $lib->is_cash_on_delivery('filterit_cash', ['cod', 'filterit_cash']));
+	check('OC4 option code cod.cod matches extension code cod', $lib->is_cash_on_delivery('cod.cod', ['cod']));
+	check('other payment is not COD', !$lib->is_cash_on_delivery('bank_transfer.bank_transfer', ['cod']));
+	check('empty payment code is not COD', !$lib->is_cash_on_delivery('', ['cod']));
+	check('empty COD list is never COD', !$lib->is_cash_on_delivery('cod.cod', []));
+
+	echo "distribute_place_weight\n";
+
+	$weights = $lib->distribute_place_weight([
+		['quantity' => 2, 'weight' => 100],
+		['quantity' => 1, 'weight' => 100]
+	], 1000.0);
+
+	check('per-unit weight = floor(1000 / 3) = 333', $weights[0]['weight'] == 333 && $weights[0]['quantity'] == 2);
+	check('remainder 1 goes to the single-unit last item', $weights[1]['weight'] == 334);
+	check('no extra items when last item has quantity 1', count($weights) == 2);
+
+	$weights = $lib->distribute_place_weight([
+		['quantity' => 1, 'weight' => 100],
+		['quantity' => 2, 'weight' => 100]
+	], 1000.0);
+
+	check('last item with quantity > 1 is split to carry the remainder', count($weights) == 3 && $weights[1]['quantity'] == 1 && $weights[2]['quantity'] == 1 && $weights[2]['weight'] == 334);
+
+	$sum = 0;
+
+	foreach ($weights as $item) {
+		$sum += $item['weight'] * $item['quantity'];
+	}
+
+	check('sum of unit weights equals place weight', $sum == 1000, (string)$sum);
+
+	$weights = $lib->distribute_place_weight([['quantity' => 4, 'weight' => 1]], 1000.0);
+
+	check('exact division leaves no split', count($weights) == 1 && $weights[0]['weight'] == 250);
+
 	echo "session cache\n";
 
 	$lib->setData('k', ['a' => 1], 10);

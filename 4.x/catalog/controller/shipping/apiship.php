@@ -234,6 +234,27 @@ class Apiship extends \Opencart\System\Engine\Controller {
 	}
 
 	/**
+	 * Выбранный в сессии способ доставки (обновление текста в чекауте после пересчёта)
+	 *
+	 * @return void
+	 */
+	public function get_selected(): void {
+		$selected = $this->session->data['shipping_method'] ?? [];
+
+		$json = [];
+
+		if (isset($selected['code']) && str_starts_with((string)$selected['code'], 'apiship.')) {
+			$json = [
+				'code' => $selected['code'],
+				'name' => $selected['name'] ?? '',
+				'text' => $selected['text'] ?? ''
+			];
+		}
+
+		$this->json($json);
+	}
+
+	/**
 	 * Последний x-tracing-id расчёта (для отладки)
 	 *
 	 * @return void

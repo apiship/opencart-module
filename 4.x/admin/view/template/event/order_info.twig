@@ -48,29 +48,10 @@
     </div>
   </div>
 </div>
+<script src="../extension/apiship/admin/view/javascript/apiship_order.js" type="text/javascript"></script>
 <script type="text/javascript"><!--
 (function() {
     var apiship_is_export = false;
-
-    function apiship_alert(type, text) {
-        $('#alert').prepend('<div class="alert alert-' + type + ' alert-dismissible"><i class="fa-solid fa-circle-' + (type == 'danger' ? 'exclamation' : 'check') + '"></i> ' + text + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
-    }
-
-    function apiship_files(json, key, title) {
-        var html = [];
-
-        for (var index = 0; index < (json[key] || []).length; ++index) {
-            html.push('<a target="_blank" href="' + json[key][index]['url'] + '">' + json[key][index]['name'] + '</a>');
-        }
-
-        if (json['error']) {
-            apiship_alert('danger', json['error']);
-        }
-
-        if (html.length) {
-            apiship_alert('success', title + ': ' + html.join(', '));
-        }
-    }
 
     function init_apiship_export_button() {
         $.ajax({

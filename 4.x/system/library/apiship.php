@@ -468,7 +468,8 @@ class Apiship {
 	 * @param string             $country
 	 * @param string             $region
 	 * @param string             $city
-	 * @param string             $postcode
+	 * @param string             $postcode    не используется: калькулятор ApiShip ищет по городу, индекс в адресе назначения
+	 *                                        ломает подбор тарифов (поведение 3.x); в экспорт заказа индекс уходит отдельно
 	 * @param string             $ext_address
 	 * @param array<int, string> $providers
 	 * @param array<mixed>       $products
@@ -743,22 +744,7 @@ class Apiship {
 		}
 
 		if ($total_count > 0 && $order_params['placeWeight'] != $total_weight) {
-			$one_item_weight = $this->format_weight($order_params['placeWeight'] / $total_count);
-
-			$total_calculation_weight = $order_params['placeWeight'];
-
-			foreach ($params['places'][0]['items'] as $key => $item) {
-				$total_calculation_weight -= $one_item_weight * $item['quantity'];
-
-				$params['places'][0]['items'][$key]['weight'] = $one_item_weight;
-			}
-
-			// Остаток веса (из-за округления) добавляем последней позиции
-			if ($total_calculation_weight > 0) {
-				$last = array_key_last($params['places'][0]['items']);
-
-				$params['places'][0]['items'][$last]['weight'] += $this->format_weight($total_calculation_weight / $params['places'][0]['items'][$last]['quantity']);
-			}
+			$params['places'][0]['items'] = $this->distribute_place_weight($params['places'][0]['items'], (float)$order_params['placeWeight']);
 		}
 
 		$output = $this->curl_post($url, $params);
@@ -780,6 +766,77 @@ class Apiship {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Распределение веса места по позициям: вес позиции в ApiShip — за единицу, поэтому остаток от деления
+	 * на количество единиц отдаётся одной единице (последняя позиция при необходимости разбивается)
+	 *
+	 * @param array<int, array<string, mixed>> $items        позиции с quantity и weight
+	 * @param float                            $place_weight вес места в граммах
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function distribute_place_weight(array $items, float $place_weight): array {
+		$total_count = 0;
+
+		foreach ($items as $item) {
+			$total_count += (int)$item['quantity'];
+		}
+
+		if ($total_count < 1) {
+			return $items;
+		}
+
+		$one_item_weight = $this->format_weight($place_weight / $total_count);
+
+		$remainder = $this->format_weight($place_weight - $one_item_weight * $total_count);
+
+		foreach ($items as $key => $item) {
+			$items[$key]['weight'] = $one_item_weight;
+		}
+
+		if ($remainder > 0) {
+			$last = array_key_last($items);
+
+			if ((int)$items[$last]['quantity'] > 1) {
+				$items[$last]['quantity'] = (int)$items[$last]['quantity'] - 1;
+
+				$single = $items[$last];
+				$single['quantity'] = 1;
+
+				$items[] = $single;
+
+				$last = array_key_last($items);
+			}
+
+			$items[$last]['weight'] += $remainder;
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Наложенный платёж: код способа оплаты из сессии OC4 имеет вид «расширение.опция» (cod.cod),
+	 * в настройках хранится код расширения (cod) либо полный код (filterit и т.п.)
+	 *
+	 * @param string             $payment_code
+	 * @param array<int, string> $cod_codes
+	 *
+	 * @return bool
+	 */
+	public function is_cash_on_delivery(string $payment_code, array $cod_codes): bool {
+		if ($payment_code == '' || !$cod_codes) {
+			return false;
+		}
+
+		if (in_array($payment_code, $cod_codes)) {
+			return true;
+		}
+
+		$extension = explode('.', $payment_code, 2)[0];
+
+		return $extension != '' && in_array($extension, $cod_codes);
 	}
 
 	/**
@@ -1037,8 +1094,8 @@ class Apiship {
 	/**
 	 * Расчёт грузоместа и позиций по товарам корзины/заказа
 	 *
-	 * @param array<mixed> $products
-	 * @param float        $total_sum
+	 * @param array<mixed> $products  товары с price в базовой валюте магазина
+	 * @param float        $total_sum сумма заказа уже в валюте shipping_apiship_rub_select
 	 *
 	 * @return array<string, mixed>
 	 */
@@ -1076,7 +1133,8 @@ class Apiship {
 			$height = (isset($product['height']) && (float)$product['height'] != 0) ? $this->length->convert((float)$product['height'], (int)$product['length_class_id'], $cm_select) : $this->format_dimension((float)($this->apiship_params['shipping_apiship_parcel_height'] ?? 0));
 			$weight = (isset($product['weight']) && (float)$product['weight'] != 0) ? $this->weight->convert((float)$product['weight'] / $quantity, (int)$product['weight_class_id'], $gr_select) : $this->format_dimension((float)($this->apiship_params['shipping_apiship_parcel_weight'] ?? 0));
 
-			$cost = $this->format_cost($this->currency->convert((float)$product['price'], $rub_select, $config_currency));
+			// Суммы для ApiShip — в валюте «рубль» из настроек; цены товаров хранятся в базовой валюте магазина
+			$cost = $this->format_cost($this->currency->convert((float)$product['price'], $config_currency, $rub_select));
 
 			$articul = (string)$product['model'];
 
@@ -1186,7 +1244,7 @@ class Apiship {
 
 		foreach ($items as &$item) {
 			if (!empty($this->apiship_params['shipping_apiship_use_fix_product_assessed_cost'])) {
-				$item['assessed_cost'] = $this->format_cost($this->currency->convert((float)($this->apiship_params['shipping_apiship_fix_product_assessed_cost'] ?? 0), $rub_select, $config_currency));
+				$item['assessed_cost'] = $this->format_cost($this->currency->convert((float)($this->apiship_params['shipping_apiship_fix_product_assessed_cost'] ?? 0), $config_currency, $rub_select));
 			} else {
 				$item['assessed_cost'] = $item['cost'];
 			}

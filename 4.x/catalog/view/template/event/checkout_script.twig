@@ -5,6 +5,7 @@ var apiship_config = {
     get_points_url: '{{ get_points_url|escape('js') }}',
     set_point_url: '{{ set_point_url|escape('js') }}',
     tracing_url: '{{ tracing_url|escape('js') }}',
+    selected_url: '{{ selected_url|escape('js') }}',
     yandex_api_key: '{{ yandex_api_key|escape('js') }}',
     image_path: '{{ image_path|escape('js') }}',
     texts: {
@@ -17,7 +18,9 @@ var apiship_config = {
         map_type: '{{ text_map_type|escape('js') }}',
         map_provider: '{{ text_map_provider|escape('js') }}',
         map_cash: '{{ text_map_cash|escape('js') }}',
-        map_card: '{{ text_map_card|escape('js') }}'
+        map_card: '{{ text_map_card|escape('js') }}',
+        map_no_points: '{{ text_map_no_points|escape('js') }}',
+        map_load: '{{ text_map_load|escape('js') }}'
     }
 };
 
@@ -96,6 +99,17 @@ $(document).ajaxSuccess(function(event, xhr, settings) {
             $('#input-shipping-method').val(apiship_method_text(apiship_quotes[code]));
         }
     }
+
+    // После выбора оплаты сервер пересчитывает вариант ApiShip (наложенный платёж): обновляем текст в форме
+    if (settings.url.indexOf('checkout/payment_method.save') !== -1 && xhr.responseJSON.success) {
+        $.getJSON(apiship_config.selected_url, function(quote) {
+            if (quote && quote.code) {
+                apiship_quotes[quote.code] = quote;
+
+                $('#input-shipping-method').val(apiship_method_text(quote));
+            }
+        });
+    }
 });
 
 // Открыть карту ПВЗ для варианта доставки
@@ -117,6 +131,12 @@ function apiship_open(code) {
         },
         success: function(data_points) {
             if (data_points['error'] == 'no_error') {
+                if (!data_points['points'] || !data_points['points'].length) {
+                    alert(apiship_config.texts.map_no_points);
+
+                    return;
+                }
+
                 var apiship = new ApishipMap(apiship_config);
 
                 apiship.open(data_points['points'], apiship_function, code);

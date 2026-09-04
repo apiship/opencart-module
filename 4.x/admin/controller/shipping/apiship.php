@@ -46,6 +46,11 @@ class Apiship extends \Opencart\System\Engine\Controller {
 				'description' => 'ApiShip: проверка выбора ПВЗ',
 				'trigger'     => 'catalog/controller/checkout/shipping_method.save/after',
 				'action'      => 'extension/apiship/event/checkout.shippingMethodSave'
+			],
+			[
+				'description' => 'ApiShip: пересчёт доставки после выбора оплаты (наложенный платёж)',
+				'trigger'     => 'catalog/controller/checkout/payment_method.save/after',
+				'action'      => 'extension/apiship/event/checkout.paymentMethodSave'
 			]
 		];
 	}
