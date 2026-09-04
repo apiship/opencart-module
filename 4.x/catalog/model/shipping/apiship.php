@@ -1446,18 +1446,26 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 		$data = null;
 
-		if (file_exists($file_name) && filesize($file_name) > 0) {
-			$fp = fopen($file_name, 'r+');
+		$exists = file_exists($file_name) && filesize($file_name) > 0;
 
-			if (flock($fp, LOCK_EX)) {
-				$text = fread($fp, filesize($file_name));
+		$fp = @fopen($file_name, $exists ? 'r+' : 'w');
 
-				$data = @unserialize($text);
-			}
-		} else {
-			$fp = fopen($file_name, 'w');
+		if ($fp === false) {
+			$this->log->write('shipping_apiship import_orders: cannot open ' . $file_name);
 
-			flock($fp, LOCK_EX);
+			return ['status' => 'error', 'import_result' => 'cannot open ' . $file_name];
+		}
+
+		if (!flock($fp, LOCK_EX)) {
+			fclose($fp);
+
+			$this->log->write('shipping_apiship import_orders: cannot lock ' . $file_name);
+
+			return ['status' => 'error', 'import_result' => 'cannot lock ' . $file_name];
+		}
+
+		if ($exists) {
+			$data = @unserialize((string)fread($fp, filesize($file_name)));
 		}
 
 		if (!is_array($data)) {

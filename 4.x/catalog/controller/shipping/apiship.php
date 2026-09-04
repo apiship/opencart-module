@@ -214,6 +214,9 @@ class Apiship extends \Opencart\System\Engine\Controller {
 	/**
 	 * Стоимость доставки без учёта правил
 	 *
+	 * Модуль сам этот эндпоинт не вызывает: публичный URL для внешних интеграций и модов,
+	 * сохранён для паритета с пакетом 3.x.
+	 *
 	 * @return void
 	 */
 	public function get_delivery_cost_original(): void {

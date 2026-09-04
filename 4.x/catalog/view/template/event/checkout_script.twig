@@ -4,6 +4,7 @@
 var apiship_config = {
     get_points_url: '{{ get_points_url|escape('js') }}',
     set_point_url: '{{ set_point_url|escape('js') }}',
+    tracing_url: '{{ tracing_url|escape('js') }}',
     yandex_api_key: '{{ yandex_api_key|escape('js') }}',
     image_path: '{{ image_path|escape('js') }}',
     texts: {
@@ -81,6 +82,11 @@ $(document).ajaxSuccess(function(event, xhr, settings) {
 
     if (settings.url.indexOf('checkout/shipping_method.quote') !== -1) {
         apiship_decorate(xhr.responseJSON);
+
+        // x-tracing-id последнего расчёта — по нему поддержка ApiShip находит запрос
+        $.get(apiship_config.tracing_url, function(id) {
+            console.log(id);
+        });
     }
 
     if (settings.url.indexOf('checkout/shipping_method.save') !== -1 && xhr.responseJSON.success) {
@@ -146,6 +152,8 @@ function apiship_function(result, code) {
                 return;
             }
 
+            apiship_quotes[data.code] = data;
+
             var input = $('#modal-shipping input[name=\'shipping_method\'][value=\'' + code + '\']');
 
             if (input.length) {
@@ -157,7 +165,7 @@ function apiship_function(result, code) {
             } else if ($('#input-shipping-code').length) {
                 // Модалка закрыта: обновляем выбранный способ в форме чекаута
                 $('#input-shipping-code').val(data.code);
-                $('#input-shipping-method').val(data.name + ' - ' + data.text);
+                $('#input-shipping-method').val(apiship_method_text(data));
             }
         },
         error: function(xhr, ajaxOptions, thrownError) {

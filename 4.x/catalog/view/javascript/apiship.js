@@ -71,7 +71,7 @@ class ApishipMap {
 		this.yandexMaps = {
 			points: [],
 			initApi: () => {
-				let yandex_api_key = get_yandex_api_key();
+				let yandex_api_key = this.getApiKey();
 				let script_src;
 
 				if (yandex_api_key === '') {
@@ -106,7 +106,7 @@ class ApishipMap {
 				this.Mymap = new ymaps.Map(this.YANDEX_MAP_CONTAINER_ID, {
 					center: [this.yandexMaps.points[0]['lat'], this.yandexMaps.points[0]['lon']],
 					zoom: 10,
-					controls: (get_yandex_api_key() === '') ?
+					controls: (this.getApiKey() === '') ?
 						['zoomControl'] :
 						['zoomControl', 'geolocationControl', apishipSearchControl]
 				}, {
@@ -313,6 +313,15 @@ class ApishipMap {
 				if (el !== null) el.remove();
 			}
 		};
+	}
+
+	// Ключ Яндекс API из конфига; глобальная get_yandex_api_key() — для сторонних скриптов, определяющих её сами
+	getApiKey() {
+		if (typeof this.config.yandex_api_key !== 'undefined') {
+			return String(this.config.yandex_api_key);
+		}
+
+		return (typeof get_yandex_api_key === 'function') ? String(get_yandex_api_key()) : '';
 	}
 
 	onCloseModal() {

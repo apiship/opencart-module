@@ -217,9 +217,18 @@ namespace ApishipTests {
 
 	check('fixed assessed cost per item', abs($fixed['assessed_cost'] - 30.0) < 0.01, (string)$fixed['assessed_cost']);
 
-	$override = library(['shipping_apiship_place_weight' => 1200, 'shipping_apiship_package_weight' => 100])->calculate_places($products, 200.0);
+	// Без переопределения вес = 800 (товар A) + 500 (по умолчанию для B) = 1300, поэтому override берём заведомо другой
+	$override = library(['shipping_apiship_place_weight' => 2000, 'shipping_apiship_package_weight' => 100])->calculate_places($products, 200.0);
 
-	check('place weight override + package weight', $override['total_weight'] == 1300, (string)$override['total_weight']);
+	check('place weight override + package weight', $override['total_weight'] == 2100, (string)$override['total_weight']);
+
+	$package_only = library(['shipping_apiship_package_weight' => 100])->calculate_places($products, 200.0);
+
+	check('package weight added to calculated weight', $package_only['total_weight'] == 1400, (string)$package_only['total_weight']);
+
+	$dims = library(['shipping_apiship_place_length' => 50, 'shipping_apiship_place_width' => 40, 'shipping_apiship_place_height' => 30])->calculate_places($products, 200.0);
+
+	check('place dimensions override', $dims['total_length'] == 50 && $dims['total_width'] == 40 && $dims['total_height'] == 30, $dims['total_length'] . 'x' . $dims['total_width'] . 'x' . $dims['total_height']);
 
 	echo "session cache\n";
 

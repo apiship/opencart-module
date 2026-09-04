@@ -29,6 +29,7 @@ class Checkout extends \Opencart\System\Engine\Controller {
 		$script_data = [
 			'get_points_url'     => $this->url->link('extension/apiship/shipping/apiship.get_points', $language, true),
 			'set_point_url'      => $this->url->link('extension/apiship/shipping/apiship.set_point', $language, true),
+			'tracing_url'        => $this->url->link('extension/apiship/shipping/apiship.get_last_tracing_id', $language, true),
 			'yandex_api_key'     => (string)$this->config->get('shipping_apiship_yandex_api_key'),
 			'version'            => (string)($this->config->get('shipping_apiship_version_js_mod') ?: '1.3'),
 			'image_path'         => 'extension/apiship/catalog/view/image/',
