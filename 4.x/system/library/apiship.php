@@ -580,7 +580,15 @@ class Apiship {
 			'data_hash'    => $data_hash
 		];
 
-		$this->toLog('shipping_apiship_calculator', ['url' => $url, 'params' => $params, 'output' => $data], isset($data['body']['errors']));
+		$this->toLog('shipping_apiship_calculator', ['url' => $url, 'params' => $params, 'output' => $data], !is_array($data['body']) || isset($data['body']['errors']));
+
+		// Транспортная ошибка или не-JSON ответ: не кешировать, иначе сбой держится 10 минут после восстановления API
+		if (!is_array($data['body'])) {
+			return [
+				'body'         => ['message' => $this->apiship_params['shipping_apiship_error_timeout'] ?? ''],
+				'x-tracing-id' => $x_tracing_id
+			];
+		}
 
 		if (isset($data['body']['errors'])) {
 			return [

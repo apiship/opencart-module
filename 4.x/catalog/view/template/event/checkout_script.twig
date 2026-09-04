@@ -6,6 +6,7 @@ var apiship_config = {
     set_point_url: '{{ set_point_url|escape('js') }}',
     tracing_url: '{{ tracing_url|escape('js') }}',
     selected_url: '{{ selected_url|escape('js') }}',
+    confirm_url: '{{ confirm_url|escape('js') }}',
     yandex_api_key: '{{ yandex_api_key|escape('js') }}',
     image_path: '{{ image_path|escape('js') }}',
     texts: {
@@ -20,7 +21,8 @@ var apiship_config = {
         map_cash: '{{ text_map_cash|escape('js') }}',
         map_card: '{{ text_map_card|escape('js') }}',
         map_no_points: '{{ text_map_no_points|escape('js') }}',
-        map_load: '{{ text_map_load|escape('js') }}'
+        map_load: '{{ text_map_load|escape('js') }}',
+        recalculate: '{{ text_recalculate|escape('js') }}'
     }
 };
 
@@ -100,13 +102,24 @@ $(document).ajaxSuccess(function(event, xhr, settings) {
         }
     }
 
-    // После выбора оплаты сервер пересчитывает вариант ApiShip (наложенный платёж): обновляем текст в форме
-    if (settings.url.indexOf('checkout/payment_method.save') !== -1 && xhr.responseJSON.success) {
+    // После выбора оплаты сервер пересчитывает вариант ApiShip (наложенный платёж): обновляем текст в форме,
+    // а если пересчёт не удался и способ доставки сброшен — очищаем поле, чтобы покупатель выбрал доставку заново
+    if (settings.url.indexOf('checkout/payment_method.save') !== -1) {
         $.getJSON(apiship_config.selected_url, function(quote) {
             if (quote && quote.code) {
                 apiship_quotes[quote.code] = quote;
 
                 $('#input-shipping-method').val(apiship_method_text(quote));
+            } else if (String($('#input-shipping-code').val()).indexOf('apiship.') === 0) {
+                $('#modal-payment').modal('hide');
+
+                $('#input-shipping-method').val('');
+                $('#input-shipping-code').val('');
+
+                // Блок подтверждения перерисовываем: ядро делает это только при успешном сохранении оплаты
+                $('#checkout-confirm').load(apiship_config.confirm_url, function() {
+                    $('#alert').prepend('<div class="alert alert-danger alert-dismissible"><i class="fa-solid fa-circle-exclamation"></i> ' + apiship_config.texts.recalculate + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+                });
             }
         });
     }

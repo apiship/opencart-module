@@ -877,6 +877,35 @@ class Apiship extends \Opencart\System\Engine\Model {
 	}
 
 	/**
+	 * Адрес доставки текущего чекаута: кеш последнего расчёта (10 минут), затем адрес из сессии OpenCart
+	 *
+	 * @return array<string, string> country, region, city, postcode, ext_address
+	 */
+	private function get_checkout_address(): array {
+		$address = [
+			'country'     => (string)$this->apiship->getData('shipping_apiship_country'),
+			'region'      => (string)$this->apiship->getData('shipping_apiship_region'),
+			'city'        => (string)$this->apiship->getData('shipping_apiship_city'),
+			'postcode'    => (string)$this->apiship->getData('shipping_apiship_postcode'),
+			'ext_address' => (string)$this->apiship->getData('shipping_apiship_ext_address')
+		];
+
+		if ($address['city'] == '' && !empty($this->session->data['shipping_address'])) {
+			$session_address = $this->session->data['shipping_address'];
+
+			$address = [
+				'country'     => trim((string)($session_address['iso_code_2'] ?? '')),
+				'region'      => (string)($session_address['zone'] ?? ''),
+				'city'        => trim((string)($session_address['city'] ?? '')),
+				'postcode'    => trim((string)($session_address['postcode'] ?? '')),
+				'ext_address' => trim((string)($session_address['address_1'] ?? ''))
+			];
+		}
+
+		return $address;
+	}
+
+	/**
 	 * Точки для карты по коду варианта доставки
 	 *
 	 * @param string $code
@@ -884,11 +913,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 	 * @return array<string, mixed>
 	 */
 	public function get_points(string $code): array {
-		$region = (string)$this->apiship->getData('shipping_apiship_region');
-		$city = (string)$this->apiship->getData('shipping_apiship_city');
-		$postcode = (string)$this->apiship->getData('shipping_apiship_postcode');
-		$ext_address = (string)$this->apiship->getData('shipping_apiship_ext_address');
-		$country = (string)$this->apiship->getData('shipping_apiship_country');
+		['country' => $country, 'region' => $region, 'city' => $city, 'postcode' => $postcode, 'ext_address' => $ext_address] = $this->get_checkout_address();
 
 		$this->apiship->toLog('get_points', [
 			'country'     => $country,
@@ -934,11 +959,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 		$delivery_type = $parce_code['delivery_type'];
 
-		$region = (string)$this->apiship->getData('shipping_apiship_region');
-		$city = (string)$this->apiship->getData('shipping_apiship_city');
-		$postcode = (string)$this->apiship->getData('shipping_apiship_postcode');
-		$ext_address = (string)$this->apiship->getData('shipping_apiship_ext_address');
-		$country = (string)$this->apiship->getData('shipping_apiship_country');
+		['country' => $country, 'region' => $region, 'city' => $city, 'postcode' => $postcode, 'ext_address' => $ext_address] = $this->get_checkout_address();
 
 		$cost = -1;
 		$address1 = '';
@@ -1685,11 +1706,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 			unset($quote['postcode'], $quote['address1']);
 		} elseif ($parce_code['delivery_type'] == 'door') {
-			$region = (string)$this->apiship->getData('shipping_apiship_region');
-			$city = (string)$this->apiship->getData('shipping_apiship_city');
-			$postcode = (string)$this->apiship->getData('shipping_apiship_postcode');
-			$ext_address = (string)$this->apiship->getData('shipping_apiship_ext_address');
-			$country = (string)$this->apiship->getData('shipping_apiship_country');
+			['country' => $country, 'region' => $region, 'city' => $city, 'postcode' => $postcode, 'ext_address' => $ext_address] = $this->get_checkout_address();
 
 			$apiship_calculator_data = $this->apiship->apiship_calculator($country, $region, $city, $postcode, $ext_address, [], $this->cart->getProducts(), $this->getCartTotal(), $this->is_cash_on_delivery());
 

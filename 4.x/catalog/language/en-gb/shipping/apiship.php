@@ -40,3 +40,4 @@ $_['shipping_apiship_map_type_3']                   = 'Russian Post office';
 $_['shipping_apiship_map_type_4']                   = 'Terminal';
 $_['shipping_apiship_error_no_points']              = 'No pickup points found. Try again or choose another shipping method';
 $_['shipping_apiship_error_map_load']               = 'Could not load the map. Reload the page';
+$_['shipping_apiship_error_recalculate']            = 'Shipping cost changed after the payment choice, please choose the shipping method again';

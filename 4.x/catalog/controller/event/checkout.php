@@ -31,6 +31,7 @@ class Checkout extends \Opencart\System\Engine\Controller {
 			'set_point_url'      => $this->url->link('extension/apiship/shipping/apiship.set_point', $language, true),
 			'tracing_url'        => $this->url->link('extension/apiship/shipping/apiship.get_last_tracing_id', $language, true),
 			'selected_url'       => $this->url->link('extension/apiship/shipping/apiship.get_selected', $language, true),
+			'confirm_url'        => $this->url->link('checkout/confirm.confirm', $language, true),
 			'yandex_api_key'     => (string)$this->config->get('shipping_apiship_yandex_api_key'),
 			'version'            => (string)($this->config->get('shipping_apiship_version_js_mod') ?: '1.3'),
 			'image_path'         => 'extension/apiship/catalog/view/image/',
@@ -45,7 +46,8 @@ class Checkout extends \Opencart\System\Engine\Controller {
 			'text_map_cash'      => $this->language->get('shipping_apiship_map_payment_cash'),
 			'text_map_card'      => $this->language->get('shipping_apiship_map_payment_card'),
 			'text_map_no_points' => $this->language->get('shipping_apiship_error_no_points'),
-			'text_map_load'      => $this->language->get('shipping_apiship_error_map_load')
+			'text_map_load'      => $this->language->get('shipping_apiship_error_map_load'),
+			'text_recalculate'   => $this->language->get('shipping_apiship_error_recalculate')
 		];
 
 		$output .= $this->load->view('extension/apiship/event/checkout_script', $script_data);
@@ -74,7 +76,18 @@ class Checkout extends \Opencart\System\Engine\Controller {
 
 		$this->load->model('extension/apiship/shipping/apiship');
 
-		$this->model_extension_apiship_shipping_apiship->refresh_quote($code);
+		$quote = $this->model_extension_apiship_shipping_apiship->refresh_quote($code);
+
+		// Пересчёт не удался (калькулятор недоступен, тариф больше не предлагается): старую цену оставлять нельзя —
+		// сбрасываем способ доставки, покупатель выбирает его заново; ядро без shipping_method заказ не оформит
+		if (!$quote) {
+			unset($this->session->data['shipping_method']);
+
+			$this->load->language('extension/apiship/shipping/apiship');
+
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(['error' => $this->language->get('shipping_apiship_error_recalculate')]));
+		}
 	}
 
 	/**
