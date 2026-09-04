@@ -121,9 +121,11 @@ class Apiship {
 			$this->log->write('curl error ' . $url . ' ' . print_r(curl_error($ch), true));
 		}
 
+		$code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+
 		curl_close($ch);
 
-		return ['body' => $result, 'headers' => $headers];
+		return ['body' => $result, 'headers' => $headers, 'code' => $code];
 	}
 
 	/**
@@ -163,9 +165,11 @@ class Apiship {
 			$this->log->write('curl error ' . $url . ' ' . print_r(curl_error($ch), true));
 		}
 
+		$code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+
 		curl_close($ch);
 
-		return ['body' => $result, 'headers' => $headers];
+		return ['body' => $result, 'headers' => $headers, 'code' => $code];
 	}
 
 	/**
@@ -582,10 +586,17 @@ class Apiship {
 
 		$this->toLog('shipping_apiship_calculator', ['url' => $url, 'params' => $params, 'output' => $data], !is_array($data['body']) || isset($data['body']['errors']));
 
-		// Транспортная ошибка или не-JSON ответ: не кешировать, иначе сбой держится 10 минут после восстановления API
-		if (!is_array($data['body'])) {
+		// Транспортная ошибка, не-JSON ответ, HTTP-ошибка (401/429/5xx) или тело без разделов расчёта:
+		// не кешировать, иначе сбой держится 10 минут после восстановления API
+		$http_code = (int)($output['code'] ?? 0);
+
+		$is_calculation = is_array($data['body']) && (isset($data['body']['deliveryToPoint']) || isset($data['body']['deliveryToDoor']));
+
+		if (!is_array($data['body']) || $http_code >= 400 || (!$is_calculation && !isset($data['body']['errors']))) {
+			$message = is_array($data['body']) && !empty($data['body']['message']) ? (string)$data['body']['message'] : ($this->apiship_params['shipping_apiship_error_timeout'] ?? '');
+
 			return [
-				'body'         => ['message' => $this->apiship_params['shipping_apiship_error_timeout'] ?? ''],
+				'body'         => ['message' => $message],
 				'x-tracing-id' => $x_tracing_id
 			];
 		}
