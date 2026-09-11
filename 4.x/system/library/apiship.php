@@ -185,7 +185,7 @@ class Apiship {
 		$data_key = 'apiship_' . $cmd . md5($limit . print_r($filter_list, true));
 		$data_hash = md5($cmd . $limit . print_r($filter_list, true));
 
-		$data = $this->getData($data_key);
+		$data = $this->cacheGet($data_key);
 
 		if ($data !== null && isset($data['data_hash']) && $data['data_hash'] == $data_hash) {
 			$this->toLog($data_key . ' cached');
@@ -233,15 +233,18 @@ class Apiship {
 			$offset += $rows_count;
 		} while ($rows_count > 0);
 
-		$this->toLog('shipping_apiship_data ' . $cmd, ['url' => $url, 'x_tracing_id' => $x_tracing_ids, 'output' => $rows]);
+		// Справочники в лог не пишем целиком: список точек — сотни килобайт на каждый расчёт
+		$this->toLog('shipping_apiship_data ' . $cmd, ['url' => $url, 'x_tracing_id' => $x_tracing_ids, 'rows' => count($rows)]);
 
-		$this->setData($data_key, ['rows' => $rows, 'data_hash' => $data_hash]);
+		$this->cacheSet($data_key, ['rows' => $rows, 'data_hash' => $data_hash]);
 
 		return $rows;
 	}
 
 	/**
-	 * Кеш в сессии OpenCart (общий для админки и витрины в рамках сессии)
+	 * Небольшие данные текущего чекаута в сессии OpenCart: адрес расчёта, выбранные ПВЗ, tracing id.
+	 * Справочники API сюда класть нельзя: сессия OC4 хранится одной JSON-строкой в колонке text (64 КБ),
+	 * переполнение молча обрезает её, и ядро теряет адрес доставки и корзину — для них есть cacheSet/cacheGet.
 	 *
 	 * @param string $key
 	 * @param mixed  $value
@@ -278,6 +281,55 @@ class Apiship {
 		}
 
 		return $item['value'] ?? null;
+	}
+
+	/**
+	 * Ключ файлового кеша OpenCart: свой для каждой сессии покупателя (расчёт зависит от корзины и адреса)
+	 *
+	 * @param string $key
+	 *
+	 * @return string
+	 */
+	private function cacheKey(string $key): string {
+		$session_id = '';
+
+		if ($this->registry->has('session')) {
+			$session_id = (string)$this->session->getId();
+		}
+
+		return 'apiship.' . md5($session_id . '|' . $key);
+	}
+
+	/**
+	 * Кеш ответов API (калькулятор, точки, списки) в кеше OpenCart, не в сессии
+	 *
+	 * @param string $key
+	 * @param mixed  $value
+	 * @param int    $expired_timeout_minuts
+	 *
+	 * @return void
+	 */
+	public function cacheSet(string $key, $value, int $expired_timeout_minuts = 10): void {
+		if (!isset($value) || !$this->registry->has('cache')) {
+			return;
+		}
+
+		$this->cache->set($this->cacheKey($key), ['value' => $value], 60 * max(1, $expired_timeout_minuts));
+	}
+
+	/**
+	 * @param string $key
+	 *
+	 * @return mixed
+	 */
+	public function cacheGet(string $key) {
+		if (!$this->registry->has('cache')) {
+			return null;
+		}
+
+		$item = $this->cache->get($this->cacheKey($key));
+
+		return is_array($item) && array_key_exists('value', $item) ? $item['value'] : null;
 	}
 
 	/**
@@ -370,7 +422,7 @@ class Apiship {
 		$data_hash = md5(print_r($points, true));
 		$data_key = 'apiship_points';
 
-		$data = $this->getData($data_key);
+		$data = $this->cacheGet($data_key);
 
 		if ($data !== null && isset($data['data_hash']) && $data['data_hash'] == $data_hash) {
 			$this->toLog($data_key . ' cached');
@@ -405,12 +457,12 @@ class Apiship {
 
 			$all_points = array_merge($all_points, $data['rows']);
 
-			$this->toLog('shipping_apiship points ', ['url' => $url, 'output' => $data]);
+			$this->toLog('shipping_apiship points ', ['url' => $url, 'rows' => count($data['rows'])]);
 
 			$offset++;
 		}
 
-		$this->setData($data_key, ['all_points' => $all_points, 'data_hash' => $data_hash]);
+		$this->cacheSet($data_key, ['all_points' => $all_points, 'data_hash' => $data_hash]);
 
 		return $all_points;
 	}
@@ -505,7 +557,7 @@ class Apiship {
 		$data_hash = md5($country . $region . $city . $postcode . $ext_address . print_r($providers, true) . print_r($products, true) . $total . $cash_on_delivery . print_r($extraParams, true));
 		$data_key = 'apiship_calculator';
 
-		$data = $this->getData($data_key);
+		$data = $this->cacheGet($data_key);
 
 		if ($data !== null && isset($data['data_hash']) && $data['data_hash'] == $data_hash) {
 			$this->toLog($data_key . ' cached');
@@ -584,7 +636,7 @@ class Apiship {
 			'data_hash'    => $data_hash
 		];
 
-		$this->toLog('shipping_apiship_calculator', ['url' => $url, 'params' => $params, 'output' => $data], !is_array($data['body']) || isset($data['body']['errors']));
+		$this->toLog('shipping_apiship_calculator', ['url' => $url, 'params' => $params, 'output' => $this->summarize_calculator($data)], !is_array($data['body']) || isset($data['body']['errors']));
 
 		// Транспортная ошибка, не-JSON ответ, HTTP-ошибка (401/429/5xx) или тело без разделов расчёта:
 		// не кешировать, иначе сбой держится 10 минут после восстановления API
@@ -608,9 +660,36 @@ class Apiship {
 			];
 		}
 
-		$this->setData($data_key, $data);
+		$this->cacheSet($data_key, $data);
 
 		return $data;
+	}
+
+	/**
+	 * Ответ калькулятора для лога: тарифы без списков pointIds (в них тысячи id на каждый тариф)
+	 *
+	 * @param array<string, mixed> $data
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function summarize_calculator(array $data): array {
+		if (!is_array($data['body'] ?? null)) {
+			return $data;
+		}
+
+		$body = $data['body'];
+
+		foreach (['deliveryToPoint', 'deliveryToDoor'] as $section) {
+			foreach ($body[$section] ?? [] as $i => $provider) {
+				foreach ($provider['tariffs'] ?? [] as $j => $tariff) {
+					if (isset($tariff['pointIds'])) {
+						$body[$section][$i]['tariffs'][$j]['pointIds'] = count($tariff['pointIds']) . ' ids';
+					}
+				}
+			}
+		}
+
+		return ['body' => $body] + $data;
 	}
 
 	/**

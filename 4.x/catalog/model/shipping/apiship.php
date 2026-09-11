@@ -1028,7 +1028,8 @@ class Apiship extends \Opencart\System\Engine\Model {
 			$select_points = [];
 		}
 
-		$select_points[$parce_code['provider']] = $shipping_apiship;
+		// В сессии храним только код выбранной точки по службе доставки: get_quote_list сверяет именно код
+		$select_points[$parce_code['provider']] = ['code' => $code];
 
 		$this->apiship->setData('shipping_apiship_select_points', $select_points);
 

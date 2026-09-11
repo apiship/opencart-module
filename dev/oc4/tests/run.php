@@ -31,6 +31,26 @@ namespace ApishipTests {
 
 	class StubSession {
 		public array $data = [];
+
+		public function getId(): string {
+			return 'test-session';
+		}
+	}
+
+	class StubCache {
+		public array $items = [];
+
+		public function get(string $key) {
+			return $this->items[$key] ?? [];
+		}
+
+		public function set(string $key, $value, int $expire = 0): void {
+			$this->items[$key] = $value;
+		}
+
+		public function delete(string $key): void {
+			unset($this->items[$key]);
+		}
 	}
 
 	class StubLog {
@@ -76,6 +96,7 @@ namespace ApishipTests {
 		$registry = new \Opencart\System\Engine\Registry();
 
 		$registry->set('session', new StubSession());
+		$registry->set('cache', new StubCache());
 		$registry->set('log', new StubLog());
 		$registry->set('load', new StubLoader());
 		$registry->set('length', new StubConverter());
@@ -347,6 +368,23 @@ namespace ApishipTests {
 	$lib->setData('expired', 'x', -1);
 
 	check('expired value is dropped', $lib->getData('expired') === null);
+
+	echo "api cache (OpenCart cache, not session)\n";
+
+	$lib_cache = library();
+
+	$lib_cache->cacheSet('big', ['rows' => range(1, 500)]);
+
+	check('cacheGet returns stored value', count($lib_cache->cacheGet('big')['rows']) == 500);
+	check('cacheGet null for missing key', $lib_cache->cacheGet('missing') === null);
+	check('api cache does not touch the session', !isset(registry()->get('session')->data['shipping_apiship']));
+
+	$big_registry = registry();
+	$big_lib = new Apiship($big_registry, ['shipping_apiship_token' => 't', 'shipping_apiship_mode' => 'n', 'shipping_apiship_provider' => []], $big_registry->get('log'));
+
+	$big_lib->cacheSet('points', ['all_points' => array_fill(0, 300, ['id' => 1, 'name' => str_repeat('x', 200)])]);
+
+	check('session stays small after caching 300 points', strlen(json_encode($big_registry->get('session')->data)) < 1000, (string)strlen(json_encode($big_registry->get('session')->data)));
 
 	echo "calculator\n";
 

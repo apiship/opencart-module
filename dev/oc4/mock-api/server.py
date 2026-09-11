@@ -70,6 +70,12 @@ POINTS = [
     point(6, "cdek", "SKL1", "Склад СДЭК Москва", 4, 55.8000, 37.7000, "Складочная", "1"),
 ]
 
+# Реалистичный объём: у магазина с несколькими службами калькулятор возвращает сотни ПВЗ на город.
+# Сессия OC4 хранится одной JSON-строкой (колонка text, 64 КБ) — справочник в сессии её переполнит.
+for _n in range(300):
+    _pid = 100 + _n
+    POINTS.append(point(_pid, "cdek" if _n % 2 else "boxberry", "MASS%03d" % _n, "ПВЗ №%d, вход со двора, 1 этаж, рядом с аптекой" % _pid, 1 + (_n % 2), 55.60 + (_n % 30) * 0.01, 37.40 + (_n // 30) * 0.02, "Улица имени Героев Панфиловцев", str(_n + 1)))
+
 ORDERS = {}
 NEXT_ORDER_ID = [1001]
 
@@ -127,7 +133,7 @@ def calculator(body):
                         "deliveryCost": base + cod,
                         "deliveryCostOriginal": base,
                         "pickupTypes": [1, 2],
-                        "pointIds": [1, 2, 3],
+                        "pointIds": [1, 2, 3] + [100 + n for n in range(300) if n % 2],
                     }
                 ],
             },
@@ -143,7 +149,7 @@ def calculator(body):
                         "deliveryCost": base - 50 + cod,
                         "deliveryCostOriginal": base - 50,
                         "pickupTypes": [1, 2],
-                        "pointIds": [4, 5],
+                        "pointIds": [4, 5] + [100 + n for n in range(300) if not n % 2],
                     }
                 ],
             },
