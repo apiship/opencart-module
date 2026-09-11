@@ -4,7 +4,10 @@ namespace Opencart\Admin\Controller\Extension\Apiship\Event;
  * Class Order
  *
  * Обработчики событий админки (регистрируются при установке модуля). Действия с заказом выполняет
- * admin-контроллер extension/apiship/shipping/order (user_token + право modify на sale/order):
+ * admin-контроллер extension/apiship/shipping/order: ядро OC4 пускает на него только с правом access,
+ * сам контроллер требует modify на этот маршрут и на sale/order. При установке права выдаются группе
+ * установившего; другим группам их выдают в Группах пользователей (см. README), иначе вкладка показывает
+ * предупреждение, а кнопок в списке заказов нет.
  * - admin/view/sale/order_info/before → info      (вкладка «ApiShip» на странице заказа)
  * - admin/view/sale/order_info/after  → infoAfter (поиск ПВЗ в модалке выбора способа доставки)
  * - admin/view/sale/order/after       → list      (кнопки «Ярлык» и «Акт» в списке заказов)
@@ -12,6 +15,18 @@ namespace Opencart\Admin\Controller\Extension\Apiship\Event;
  * @package Opencart\Admin\Controller\Extension\Apiship\Event
  */
 class Order extends \Opencart\System\Engine\Controller {
+	private const ROUTE = 'extension/apiship/shipping/order';
+
+	/**
+	 * Может ли пользователь выполнять действия ApiShip: те же права, что проверяют ядро (access на маршрут)
+	 * и контроллер действий (modify на маршрут и на sale/order)
+	 *
+	 * @return bool
+	 */
+	private function can_act(): bool {
+		return $this->user->hasPermission('access', self::ROUTE) && $this->user->hasPermission('modify', self::ROUTE) && $this->user->hasPermission('modify', 'sale/order');
+	}
+
 	/**
 	 * @param string               $route
 	 * @param array<string, mixed> $data
@@ -55,6 +70,8 @@ class Order extends \Opencart\System\Engine\Controller {
 
 		$tab_data['order_id'] = $order_id;
 		$tab_data['user_token'] = $this->session->data['user_token'];
+		// Нет прав на маршрут действий — вкладка с подсказкой, какие права выдать, вместо молчащих кнопок
+		$tab_data['apiship_permission_error'] = $this->can_act() ? '' : sprintf($this->language->get('error_shipping_apiship_order_permission'), self::ROUTE);
 		$tab_data['export_url'] = $this->url->link('extension/apiship/shipping/order.export', $token, true);
 		$tab_data['export_cancel_url'] = $this->url->link('extension/apiship/shipping/order.cancel', $token, true);
 		$tab_data['get_order_params_url'] = $this->url->link('extension/apiship/shipping/order.params', $token . '&order_id=' . $order_id, true);
@@ -102,8 +119,8 @@ class Order extends \Opencart\System\Engine\Controller {
 	 * @return void
 	 */
 	public function list(string &$route, array &$data, string &$output): void {
-		// Ярлыки и акты доступны только пользователям с правом изменять заказы
-		if (!$this->config->get('shipping_apiship_status') || !$this->user->hasPermission('modify', 'sale/order')) {
+		// Ярлыки и акты идут через маршрут действий: кнопки только тем, кого он пустит
+		if (!$this->config->get('shipping_apiship_status') || !$this->can_act()) {
 			return;
 		}
 

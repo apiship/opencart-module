@@ -120,7 +120,7 @@ class Apiship {
 	 *
 	 * @return array<string, mixed> body, headers, code
 	 */
-	private function curl_request(string $url, ?string $body): array {
+	protected function curl_request(string $url, ?string $body): array {
 		$headers = [];
 
 		if ($this->curl === null) {
@@ -174,7 +174,8 @@ class Apiship {
 	}
 
 	/**
-	 * Постраничная выгрузка списков API с кешированием в сессии
+	 * Постраничная выгрузка списков API с кешированием в кеше OpenCart (не в сессии): ключ — команда и фильтр,
+	 * TTL — CACHE_LISTS_MINUTES
 	 *
 	 * @param string             $cmd
 	 * @param int                $limit
@@ -288,7 +289,8 @@ class Apiship {
 
 	/**
 	 * Ключ файлового кеша OpenCart. Справочники (точки, службы, статусы) и расчёты зависят только от токена
-	 * и параметров запроса, поэтому кеш общий для всех покупателей магазина: ключ без идентификатора сессии
+	 * и параметров запроса, поэтому кеш общий для всех покупателей магазина: ключ без идентификатора сессии.
+	 * Параметры запроса вызывающий код кладёт в $key (хеш запроса), иначе покупатели вытесняли бы друг друга из одного слота
 	 *
 	 * @param string $key
 	 *
@@ -427,7 +429,7 @@ class Apiship {
 	 */
 	public function apiship_points(array $points): array {
 		$data_hash = md5(print_r($points, true));
-		$data_key = 'apiship_points';
+		$data_key = 'apiship_points.' . $data_hash;
 
 		$data = $this->cacheGet($data_key);
 
@@ -627,17 +629,6 @@ class Apiship {
 			}
 		}
 
-		$data_hash = md5($country . $region . $city . $postcode . $ext_address . print_r($providers, true) . print_r($products, true) . $total . $cash_on_delivery . print_r($extraParams, true));
-		$data_key = 'apiship_calculator';
-
-		$data = $this->cacheGet($data_key);
-
-		if ($data !== null && isset($data['data_hash']) && $data['data_hash'] == $data_hash) {
-			$this->toLog($data_key . ' cached');
-
-			return $data;
-		}
-
 		$calculate_data = $this->calculate_places($products, $total);
 
 		$items_cost = $calculate_data['total_cost'];
@@ -697,6 +688,19 @@ class Apiship {
 
 		if ($extraParams) {
 			$params['extraParams'] = $extraParams;
+		}
+
+		// Ключ кеша — весь запрос к калькулятору: адрес отправителя и настройки из админки входят в него,
+		// а cart_id покупателя — нет, поэтому одинаковые корзины с одним адресом делят один результат
+		$data_hash = md5((string)json_encode($params));
+		$data_key = 'apiship_calculator.' . $data_hash;
+
+		$data = $this->cacheGet($data_key);
+
+		if ($data !== null && isset($data['data_hash']) && $data['data_hash'] == $data_hash) {
+			$this->toLog($data_key . ' cached');
+
+			return $data;
 		}
 
 		$output = $this->curl_post($url, $params);

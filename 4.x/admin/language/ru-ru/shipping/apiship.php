@@ -203,3 +203,4 @@ $_['button_apiship_cancel']                                       = 'Отмен�
 $_['error_apiship_key']                                           = 'Неверный ключ';
 $_['entry_shipping_apiship_cron_example']                         = 'Пример команды cron';
 $_['help_shipping_apiship_cron']                                  = 'Cron-эндпоинты принимают только POST; ключ передаётся заголовком X-Apiship-Key (или POST-полем key), в адресе ключ не принимается.';
+$_['error_shipping_apiship_order_permission']                   = 'Нет прав на действия ApiShip: выдайте вашей группе пользователей «Доступ» и «Изменение» для маршрута %s (Система → Пользователи → Группы пользователей).';

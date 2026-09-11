@@ -92,6 +92,28 @@ namespace ApishipTests {
 		}
 	}
 
+	// Библиотека без сети: ответы API подставляются по подстроке url, каждый запрос записывается
+	class StubApi extends Apiship {
+		public array $responses = [];
+		public array $requests = [];
+
+		protected function curl_request(string $url, ?string $body): array {
+			$this->requests[] = $url;
+
+			foreach ($this->responses as $needle => $payload) {
+				if (strpos($url, $needle) !== false) {
+					return ['body' => json_encode($payload), 'headers' => ['x-tracing-id' => ['t-1']], 'code' => 200];
+				}
+			}
+
+			return ['body' => '{"message":"not found"}', 'headers' => [], 'code' => 404];
+		}
+
+		public function requests_to(string $needle): int {
+			return count(array_filter($this->requests, fn($url) => strpos($url, $needle) !== false));
+		}
+	}
+
 	function registry(): \Opencart\System\Engine\Registry {
 		$registry = new \Opencart\System\Engine\Registry();
 
@@ -115,8 +137,8 @@ namespace ApishipTests {
 		return $registry;
 	}
 
-	function library(array $params = []): Apiship {
-		$registry = registry();
+	function library(array $params = [], ?\Opencart\System\Engine\Registry $registry = null): Apiship {
+		$registry = $registry ?? registry();
 
 		$defaults = [
 			'shipping_apiship_rub_select'   => 'RUB',
@@ -371,13 +393,15 @@ namespace ApishipTests {
 
 	echo "api cache (OpenCart cache, not session)\n";
 
-	$lib_cache = library();
+	$cache_registry = registry();
+	$lib_cache = library([], $cache_registry);
 
 	$lib_cache->cacheSet('big', ['rows' => range(1, 500)]);
 
 	check('cacheGet returns stored value', count($lib_cache->cacheGet('big')['rows']) == 500);
 	check('cacheGet null for missing key', $lib_cache->cacheGet('missing') === null);
-	check('api cache does not touch the session', !isset(registry()->get('session')->data['shipping_apiship']));
+	check('api cache does not touch the session', $cache_registry->get('session')->data === []);
+	check('api cache lands in the OpenCart cache', count($cache_registry->get('cache')->items) == 1);
 
 	$big_registry = registry();
 	$big_lib = new Apiship($big_registry, ['shipping_apiship_token' => 't', 'shipping_apiship_mode' => 'n', 'shipping_apiship_provider' => []], $big_registry->get('log'));
@@ -391,6 +415,68 @@ namespace ApishipTests {
 	$calc = $lib->apiship_calculator('RU', 'Москва', '', '', '', [], $products, 200.0, false);
 
 	check('empty city → message without network call', isset($calc['body']['message']));
+
+	echo "api calls: cache in OpenCart cache, key per request\n";
+
+	$api_params = [
+		'shipping_apiship_url'          => 'http://api.test/v1/',
+		'shipping_apiship_token'        => 'tok',
+		'shipping_apiship_sending_city' => 'Москва'
+	];
+
+	$api_responses = [
+		'lists/providers' => ['rows' => [['key' => 'cdek']]],
+		'lists/points'    => ['rows' => [['id' => 1, 'code' => 'P1'], ['id' => 2, 'code' => 'P2']]],
+		'calculator'      => ['deliveryToPoint' => [], 'deliveryToDoor' => []]
+	];
+
+	$api_registry = registry();
+	$api = new StubApi($api_registry, $api_params + ['shipping_apiship_rub_select' => 'RUB', 'shipping_apiship_gr_select' => 1, 'shipping_apiship_cm_select' => 1, 'shipping_apiship_mode' => 'shipping_apiship_mode_normal', 'shipping_apiship_provider' => [], 'shipping_apiship_parcel_length' => 10, 'shipping_apiship_parcel_width' => 10, 'shipping_apiship_parcel_height' => 10, 'shipping_apiship_parcel_weight' => 500], $api_registry->get('log'));
+	$api->responses = $api_responses;
+
+	$api->apiship_providers();
+	$api->apiship_providers();
+
+	check('lists: second call is served from cache', $api->requests_to('lists/providers') == 1, (string)$api->requests_to('lists/providers'));
+
+	$api->apiship_points([1, 2]);
+	$api->apiship_points([1, 2]);
+
+	check('points: second call with the same ids is served from cache', $api->requests_to('lists/points') == 1, (string)$api->requests_to('lists/points'));
+
+	$api->apiship_points([3]);
+
+	check('points: another id list is another cache entry, not an overwrite check', $api->requests_to('lists/points') == 2, (string)$api->requests_to('lists/points'));
+
+	$api->apiship_points([1, 2]);
+
+	check('points: first list still cached after the second one', $api->requests_to('lists/points') == 2, (string)$api->requests_to('lists/points'));
+
+	$cart_a = array_map(fn($product) => $product + ['cart_id' => 1001], $products);
+	$cart_b = array_map(fn($product) => $product + ['cart_id' => 2002], $products);
+
+	$api->apiship_calculator('RU', 'Москва', 'Москва', '', 'Тверская 10', [], $cart_a, 200.0, false);
+	$api->apiship_calculator('RU', 'Москва', 'Москва', '', 'Тверская 10', [], $cart_a, 200.0, false);
+
+	check('calculator: same request is served from cache', $api->requests_to('calculator') == 1, (string)$api->requests_to('calculator'));
+
+	$api->apiship_calculator('RU', 'Москва', 'Москва', '', 'Тверская 10', [], $cart_b, 200.0, false);
+
+	check('calculator: another customer with the same cart and address shares the result (cart_id not in key)', $api->requests_to('calculator') == 1, (string)$api->requests_to('calculator'));
+
+	$api->apiship_calculator('RU', 'Москва', 'Москва', '', 'Тверская 10', [], $cart_a, 200.0, true);
+
+	check('calculator: cash on delivery changes the request → new call', $api->requests_to('calculator') == 2, (string)$api->requests_to('calculator'));
+
+	$api_other_sender = new StubApi($api_registry, ['shipping_apiship_sending_city' => 'Тула'] + $api_params + ['shipping_apiship_rub_select' => 'RUB', 'shipping_apiship_gr_select' => 1, 'shipping_apiship_cm_select' => 1, 'shipping_apiship_mode' => 'shipping_apiship_mode_normal', 'shipping_apiship_provider' => [], 'shipping_apiship_parcel_length' => 10, 'shipping_apiship_parcel_width' => 10, 'shipping_apiship_parcel_height' => 10, 'shipping_apiship_parcel_weight' => 500], $api_registry->get('log'));
+	$api_other_sender->responses = $api_responses;
+
+	$api_other_sender->apiship_calculator('RU', 'Москва', 'Москва', '', 'Тверская 10', [], $cart_a, 200.0, false);
+
+	check('calculator: changed sender settings do not hit the old cache entry', $api_other_sender->requests_to('calculator') == 1, (string)$api_other_sender->requests_to('calculator'));
+
+	check('api calls never write to the session', $api_registry->get('session')->data === [], json_encode($api_registry->get('session')->data));
+	check('api calls write to the OpenCart cache', count($api_registry->get('cache')->items) >= 5, (string)count($api_registry->get('cache')->items));
 
 	echo "format\n";
 

@@ -203,3 +203,4 @@ $_['button_apiship_cancel']                                       = 'Cancel orde
 $_['error_apiship_key']                                           = 'Invalid key';
 $_['entry_shipping_apiship_cron_example']                         = 'Cron command example';
 $_['help_shipping_apiship_cron']                                  = 'Cron endpoints accept POST only; pass the key in the X-Apiship-Key header (or the key POST field), the key is not accepted in the URL.';
+$_['error_shipping_apiship_order_permission']                   = 'No permission for ApiShip actions: grant your user group Access and Modify for the route %s (System → Users → User Groups).';
