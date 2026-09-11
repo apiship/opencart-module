@@ -25,6 +25,12 @@ class Apiship {
 	 * @var object
 	 */
 	private object $log;
+	/**
+	 * Один curl-хэндл на запрос страницы: keep-alive к API вместо нового TLS-соединения на каждый вызов
+	 *
+	 * @var \CurlHandle|null
+	 */
+	private ?\CurlHandle $curl = null;
 
 	/**
 	 * @param \Opencart\System\Engine\Registry $registry
@@ -93,39 +99,7 @@ class Apiship {
 	 * @return array<string, mixed>
 	 */
 	private function curl_get(string $url): array {
-		$headers = [];
-
-		$ch = curl_init();
-
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $this->getHeaders());
-		curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) use (&$headers) {
-			$len = strlen($header);
-
-			$header = explode(':', $header, 2);
-
-			if (count($header) < 2) {
-				return $len;
-			}
-
-			$headers[strtolower(trim($header[0]))][] = trim($header[1]);
-
-			return $len;
-		});
-
-		$result = curl_exec($ch);
-
-		if ($result === false) {
-			$this->log->write('curl error ' . $url . ' ' . print_r(curl_error($ch), true));
-		}
-
-		$code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-
-		curl_close($ch);
-
-		return ['body' => $result, 'headers' => $headers, 'code' => $code];
+		return $this->curl_request($url, null);
 	}
 
 	/**
@@ -135,15 +109,33 @@ class Apiship {
 	 * @return array<string, mixed>
 	 */
 	private function curl_post(string $url, array $data): array {
+		return $this->curl_request($url, json_encode($data));
+	}
+
+	/**
+	 * HTTP-запрос к API: общий хэндл (keep-alive), сжатие ответа, таймауты соединения и ответа
+	 *
+	 * @param string      $url
+	 * @param string|null $body null — GET, иначе POST с JSON-телом
+	 *
+	 * @return array<string, mixed> body, headers, code
+	 */
+	private function curl_request(string $url, ?string $body): array {
 		$headers = [];
 
-		$ch = curl_init();
+		if ($this->curl === null) {
+			$this->curl = curl_init();
+		}
+
+		$ch = $this->curl;
+
+		curl_reset($ch);
 
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+		curl_setopt($ch, CURLOPT_ENCODING, '');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $this->getHeaders());
 		curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) use (&$headers) {
 			$len = strlen($header);
@@ -159,6 +151,11 @@ class Apiship {
 			return $len;
 		});
 
+		if ($body !== null) {
+			curl_setopt($ch, CURLOPT_POST, 1);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+		}
+
 		$result = curl_exec($ch);
 
 		if ($result === false) {
@@ -167,9 +164,13 @@ class Apiship {
 
 		$code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 
-		curl_close($ch);
-
 		return ['body' => $result, 'headers' => $headers, 'code' => $code];
+	}
+
+	public function __destruct() {
+		if ($this->curl !== null) {
+			curl_close($this->curl);
+		}
 	}
 
 	/**
@@ -231,12 +232,14 @@ class Apiship {
 
 			$rows_count = count($data['rows']);
 			$offset += $rows_count;
-		} while ($rows_count > 0);
+
+			// Страница короче лимита — это последняя; отдельный запрос за пустой страницей не нужен
+		} while ($rows_count >= $limit);
 
 		// Справочники в лог не пишем целиком: список точек — сотни килобайт на каждый расчёт
 		$this->toLog('shipping_apiship_data ' . $cmd, ['url' => $url, 'x_tracing_id' => $x_tracing_ids, 'rows' => count($rows)]);
 
-		$this->cacheSet($data_key, ['rows' => $rows, 'data_hash' => $data_hash]);
+		$this->cacheSet($data_key, ['rows' => $rows, 'data_hash' => $data_hash], self::CACHE_LISTS_MINUTES);
 
 		return $rows;
 	}
@@ -284,21 +287,25 @@ class Apiship {
 	}
 
 	/**
-	 * Ключ файлового кеша OpenCart: свой для каждой сессии покупателя (расчёт зависит от корзины и адреса)
+	 * Ключ файлового кеша OpenCart. Справочники (точки, службы, статусы) и расчёты зависят только от токена
+	 * и параметров запроса, поэтому кеш общий для всех покупателей магазина: ключ без идентификатора сессии
 	 *
 	 * @param string $key
 	 *
 	 * @return string
 	 */
 	private function cacheKey(string $key): string {
-		$session_id = '';
+		$token = (string)($this->apiship_params['shipping_apiship_token'] ?? '');
 
-		if ($this->registry->has('session')) {
-			$session_id = (string)$this->session->getId();
-		}
-
-		return 'apiship.' . md5($session_id . '|' . $key);
+		return 'apiship.' . md5($token . '|' . $key);
 	}
+
+	/**
+	 * TTL кеша: справочники (точки, службы, статусы, подключения) меняются редко — 6 часов;
+	 * расчёт стоимости зависит от корзины и адреса — 10 минут
+	 */
+	public const CACHE_LISTS_MINUTES = 360;
+	public const CACHE_CALCULATOR_MINUTES = 10;
 
 	/**
 	 * Кеш ответов API (калькулятор, точки, списки) в кеше OpenCart, не в сессии
@@ -309,7 +316,7 @@ class Apiship {
 	 *
 	 * @return void
 	 */
-	public function cacheSet(string $key, $value, int $expired_timeout_minuts = 10): void {
+	public function cacheSet(string $key, $value, int $expired_timeout_minuts = self::CACHE_CALCULATOR_MINUTES): void {
 		if (!isset($value) || !$this->registry->has('cache')) {
 			return;
 		}
@@ -457,14 +464,80 @@ class Apiship {
 
 			$all_points = array_merge($all_points, $data['rows']);
 
+			$this->remember_points($data['rows']);
+
 			$this->toLog('shipping_apiship points ', ['url' => $url, 'rows' => count($data['rows'])]);
 
 			$offset++;
 		}
 
-		$this->cacheSet($data_key, ['all_points' => $all_points, 'data_hash' => $data_hash]);
+		$this->cacheSet($data_key, ['all_points' => $all_points, 'data_hash' => $data_hash], self::CACHE_LISTS_MINUTES);
 
 		return $all_points;
+	}
+
+	/**
+	 * Одна точка по id: сначала из уже загруженных справочников в кеше, без запроса к API
+	 *
+	 * @param string $id
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function apiship_point(string $id): array {
+		$id = trim($id);
+
+		if ($id == '' || !ctype_digit($id)) {
+			return [];
+		}
+
+		$cached = $this->cacheGet('apiship_points_index');
+
+		if (is_array($cached) && isset($cached[$id])) {
+			return $cached[$id];
+		}
+
+		$data = $this->apiship_point_by_params(['id=' . $id]);
+
+		$point = isset($data[0]) && is_array($data[0]) ? $data[0] : [];
+
+		if ($point) {
+			$this->remember_points([$point]);
+		}
+
+		return $point;
+	}
+
+	/**
+	 * Индекс точек по id в кеше: пополняется каждым ответом lists/points, чтобы точечные запросы
+	 * (выбранный ПВЗ в чекауте, экспорт заказа) не ходили в API повторно
+	 *
+	 * @param array<int, array<string, mixed>> $points
+	 *
+	 * @return void
+	 */
+	public function remember_points(array $points): void {
+		if (!$points || !$this->registry->has('cache')) {
+			return;
+		}
+
+		$index = $this->cacheGet('apiship_points_index');
+
+		if (!is_array($index)) {
+			$index = [];
+		}
+
+		foreach ($points as $point) {
+			if (isset($point['id'])) {
+				$index[(string)$point['id']] = $point;
+			}
+		}
+
+		// Ограничение размера индекса: старые записи вытесняются
+		if (count($index) > 5000) {
+			$index = array_slice($index, -5000, null, true);
+		}
+
+		$this->cacheSet('apiship_points_index', $index, self::CACHE_LISTS_MINUTES);
 	}
 
 	/**

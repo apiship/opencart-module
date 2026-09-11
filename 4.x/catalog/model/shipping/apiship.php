@@ -135,9 +135,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 	 * @return array<string, mixed>
 	 */
 	private function apiship_point(string $id): array {
-		$data = $this->apiship->apiship_point_by_params(['id=' . $id]);
-
-		return $data[0] ?? [];
+		return $this->apiship->apiship_point($id);
 	}
 
 	/**
@@ -266,6 +264,17 @@ class Apiship extends \Opencart\System\Engine\Model {
 	 */
 	private function get_image_url(string $file): string {
 		return HTTP_SERVER . 'extension/apiship/catalog/view/image/' . $file;
+	}
+
+	/**
+	 * Экранирование строки для вставки в html
+	 *
+	 * @param mixed $value
+	 *
+	 * @return string
+	 */
+	private function esc($value): string {
+		return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 	}
 
 	/**
@@ -527,6 +536,10 @@ class Apiship extends \Opencart\System\Engine\Model {
 			$points_data = $this->get_points_array($country, $region, $city, $postcode, $ext_address);
 
 			if ($points_data['error'] == 'no_error') {
+				foreach ($points_data['points'] as $i => $point) {
+					$points_data['points'][$i]['name'] = $this->point_title($point);
+				}
+
 				usort($points_data['points'], function($a, $b) {
 					return strcmp($a['name'], $b['name']);
 				});
@@ -695,16 +708,17 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 		$loading_html = '<div id="apiship_loading_' . $code . '" class="apiship_loading" style="visibility:hidden;"></div>';
 
+		// Строки из API (названия точек, адреса, тарифы, описания) вставляются в html-заголовок: экранируем
 		$template_ar = [
 			'%type'        => $type_name,
-			'%company'     => $this->get_provider_name($providerKey),
-			'%name'        => $pointName,
-			'%address'     => $pointAddress,
-			'%tariff'      => $tariffName,
+			'%company'     => $this->esc($this->get_provider_name($providerKey)),
+			'%name'        => $this->esc($pointName),
+			'%address'     => $this->esc($pointAddress),
+			'%tariff'      => $this->esc($tariffName),
 			'%time'        => $time,
-			'%description' => $tariffDescription,
-			'%logo'        => $this->get_image_ref($providerKey),
-			'%link'        => '<a class="apiship_points" href="#" onclick="apiship_open(\'' . $code . '\');return false;">' . $this->get_link_text($code) . $loading_html . '</a>'
+			'%description' => $this->esc($tariffDescription),
+			'%logo'        => $this->get_image_ref($this->esc($providerKey)),
+			'%link'        => '<a class="apiship_points" href="#" onclick="apiship_open(\'' . $this->esc($code) . '\');return false;">' . $this->get_link_text($code) . $loading_html . '</a>'
 		];
 
 		return str_replace(array_keys($template_ar), array_values($template_ar), $template);
@@ -834,35 +848,29 @@ class Apiship extends \Opencart\System\Engine\Model {
 						$cost = $this->currency->convert((float)$tariff['deliveryCost'], (string)$this->apiship_params['shipping_apiship_rub_select'], (string)$this->config->get('config_currency'));
 						$cost_with_tax = $this->tax->calculate($cost, (int)$this->apiship_params['shipping_apiship_tax_class_id'], (bool)$this->config->get('config_tax'));
 
+						// Только то, что нужно карте; заголовок по шаблону (для админки) считается отдельно в point_title()
 						$all_points[] = [
 							'lon'          => $point['lon'],
 							'lat'          => $point['lat'],
 							'code'         => 'apiship.' . $code,
 							'tariff'       => $tariff['tariffName'],
-							'daysMin'      => $tariff['daysMin'],
-							'daysMax'      => $tariff['daysMax'],
 							'text'         => $this->currency->format($cost_with_tax, $this->session->data['currency']),
 							'cost'         => $this->currency->format($cost_with_tax, $this->session->data['currency'], 0, false),
 							'cost_value'   => (float)$tariff['deliveryCost'],
-							'name'         => $this->fill_template([
-								'template'          => $this->apiship_params['shipping_apiship_title_point_template'],
-								'type'              => 'point',
-								'sub_type'          => $point['type'],
-								'providerKey'       => $provider['providerKey'],
-								'tariffName'        => $tariff['tariffName'],
-								'pointName'         => $point['name'],
-								'pointAddress'      => $point['address'],
-								'daysMin'           => $tariff['daysMin'],
-								'daysMax'           => $tariff['daysMax'],
-								'tariffDescription' => $tariff['tariffDescription'],
-								'code'              => 'apiship.' . $code
-							]),
 							'type'         => $apiship_point_types[(int)$point['type']] ?? (string)$point['type'],
 							'provider'     => $apiship_providers[$provider['providerKey']] ?? $provider['providerKey'],
 							'provider_key' => $provider['providerKey'],
 							'address'      => $point['address'],
-							'paymentCash'  => $point['paymentCash'],
-							'paymentCard'  => $point['paymentCard']
+							'paymentCash'  => (int)$point['paymentCash'],
+							'paymentCard'  => (int)$point['paymentCard'],
+							'_title'       => [
+								'sub_type'          => $point['type'],
+								'pointName'         => $point['name'],
+								'tariffName'        => $tariff['tariffName'],
+								'daysMin'           => $tariff['daysMin'],
+								'daysMax'           => $tariff['daysMax'],
+								'tariffDescription' => $tariff['tariffDescription']
+							]
 						];
 					}
 				}
@@ -906,6 +914,31 @@ class Apiship extends \Opencart\System\Engine\Model {
 	}
 
 	/**
+	 * Заголовок точки по шаблону из настроек (нужен только списку ПВЗ в админке, на карте не используется)
+	 *
+	 * @param array<string, mixed> $point элемент get_points_array
+	 *
+	 * @return string
+	 */
+	private function point_title(array $point): string {
+		$t = $point['_title'] ?? [];
+
+		return $this->fill_template([
+			'template'          => $this->apiship_params['shipping_apiship_title_point_template'],
+			'type'              => 'point',
+			'sub_type'          => $t['sub_type'] ?? '',
+			'providerKey'       => $point['provider_key'],
+			'tariffName'        => $t['tariffName'] ?? '',
+			'pointName'         => $t['pointName'] ?? '',
+			'pointAddress'      => $point['address'],
+			'daysMin'           => $t['daysMin'] ?? '',
+			'daysMax'           => $t['daysMax'] ?? '',
+			'tariffDescription' => $t['tariffDescription'] ?? '',
+			'code'              => $point['code']
+		]);
+	}
+
+	/**
 	 * Точки для карты по коду варианта доставки
 	 *
 	 * @param string $code
@@ -932,6 +965,8 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 		foreach ($data['points'] as $point) {
 			if ($this->apiship_params['shipping_apiship_group_points'] || $point['provider_key'] == $parce_code['provider']) {
+				unset($point['_title'], $point['cost_value']);
+
 				$points[] = $point;
 			}
 		}

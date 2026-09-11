@@ -3,23 +3,34 @@ namespace Opencart\Catalog\Controller\Extension\Apiship\Shipping;
 /**
  * Class Apiship
  *
- * Ajax-эндпоинты витрины и cron-эндпоинты модуля.
+ * Эндпоинты витрины: ajax чекаута (сессия покупателя) и cron (ключ из настроек).
+ * Действия с заказами из админки идут через admin-контроллер extension/apiship/shipping/order.
  * Маршруты: index.php?route=extension/apiship/shipping/apiship.<method>
  *
  * @package Opencart\Catalog\Controller\Extension\Apiship\Shipping
  */
 class Apiship extends \Opencart\System\Engine\Controller {
 	/**
-	 * Проверка ключа для cron-эндпоинтов и вызовов из админки
+	 * Ключ cron: заголовок X-Apiship-Key либо POST-поле key. В query string ключ не принимается,
+	 * чтобы он не оседал в логах веб-сервера и прокси
 	 *
 	 * @return bool
 	 */
 	private function check_key(): bool {
-		$key = $this->request->get['key'] ?? ($this->request->post['key'] ?? '');
+		$key = (string)($this->request->server['HTTP_X_APISHIP_KEY'] ?? ($this->request->post['key'] ?? ''));
 
 		$config_key = (string)$this->config->get('shipping_apiship_cron_key');
 
-		return $config_key != '' && hash_equals($config_key, (string)$key);
+		return $config_key != '' && $key != '' && hash_equals($config_key, $key);
+	}
+
+	/**
+	 * Изменяющие действия только POST
+	 *
+	 * @return bool
+	 */
+	private function is_post(): bool {
+		return strtoupper((string)($this->request->server['REQUEST_METHOD'] ?? '')) == 'POST';
 	}
 
 	/**
@@ -39,6 +50,25 @@ class Apiship extends \Opencart\System\Engine\Controller {
 		$this->load->language('extension/apiship/shipping/apiship');
 
 		return ['status' => 'error', 'error' => $this->language->get('shipping_apiship_error_key')];
+	}
+
+	/**
+	 * Cron-эндпоинт: POST + ключ
+	 *
+	 * @return array<string, mixed>|null ошибка либо null если доступ есть
+	 */
+	private function cron_guard(): ?array {
+		if (!$this->is_post()) {
+			$this->load->language('extension/apiship/shipping/apiship');
+
+			return ['status' => 'error', 'error' => $this->language->get('shipping_apiship_error_method')];
+		}
+
+		if (!$this->check_key()) {
+			return $this->error_key();
+		}
+
+		return null;
 	}
 
 	/**
@@ -68,53 +98,15 @@ class Apiship extends \Opencart\System\Engine\Controller {
 	}
 
 	/**
-	 * Экспорт заказа (из карточки заказа в админке)
-	 *
-	 * @return void
-	 */
-	public function export_order(): void {
-		if (!$this->check_key()) {
-			$this->json($this->error_key());
-
-			return;
-		}
-
-		$this->load->model('extension/apiship/shipping/apiship');
-
-		$params = array_merge($this->request->get, $this->request->post);
-
-		$order_id = (int)($params['id'] ?? 0);
-
-		$this->json($this->model_extension_apiship_shipping_apiship->export_order($order_id, $params));
-	}
-
-	/**
-	 * Отмена заказа в ApiShip
-	 *
-	 * @return void
-	 */
-	public function cancel_order(): void {
-		if (!$this->check_key()) {
-			$this->json($this->error_key());
-
-			return;
-		}
-
-		$this->load->model('extension/apiship/shipping/apiship');
-
-		$order_id = (int)($this->request->get['id'] ?? ($this->request->post['id'] ?? 0));
-
-		$this->json($this->model_extension_apiship_shipping_apiship->cancel_order($order_id));
-	}
-
-	/**
-	 * Cron: импорт статусов
+	 * Cron: импорт статусов (POST, ключ)
 	 *
 	 * @return void
 	 */
 	public function import_orders(): void {
-		if (!$this->check_key()) {
-			$this->json($this->error_key());
+		$error = $this->cron_guard();
+
+		if ($error) {
+			$this->json($error);
 
 			return;
 		}
@@ -125,13 +117,15 @@ class Apiship extends \Opencart\System\Engine\Controller {
 	}
 
 	/**
-	 * Cron: групповой экспорт
+	 * Cron: групповой экспорт (POST, ключ)
 	 *
 	 * @return void
 	 */
 	public function export_orders(): void {
-		if (!$this->check_key()) {
-			$this->json($this->error_key());
+		$error = $this->cron_guard();
+
+		if ($error) {
+			$this->json($error);
 
 			return;
 		}
@@ -142,77 +136,7 @@ class Apiship extends \Opencart\System\Engine\Controller {
 	}
 
 	/**
-	 * Ярлыки (POST id — список order_id через запятую)
-	 *
-	 * @return void
-	 */
-	public function get_label(): void {
-		if (!$this->check_key()) {
-			$this->json(['labels' => []] + $this->error_key());
-
-			return;
-		}
-
-		$this->load->model('extension/apiship/shipping/apiship');
-
-		$this->json($this->model_extension_apiship_shipping_apiship->get_label($this->get_ids()));
-	}
-
-	/**
-	 * Акты приёма-передачи (POST id — список order_id через запятую)
-	 *
-	 * @return void
-	 */
-	public function get_waybill(): void {
-		if (!$this->check_key()) {
-			$this->json(['waybills' => []] + $this->error_key());
-
-			return;
-		}
-
-		$this->load->model('extension/apiship/shipping/apiship');
-
-		$this->json($this->model_extension_apiship_shipping_apiship->get_waybill($this->get_ids()));
-	}
-
-	/**
-	 * @return array<int, int>
-	 */
-	private function get_ids(): array {
-		$id = (string)($this->request->post['id'] ?? ($this->request->get['id'] ?? ''));
-
-		$ids = [];
-
-		foreach (explode(',', $id) as $value) {
-			if ((int)$value > 0) {
-				$ids[] = (int)$value;
-			}
-		}
-
-		return $ids;
-	}
-
-	/**
-	 * Параметры экспорта для карточки заказа
-	 *
-	 * @return void
-	 */
-	public function get_order_params(): void {
-		if (!$this->check_key()) {
-			$this->json($this->error_key());
-
-			return;
-		}
-
-		$this->load->model('extension/apiship/shipping/apiship');
-
-		$order_id = (int)($this->request->get['id'] ?? 0);
-
-		$this->json($this->model_extension_apiship_shipping_apiship->get_order_params($order_id));
-	}
-
-	/**
-	 * Стоимость доставки без учёта правил
+	 * Стоимость доставки без учёта правил (POST order_id, ключ)
 	 *
 	 * Модуль сам этот эндпоинт не вызывает: публичный URL для внешних интеграций и модов,
 	 * сохранён для паритета с пакетом 3.x.
@@ -220,15 +144,17 @@ class Apiship extends \Opencart\System\Engine\Controller {
 	 * @return void
 	 */
 	public function get_delivery_cost_original(): void {
-		if (!$this->check_key()) {
-			$this->json($this->error_key());
+		$error = $this->cron_guard();
+
+		if ($error) {
+			$this->json($error);
 
 			return;
 		}
 
 		$this->load->model('extension/apiship/shipping/apiship');
 
-		$order_id = (int)($this->request->get['id'] ?? 0);
+		$order_id = (int)($this->request->post['order_id'] ?? ($this->request->post['id'] ?? 0));
 
 		$this->json($this->model_extension_apiship_shipping_apiship->get_delivery_cost_original($order_id));
 	}

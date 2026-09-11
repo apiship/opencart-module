@@ -32,22 +32,23 @@ function get_yandex_api_key() {
 
 // Разметка варианта доставки ApiShip в модалке выбора способа доставки
 function apiship_render_quote_label(label, quote) {
+    var esc = ApishipMap.escapeHtml;
     var html = '';
 
     if (quote.apiship_image) {
-        html += '<img src="' + quote.apiship_image + '"' + (quote.apiship_image_class ? ' class="' + quote.apiship_image_class + '"' : '') + '> ';
+        html += '<img src="' + esc(quote.apiship_image) + '"' + (quote.apiship_image_class ? ' class="' + esc(quote.apiship_image_class) + '"' : '') + '> ';
     }
 
-    var text = quote.name + ' - ' + quote.text;
+    var text = quote.name + ' - ' + esc(quote.text);
 
     if (quote.code.indexOf('point_') !== -1 && quote.code.indexOf('error') !== -1) {
-        text = quote.name + ' ' + apiship_config.texts.from + ' ' + quote.text;
+        text = quote.name + ' ' + esc(apiship_config.texts.from) + ' ' + esc(quote.text);
     }
 
     html += text;
 
     if (quote.apiship_link) {
-        html += ' <a class="' + (quote.apiship_link_class || '') + '" href="#" onclick="' + quote.apiship_link + '">' + (quote.apiship_link_text || '') + '<div id="apiship_loading_' + quote.code + '" class="apiship_loading" style="visibility:hidden;"></div></a>';
+        html += ' <a class="' + esc(quote.apiship_link_class || '') + '" href="#" onclick="' + esc(quote.apiship_link) + '">' + esc(quote.apiship_link_text || '') + '<div id="apiship_loading_' + esc(quote.code) + '" class="apiship_loading" style="visibility:hidden;"></div></a>';
     }
 
     label.html(html);

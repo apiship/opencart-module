@@ -201,3 +201,5 @@ $_['text_apiship_not_apiship_order']                              = 'Order shipp
 $_['button_apiship_export']                                       = 'Create order in ApiShip';
 $_['button_apiship_cancel']                                       = 'Cancel order in ApiShip';
 $_['error_apiship_key']                                           = 'Invalid key';
+$_['entry_shipping_apiship_cron_example']                         = 'Cron command example';
+$_['help_shipping_apiship_cron']                                  = 'Cron endpoints accept POST only; pass the key in the X-Apiship-Key header (or the key POST field), the key is not accepted in the URL.';

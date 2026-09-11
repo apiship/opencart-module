@@ -157,9 +157,9 @@ class ApishipMap {
 
 								let el = this.getParentElement().getElementsByClassName('apiship_cluster')[0];
 								if (changeProviderKey) {
-									el.innerHTML = ' ' + texts.from + ' ' + text_min;
+									el.innerHTML = ' ' + ApishipMap.escapeHtml(texts.from) + ' ' + ApishipMap.escapeHtml(text_min);
 								} else {
-									el.innerHTML = '<img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + providerKey + '.svg">' + ' ' + texts.from + ' ' + text_min;
+									el.innerHTML = '<img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + encodeURIComponent(providerKey) + '.svg">' + ' ' + ApishipMap.escapeHtml(texts.from) + ' ' + ApishipMap.escapeHtml(text_min);
 								}
 							}
 						}
@@ -174,15 +174,18 @@ class ApishipMap {
 				let point_types = [];
 				let providers = [];
 
+				const esc = ApishipMap.escapeHtml;
+
 				for (const point of points) {
 					if (!point_types.includes(point.type)) point_types.push(point.type);
 					if (!providers.includes(point.provider)) providers.push(point.provider);
 
+					// Адрес, тариф, стоимость приходят из API — в html только экранированными
 					const balloonContentBody =
-						'<h3 style="font-size: 1.3em;font-weight: bold;margin-bottom: 0.5em;">' + point.address + '</h3>' +
-						'<b>' + texts.map_cost + ': </b>' + point.text + '<br>' +
-						(point.paymentCash == 1 ? '<img title="' + texts.map_cash + '" src="' + this.image_path + 'apiship_cash.png">' : '') + ' ' +
-						(point.paymentCard == 1 ? '<img title="' + texts.map_card + '" src="' + this.image_path + 'apiship_card.png">' : '');
+						'<h3 style="font-size: 1.3em;font-weight: bold;margin-bottom: 0.5em;">' + esc(point.address) + '</h3>' +
+						'<b>' + esc(texts.map_cost) + ': </b>' + esc(point.text) + '<br>' +
+						(point.paymentCash == 1 ? '<img title="' + esc(texts.map_cash) + '" src="' + esc(this.image_path) + 'apiship_cash.png">' : '') + ' ' +
+						(point.paymentCard == 1 ? '<img title="' + esc(texts.map_card) + '" src="' + esc(this.image_path) + 'apiship_card.png">' : '');
 
 					objectManager.add({
 						type: 'Feature',
@@ -197,15 +200,15 @@ class ApishipMap {
 							providerKey: point.provider_key,
 							cost: parseFloat(point.cost),
 							text: point.text,
-							balloonContentHeader: point.tariff,
+							balloonContentHeader: esc(point.tariff),
 							balloonContentBody: balloonContentBody,
-							balloonContentFooter: '<a href=# data-placemarkid="' + point.code + '" class="list_item btn btn-success">' + texts.map_take_here + '</a>'
+							balloonContentFooter: '<a href=# data-placemarkid="' + esc(point.code) + '" class="list_item btn btn-success">' + esc(texts.map_take_here) + '</a>'
 						},
 						options: {
 							iconLayout: 'default#imageWithContent',
 							iconImageHref: '',
 							iconContentLayout: ymaps.templateLayoutFactory.createClass(
-								'<span class="apiship_cluster"><img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + point.provider_key + '.svg"> ' + point.text + '</span>'
+								'<span class="apiship_cluster"><img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + encodeURIComponent(point.provider_key) + '.svg"> ' + esc(point.text) + '</span>'
 							),
 							iconImageSize: [140, 40],
 							iconImageOffset: [0, 0],
@@ -320,6 +323,16 @@ class ApishipMap {
 				if (el !== null) el.remove();
 			}
 		};
+	}
+
+	// Экранирование строки для вставки в html (данные точек приходят из API)
+	static escapeHtml(value) {
+		return String(value == null ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
 	}
 
 	// Ключ Яндекс API из конфига; глобальная get_yandex_api_key() — для сторонних скриптов, определяющих её сами

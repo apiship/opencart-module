@@ -3,7 +3,8 @@ namespace Opencart\Admin\Controller\Extension\Apiship\Event;
 /**
  * Class Order
  *
- * Обработчики событий админки (регистрируются при установке модуля):
+ * Обработчики событий админки (регистрируются при установке модуля). Действия с заказом выполняет
+ * admin-контроллер extension/apiship/shipping/order (user_token + право modify на sale/order):
  * - admin/view/sale/order_info/before → info      (вкладка «ApiShip» на странице заказа)
  * - admin/view/sale/order_info/after  → infoAfter (поиск ПВЗ в модалке выбора способа доставки)
  * - admin/view/sale/order/after       → list      (кнопки «Ярлык» и «Акт» в списке заказов)
@@ -20,7 +21,7 @@ class Order extends \Opencart\System\Engine\Controller {
 	 * @return void
 	 */
 	public function info(string &$route, array &$data, string &$code, string &$output): void {
-		// Вкладка содержит cron-ключ, которым выполняются экспорт и отмена: только для пользователей с правом изменять заказы
+		// Экспорт и отмена меняют заказ: вкладка только для пользователей с правом изменять заказы
 		if (!$this->config->get('shipping_apiship_status') || !$this->user->hasPermission('modify', 'sale/order')) {
 			return;
 		}
@@ -49,17 +50,17 @@ class Order extends \Opencart\System\Engine\Controller {
 
 		$tab_data = $this->language->all();
 
-		$catalog = HTTP_CATALOG . 'index.php?route=extension/apiship/shipping/apiship.';
-		$key = '&key=' . urlencode((string)$this->config->get('shipping_apiship_cron_key'));
+		// Все действия — через admin-контроллер с user_token; cron-ключ в html не попадает
+		$token = 'user_token=' . $this->session->data['user_token'];
 
 		$tab_data['order_id'] = $order_id;
 		$tab_data['user_token'] = $this->session->data['user_token'];
-		$tab_data['export_url'] = $catalog . 'export_order&id=' . $order_id . $key;
-		$tab_data['export_cancel_url'] = $catalog . 'cancel_order&id=' . $order_id . $key;
-		$tab_data['get_order_params_url'] = $catalog . 'get_order_params&id=' . $order_id . $key;
-		$tab_data['label_url'] = $catalog . 'get_label' . $key;
-		$tab_data['waybill_url'] = $catalog . 'get_waybill' . $key;
-		$tab_data['history_url'] = $this->url->link('sale/order.history', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $order_id, true);
+		$tab_data['export_url'] = $this->url->link('extension/apiship/shipping/order.export', $token, true);
+		$tab_data['export_cancel_url'] = $this->url->link('extension/apiship/shipping/order.cancel', $token, true);
+		$tab_data['get_order_params_url'] = $this->url->link('extension/apiship/shipping/order.params', $token . '&order_id=' . $order_id, true);
+		$tab_data['label_url'] = $this->url->link('extension/apiship/shipping/order.label', $token, true);
+		$tab_data['waybill_url'] = $this->url->link('extension/apiship/shipping/order.waybill', $token, true);
+		$tab_data['history_url'] = $this->url->link('sale/order.history', $token . '&order_id=' . $order_id, true);
 
 		if (!isset($data['tabs']) || !is_array($data['tabs'])) {
 			$data['tabs'] = [];
@@ -101,7 +102,7 @@ class Order extends \Opencart\System\Engine\Controller {
 	 * @return void
 	 */
 	public function list(string &$route, array &$data, string &$output): void {
-		// Кнопки ярлыков и актов содержат cron-ключ: только для пользователей с правом изменять заказы
+		// Ярлыки и акты доступны только пользователям с правом изменять заказы
 		if (!$this->config->get('shipping_apiship_status') || !$this->user->hasPermission('modify', 'sale/order')) {
 			return;
 		}
@@ -110,11 +111,10 @@ class Order extends \Opencart\System\Engine\Controller {
 
 		$list_data = $this->language->all();
 
-		$catalog = HTTP_CATALOG . 'index.php?route=extension/apiship/shipping/apiship.';
-		$key = '&key=' . urlencode((string)$this->config->get('shipping_apiship_cron_key'));
+		$token = 'user_token=' . $this->session->data['user_token'];
 
-		$list_data['label_url'] = $catalog . 'get_label' . $key;
-		$list_data['waybill_url'] = $catalog . 'get_waybill' . $key;
+		$list_data['label_url'] = $this->url->link('extension/apiship/shipping/order.label', $token, true);
+		$list_data['waybill_url'] = $this->url->link('extension/apiship/shipping/order.waybill', $token, true);
 
 		$output = $this->inject($output, $this->load->view('extension/apiship/event/order_list', $list_data));
 	}

@@ -398,6 +398,60 @@ namespace ApishipTests {
 	check('format_weight floors', $lib->format_weight(10.9) == 10.0);
 	check('format_dimension rounds', $lib->format_dimension(10.5) == 11.0);
 
+
+	echo "points index (cache)\n";
+
+	$registry_points = registry();
+	$points_lib = new Apiship($registry_points, [
+		'shipping_apiship_rub_select' => 'RUB',
+		'shipping_apiship_gr_select'  => 1,
+		'shipping_apiship_cm_select'  => 1,
+		'shipping_apiship_token'      => 'token-a',
+		'shipping_apiship_mode'       => 'shipping_apiship_mode_normal',
+		'shipping_apiship_provider'   => []
+	], $registry_points->get('log'));
+
+	$points_lib->remember_points([
+		['id' => 7, 'code' => 'P7', 'name' => 'Точка 7'],
+		['id' => '8', 'code' => 'P8', 'name' => 'Точка 8'],
+		['code' => 'no-id']
+	]);
+
+	check('point found in index by id without API call', $points_lib->apiship_point('7')['code'] == 'P7');
+	check('string id is indexed too', $points_lib->apiship_point('8')['name'] == 'Точка 8');
+	check('non-digit id → empty array, no API call', $points_lib->apiship_point('7; DROP') === []);
+	check('empty id → empty array', $points_lib->apiship_point('') === []);
+
+	$cache_keys = array_keys($registry_points->get('cache')->items);
+
+	check('index stored under token-scoped key', count($cache_keys) == 1 && str_starts_with($cache_keys[0], 'apiship.'), implode(',', $cache_keys));
+
+	$other_session = registry();
+	$other_session->set('cache', $registry_points->get('cache'));
+	$other_session->get('session')->data['dummy'] = 'other customer';
+
+	$same_token = new Apiship($other_session, [
+		'shipping_apiship_rub_select' => 'RUB',
+		'shipping_apiship_gr_select'  => 1,
+		'shipping_apiship_cm_select'  => 1,
+		'shipping_apiship_token'      => 'token-a',
+		'shipping_apiship_mode'       => 'shipping_apiship_mode_normal',
+		'shipping_apiship_provider'   => []
+	], $other_session->get('log'));
+
+	check('cache is shared between customers of one store (same token)', $same_token->apiship_point('7')['code'] == 'P7');
+
+	$other_token = new Apiship($other_session, [
+		'shipping_apiship_rub_select' => 'RUB',
+		'shipping_apiship_gr_select'  => 1,
+		'shipping_apiship_cm_select'  => 1,
+		'shipping_apiship_token'      => 'token-b',
+		'shipping_apiship_mode'       => 'shipping_apiship_mode_normal',
+		'shipping_apiship_provider'   => []
+	], $other_session->get('log'));
+
+	check('another token does not see the index', $other_token->cacheGet('apiship_points_index') === [] || $other_token->cacheGet('apiship_points_index') === null);
+
 	echo "\n" . ($failures ? "FAILED: $failures, passed: $passed" : "All $passed tests passed") . "\n";
 
 	exit($failures ? 1 : 0);

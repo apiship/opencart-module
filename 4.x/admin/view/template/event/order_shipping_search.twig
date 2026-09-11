@@ -1,3 +1,4 @@
+<script src="../extension/apiship/admin/view/javascript/apiship_order.js" type="text/javascript"></script>
 <script type="text/javascript"><!--
 // ApiShip: поиск ПВЗ в модалке выбора способа доставки при редактировании заказа
 (function() {
@@ -29,7 +30,7 @@
                         }
 
                         html += '/>';
-                        html += '  <label for="input-shipping-method-' + k + '">' + json['shipping_methods'][i]['quote'][j]['name'] + ' - ' + json['shipping_methods'][i]['quote'][j]['text'] + '</label>';
+                        html += '  <label for="input-shipping-method-' + k + '">' + json['shipping_methods'][i]['quote'][j]['name'] + ' - ' + apiship_escape(json['shipping_methods'][i]['quote'][j]['text']) + '</label>';
                         html += '</div>';
 
                         k++;

@@ -129,8 +129,10 @@
 
         $.ajax({
             url: '{{ export_url }}',
+            type: 'post',
             dataType: 'json',
             data: {
+                order_id: '{{ order_id }}',
                 shipping_apiship_pickup_type: $('#shipping_apiship_pickup_type').val(),
                 shipping_apiship_place_length: $('#shipping_apiship_place_length').val(),
                 shipping_apiship_place_width: $('#shipping_apiship_place_width').val(),
@@ -175,7 +177,9 @@
 
         $.ajax({
             url: '{{ export_cancel_url }}',
+            type: 'post',
             dataType: 'json',
+            data: {order_id: '{{ order_id }}'},
             beforeSend: function() {
                 $(element).button('loading');
             },

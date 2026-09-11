@@ -304,7 +304,7 @@
                   <label for="input-export-cron-url" class="col-sm-3 col-form-label">{{ entry_shipping_apiship_export_cron_url }}</label>
                   <div class="col-sm-9">
                     <div class="input-group">
-                      <input type="text" id="input-export-cron-url" value="{{ shipping_apiship_export_cron_url }}&key={{ shipping_apiship_cron_key }}" class="form-control" readonly/>
+                      <input type="text" id="input-export-cron-url" value="{{ shipping_apiship_export_cron_url }}" class="form-control" readonly/>
                       <button type="button" class="btn btn-light apiship-copy" data-target="#input-export-cron-url" title="{{ text_shipping_apiship_cron_url_copy }}"><i class="fa-solid fa-clipboard"></i></button>
                     </div>
                   </div>
@@ -313,9 +313,19 @@
                   <label for="input-import-cron-url" class="col-sm-3 col-form-label">{{ entry_shipping_apiship_import_cron_url }}</label>
                   <div class="col-sm-9">
                     <div class="input-group">
-                      <input type="text" id="input-import-cron-url" value="{{ shipping_apiship_import_cron_url }}&key={{ shipping_apiship_cron_key }}" class="form-control" readonly/>
+                      <input type="text" id="input-import-cron-url" value="{{ shipping_apiship_import_cron_url }}" class="form-control" readonly/>
                       <button type="button" class="btn btn-light apiship-copy" data-target="#input-import-cron-url" title="{{ text_shipping_apiship_cron_url_copy }}"><i class="fa-solid fa-clipboard"></i></button>
                     </div>
+                  </div>
+                </div>
+                <div class="row mb-3">
+                  <label for="input-cron-example" class="col-sm-3 col-form-label">{{ entry_shipping_apiship_cron_example }}</label>
+                  <div class="col-sm-9">
+                    <div class="input-group">
+                      <input type="text" id="input-cron-example" value="curl -X POST -H &quot;X-Apiship-Key: {{ shipping_apiship_cron_key }}&quot; &quot;{{ shipping_apiship_export_cron_url }}&quot;" class="form-control" readonly/>
+                      <button type="button" class="btn btn-light apiship-copy" data-target="#input-cron-example" title="{{ text_shipping_apiship_cron_url_copy }}"><i class="fa-solid fa-clipboard"></i></button>
+                    </div>
+                    <div class="form-text">{{ help_shipping_apiship_cron }}</div>
                   </div>
                 </div>
                 <div class="row mb-3">
@@ -464,8 +474,7 @@ $('.apiship-copy').on('click', function() {
 });
 
 $('#input-cron-key').on('input', function() {
-    $('#input-export-cron-url').val('{{ shipping_apiship_export_cron_url }}&key=' + $(this).val());
-    $('#input-import-cron-url').val('{{ shipping_apiship_import_cron_url }}&key=' + $(this).val());
+    $('#input-cron-example').val('curl -X POST -H "X-Apiship-Key: ' + $(this).val() + '" "{{ shipping_apiship_export_cron_url }}"');
 });
 
 $('.shipping_apiship_provider').select2({

@@ -1,0 +1,186 @@
+<?php
+namespace Opencart\Admin\Controller\Extension\Apiship\Shipping;
+/**
+ * Class Order
+ *
+ * Действия с заказом из админки: экспорт в ApiShip, отмена, ярлыки, акты, параметры экспорта.
+ * Авторизация — сессия админки (user_token) и право modify на sale/order; cron-ключ сюда не попадает.
+ * Модель витрины вызывается через экземпляр магазина (как sale/order.call в ядре OC4).
+ *
+ * Маршруты: index.php?route=extension/apiship/shipping/order.<method>&user_token=…
+ *
+ * @package Opencart\Admin\Controller\Extension\Apiship\Shipping
+ */
+class Order extends \Opencart\System\Engine\Controller {
+	/**
+	 * Проверка прав: любое действие с заказом требует modify на sale/order
+	 *
+	 * @return string текст ошибки или '' если доступ есть
+	 */
+	private function permission_error(): string {
+		$this->load->language('extension/apiship/shipping/apiship');
+
+		if (!$this->user->hasPermission('modify', 'sale/order')) {
+			return $this->language->get('error_permission');
+		}
+
+		return '';
+	}
+
+	/**
+	 * Модель витрины в контексте магазина заказа
+	 *
+	 * @param int $order_id
+	 *
+	 * @return object|null модель extension/apiship/shipping/apiship витрины
+	 */
+	private function catalog_model(int $order_id): ?object {
+		$this->load->model('sale/order');
+
+		$order_info = $order_id ? $this->model_sale_order->getOrder($order_id) : [];
+
+		$store_id = (int)($order_info['store_id'] ?? 0);
+		$language = (string)($order_info['language_code'] ?? $this->config->get('config_language'));
+		$currency = (string)($order_info['currency_code'] ?? $this->config->get('config_currency'));
+
+		$this->load->model('setting/store');
+
+		$store = $this->model_setting_store->createStoreInstance($store_id, $language, $currency);
+
+		$store->session->data['currency'] = $currency;
+
+		$store->load->model('extension/apiship/shipping/apiship');
+
+		$model = $store->model_extension_apiship_shipping_apiship;
+
+		// Сессия экземпляра одноразовая: её не сохраняем и не плодим
+		$store->session->destroy();
+
+		return $model;
+	}
+
+	/**
+	 * @param mixed $data
+	 *
+	 * @return void
+	 */
+	private function json($data): void {
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($data));
+	}
+
+	/**
+	 * @return array<int, int>
+	 */
+	private function ids(): array {
+		// Список заказов и вкладка заказа шлют строку «1,2,3»; массив id[] тоже принимаем
+		$id = $this->request->post['id'] ?? '';
+
+		$values = is_array($id) ? $id : explode(',', (string)$id);
+
+		$ids = [];
+
+		foreach ($values as $value) {
+			if (is_scalar($value) && (int)$value > 0) {
+				$ids[] = (int)$value;
+			}
+		}
+
+		return array_values(array_unique($ids));
+	}
+
+	/**
+	 * Параметры экспорта для вкладки заказа (GET order_id)
+	 *
+	 * @return void
+	 */
+	public function params(): void {
+		$error = $this->permission_error();
+
+		if ($error) {
+			$this->json(['error' => $error]);
+
+			return;
+		}
+
+		$order_id = (int)($this->request->get['order_id'] ?? 0);
+
+		$this->json($this->catalog_model($order_id)->get_order_params($order_id));
+	}
+
+	/**
+	 * Экспорт заказа в ApiShip (POST order_id + параметры места)
+	 *
+	 * @return void
+	 */
+	public function export(): void {
+		$error = $this->permission_error();
+
+		if ($error) {
+			$this->json(['error' => $error]);
+
+			return;
+		}
+
+		$order_id = (int)($this->request->post['order_id'] ?? 0);
+
+		$this->json($this->catalog_model($order_id)->export_order($order_id, $this->request->post));
+	}
+
+	/**
+	 * Отмена заказа в ApiShip (POST order_id)
+	 *
+	 * @return void
+	 */
+	public function cancel(): void {
+		$error = $this->permission_error();
+
+		if ($error) {
+			$this->json(['error' => $error]);
+
+			return;
+		}
+
+		$order_id = (int)($this->request->post['order_id'] ?? 0);
+
+		$this->json($this->catalog_model($order_id)->cancel_order($order_id));
+	}
+
+	/**
+	 * Ярлыки (POST id — список order_id через запятую)
+	 *
+	 * @return void
+	 */
+	public function label(): void {
+		$error = $this->permission_error();
+
+		if ($error) {
+			$this->json(['labels' => [], 'error' => $error]);
+
+			return;
+		}
+
+		$ids = $this->ids();
+
+		$this->json($this->catalog_model($ids[0] ?? 0)->get_label($ids));
+	}
+
+	/**
+	 * Акты приёма-передачи (POST id — список order_id через запятую)
+	 *
+	 * @return void
+	 */
+	public function waybill(): void {
+		$error = $this->permission_error();
+
+		if ($error) {
+			$this->json(['waybills' => [], 'error' => $error]);
+
+			return;
+		}
+
+		$ids = $this->ids();
+
+		$this->json($this->catalog_model($ids[0] ?? 0)->get_waybill($ids));
+	}
+}

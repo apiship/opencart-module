@@ -43,7 +43,7 @@ CI в репозитории нет — эти две команды и сцен
 2. Оформить заказ.
 3. Админка → Заказы → заказ → вкладка «ApiShip»: параметры места заполнены, «Создать заказ в ApiShip» → статус и трек-ссылка появились, кнопки «Ярлык» и «Акт» отдают ссылки на файлы.
 4. Список заказов: отметить заказ → кнопки ярлыка/акта в шапке.
-5. Cron: `curl "http://localhost:8080/index.php?route=extension/apiship/shipping/apiship.export_orders&key=<ключ>"` и `...apiship.import_orders&key=<ключ>` (ключ — в настройках модуля).
+5. Cron (только POST, ключ в заголовке): `curl -X POST -H "X-Apiship-Key: <ключ>" "http://localhost:8080/index.php?route=extension/apiship/shipping/apiship.export_orders"` и `...apiship.import_orders` (ключ — в настройках модуля; в адресе ключ не принимается).
 
 ## Mock API
 

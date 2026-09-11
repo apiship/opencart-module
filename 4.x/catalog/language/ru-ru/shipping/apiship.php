@@ -41,3 +41,4 @@ $_['shipping_apiship_map_type_4']                   = 'Терминал';
 $_['shipping_apiship_error_no_points']              = 'Пункты выдачи не найдены. Попробуйте ещё раз или выберите другой способ доставки';
 $_['shipping_apiship_error_map_load']               = 'Не удалось загрузить карту. Обновите страницу';
 $_['shipping_apiship_error_recalculate']            = 'Стоимость доставки изменилась после выбора оплаты, выберите способ доставки заново';
+$_['shipping_apiship_error_method']                 = 'Метод не поддерживается: используйте POST';
