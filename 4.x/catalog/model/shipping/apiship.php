@@ -278,6 +278,18 @@ class Apiship extends \Opencart\System\Engine\Model {
 	}
 
 	/**
+	 * Экранирование строки, которая могла прийти уже экранированной (адрес из запроса OpenCart):
+	 * сначала снимаем сущности, потом экранируем — на выходе всегда ровно один слой
+	 *
+	 * @param mixed $value
+	 *
+	 * @return string
+	 */
+	private function esc_once($value): string {
+		return $this->esc(html_entity_decode((string)$value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+	}
+
+	/**
 	 * @param string $code
 	 *
 	 * @return string
@@ -606,21 +618,26 @@ class Apiship extends \Opencart\System\Engine\Model {
 		}
 
 		if ($this->apiship_params['shipping_apiship_error_stub_show'] && empty($quote_data)) {
+			// Имя варианта — html (как и у тарифов из fill_template), поэтому сообщение API и город из адреса
+			// покупателя экранируются: заглушка попадает и в чекаут, и в модалку доставки при редактировании заказа
+			// в админке. Город ядро OpenCart уже прогнало через htmlspecialchars на входе, поэтому экранируем
+			// нормализующе (decode → encode), чтобы «&» и кавычки в названии города не показывались дважды
+
 			// нет данных, потому что таймаут
 			$title = $this->apiship_params['shipping_apiship_error_timeout'];
 
 			// нет данных, потому что ошибка
 			if (isset($data['message'])) {
-				$title = $data['message'];
+				$title = $this->esc_once($data['message']);
 
 				foreach ($data['errors'] ?? [] as $error) {
-					$title .= ', ' . $error['message'];
+					$title .= ', ' . $this->esc_once($error['message'] ?? '');
 				}
 			}
 
 			// нет данных, потому что поиск не нашел
 			if (isset($data['deliveryToPoint']) || isset($data['deliveryToDoor'])) {
-				$title = sprintf($this->apiship_params['shipping_apiship_no_shipping'], $city . ', ' . $region);
+				$title = sprintf($this->apiship_params['shipping_apiship_no_shipping'], $this->esc_once($city . ', ' . $region));
 			}
 
 			$quote_data['error'] = [

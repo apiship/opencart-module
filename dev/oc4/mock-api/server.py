@@ -17,9 +17,11 @@ from urllib.parse import urlparse, parse_qs, unquote
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8085
 
+# Третья служба и последний статус — с html в имени: страница настроек модуля обязана показать их как текст
 PROVIDERS = [
     {"key": "cdek", "name": "СДЭК"},
     {"key": "boxberry", "name": "Boxberry"},
+    {"key": "evilhtml", "name": "Evil <img src=x onerror=alert(1)>"},
 ]
 
 STATUSES = [
@@ -29,6 +31,7 @@ STATUSES = [
     {"key": "readyForRecipient", "name": "Готов к выдаче"},
     {"key": "delivered", "name": "Доставлен"},
     {"key": "canceled", "name": "Отменён"},
+    {"key": "evilhtml", "name": "<script>alert('status')</script>"},
 ]
 
 
@@ -115,6 +118,10 @@ def filter_points(filter_string):
 
 
 def calculator(body):
+    # Город «Нигде» в адресе назначения: тарифов нет — модуль показывает заглушку «нет доставки»
+    if "Нигде" in ((body.get("to") or {}).get("addressString") or ""):
+        return {"deliveryToPoint": [], "deliveryToDoor": []}
+
     places = body.get("places") or [{}]
     weight = float(places[0].get("weight") or 1)
     base = 300 + round(weight / 1000) * 50
