@@ -79,7 +79,8 @@
                     $('#shipping_apiship_order_status').text('{{ entry_shipping_apiship_order_status_not_export|escape('js') }}');
                 }
 
-                if (json['tracking_url'] && json['tracking_url'].length > 0) {
+                // Трек-ссылка приходит из API: ссылкой делаем только http(s), остальное показываем текстом
+                if (json['tracking_url'] && /^https?:\/\//i.test(json['tracking_url'])) {
                     var link = $('<a>', {
                         href: json['tracking_url'],
                         text: json['tracking_url'],
@@ -88,6 +89,8 @@
                     });
 
                     $('#shipping_apiship_tracking_url').empty().append(link);
+                } else if (json['tracking_url'] && json['tracking_url'].length > 0) {
+                    $('#shipping_apiship_tracking_url').text(json['tracking_url']);
                 } else {
                     $('#shipping_apiship_tracking_url').text('{{ entry_shipping_apiship_tracking_url_not_found|escape('js') }}');
                 }

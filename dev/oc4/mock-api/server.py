@@ -296,14 +296,18 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send_json({"code": "040010", "message": "Заказ уже существует", "errors": [{"field": "clientNumber", "message": "duplicate"}]}, 400)
             oid = NEXT_ORDER_ID[0]
             NEXT_ORDER_ID[0] += 1
+            # Слово «evilstatus» в заказе (например, в комментарии): статус с html в имени, трек-ссылка с javascript:,
+            # трек-номер с html — проверка экранирования истории заказа и трек-ссылки в админке
+            evil = "evilstatus" in json.dumps(body, ensure_ascii=False)
             ORDERS[oid] = {
                 "clientNumber": client,
                 "providerKey": order.get("providerKey"),
-                "trackingUrl": "https://track.example.test/%s" % oid,
-                "status": {"key": "uploaded", "name": "Загружен", "created": now_iso()},
+                "trackingUrl": "javascript:alert('track')" if evil else "https://track.example.test/%s" % oid,
+                "status": {"key": "evilhtml", "name": "<script>alert('status')</script>", "created": now_iso()} if evil else {"key": "uploaded", "name": "Загружен", "created": now_iso()},
                 "request": body,
             }
-            return self.send_json({"orderId": oid, "providerNumber": "%s-%s" % ((order.get("providerKey") or "").upper(), oid)})
+            provider_number = "%s-%s" % ((order.get("providerKey") or "").upper(), oid)
+            return self.send_json({"orderId": oid, "providerNumber": provider_number + "<b>x</b>" if evil else provider_number})
 
         if path == "/v1/orders/labels":
             ids = body.get("orderIds") or []

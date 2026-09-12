@@ -1379,7 +1379,9 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 			$text = sprintf($this->apiship_params['shipping_apiship_success_export_message'], $output_data['orderId'], $track_number, $status_name);
 
-			$this->model_checkout_order->addHistory($order_id, $shipping_apiship_export_status_ok ?: (int)$order['order_status_id'], $text, false);
+			// Комментарий истории ядро админки показывает как html (nl2br без экранирования), а название статуса
+			// и трек приходят из API — в историю пишем экранированный текст; в JSON-ответ отдаём сырой, его экранирует JS
+			$this->model_checkout_order->addHistory($order_id, $shipping_apiship_export_status_ok ?: (int)$order['order_status_id'], $this->esc($text), false);
 
 			$this->bind_apiship_order($order_id, (int)$output_data['orderId']);
 			$this->change_order_str_field($order_id, 'tracking', $track_number);
@@ -1400,7 +1402,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 		$this->log->write('shipping_apiship export error ' . print_r($output_data, true));
 
 		if ($shipping_apiship_export_status_error) {
-			$this->model_checkout_order->addHistory($order_id, $shipping_apiship_export_status_error, $text, false);
+			$this->model_checkout_order->addHistory($order_id, $shipping_apiship_export_status_error, $this->esc($text), false);
 		}
 
 		return ['error' => $text];
@@ -1427,7 +1429,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 			$order = $this->model_checkout_order->getOrder($order_id);
 
-			$this->model_checkout_order->addHistory($order_id, (int)$this->apiship_params['shipping_apiship_cancel_export_status'] ?: (int)($order['order_status_id'] ?? 0), $text, false);
+			$this->model_checkout_order->addHistory($order_id, (int)$this->apiship_params['shipping_apiship_cancel_export_status'] ?: (int)($order['order_status_id'] ?? 0), $this->esc($text), false);
 
 			$this->delete_apiship_order($order_id);
 			$this->change_order_str_field($order_id, 'tracking', '');
@@ -1587,7 +1589,8 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 					// Сначала история заказа OpenCart, затем фиксация статуса ApiShip: при сбое истории статус останется
 					// прежним и запись будет обработана повторно на следующем запуске
-					$this->model_checkout_order->addHistory($order_id, $order_new_status, $order_text, $order_notify);
+					// Название статуса — из API: в комментарий истории только экранированным
+					$this->model_checkout_order->addHistory($order_id, $order_new_status, $this->esc($order_text), $order_notify);
 
 					$this->set_apiship_order_status((int)$apiship_order['apiship_order_id'], (int)$status_id);
 
