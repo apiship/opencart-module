@@ -301,7 +301,7 @@ class Apiship {
 	 *
 	 * @return string
 	 */
-	private function cacheKey(string $key): string {
+	protected function cacheKey(string $key): string {
 		$token = (string)($this->apiship_params['shipping_apiship_token'] ?? '');
 
 		return 'apiship.' . md5($token . '|' . $key);
@@ -328,11 +328,12 @@ class Apiship {
 
 	/**
 	 * Индекс точек в кеше разбит на шарды по id: точечный запрос (выбранный ПВЗ, экспорт) декодирует один
-	 * файл, а не весь справочник. 32 шарда по 1000 обрезанных точек (около 500 байт в JSON каждая) —
-	 * до 32000 точек, файл шарда около 500 КБ
+	 * файл, а не весь справочник. 64 шарда по 1500 обрезанных точек (около 500 байт в JSON каждая) —
+	 * до 96 000 точек на магазин, файл шарда до 750 КБ. Потолок — на несколько крупных городов сразу:
+	 * при переполнении шарда старые записи вытесняются и запрашиваются у API заново, данные при этом верны
 	 */
-	public const POINTS_INDEX_SHARDS = 32;
-	public const POINTS_INDEX_SHARD_LIMIT = 1000;
+	public const POINTS_INDEX_SHARDS = 64;
+	public const POINTS_INDEX_SHARD_LIMIT = 1500;
 
 	/**
 	 * Ключ шарда индекса для id точки

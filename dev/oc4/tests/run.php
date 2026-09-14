@@ -40,8 +40,11 @@ namespace ApishipTests {
 	class StubCache {
 		public array $items = [];
 		public array $sets = [];
+		public array $gets = [];
 
 		public function get(string $key) {
+			$this->gets[] = $key;
+
 			return $this->items[$key] ?? [];
 		}
 
@@ -113,6 +116,10 @@ namespace ApishipTests {
 
 		public function requests_to(string $needle): int {
 			return count(array_filter($this->requests, fn($url) => strpos($url, $needle) !== false));
+		}
+
+		public function cacheKeyFor(string $key): string {
+			return $this->cacheKey($key);
 		}
 	}
 
@@ -448,11 +455,11 @@ namespace ApishipTests {
 
 	$api->apiship_points([3]);
 
-	check('points: another id list is another cache entry, not an overwrite check', $api->requests_to('lists/points') == 2, (string)$api->requests_to('lists/points'));
+	check('points: an id missing from the index is requested from the API', $api->requests_to('lists/points') == 2, (string)$api->requests_to('lists/points'));
 
 	$api->apiship_points([1, 2]);
 
-	check('points: first list still cached after the second one', $api->requests_to('lists/points') == 2, (string)$api->requests_to('lists/points'));
+	check('points: ids loaded earlier are still served from the index after another load', $api->requests_to('lists/points') == 2, (string)$api->requests_to('lists/points'));
 
 	$cart_a = array_map(fn($product) => $product + ['cart_id' => 1001], $products);
 	$cart_b = array_map(fn($product) => $product + ['cart_id' => 2002], $products);
@@ -583,11 +590,22 @@ namespace ApishipTests {
 
 	check('index keeps 12000 points (Moscow) without evicting', $big->apiship_point('1')['code'] == 'P1' && $big->apiship_point('12000')['code'] == 'P12000' && $big->requests === [], implode(' | ', $big->requests));
 
-	$big_reads = 0;
-	$big_registry->get('cache')->items = array_map(function($item) use (&$big_reads) { return $item; }, $big_registry->get('cache')->items);
-	$shard_bytes = max(array_map(fn($item) => strlen(json_encode($item)), $big_registry->get('cache')->items));
+	$big_registry->get('cache')->gets = [];
+	$big->apiship_point('777');
 
-	check('single point lookup reads one shard, not the whole index', $shard_bytes < strlen(json_encode($big_registry->get('cache')->items)) / 8, (string)$shard_bytes);
+	check('single point lookup reads one cache entry (its shard), not the whole index', count($big_registry->get('cache')->gets) == 1 && $big_registry->get('cache')->gets[0] == $big->cacheKeyFor(Apiship::points_shard_key('777')), implode(',', $big_registry->get('cache')->gets));
+
+	$big_registry->get('cache')->gets = [];
+	$big->apiship_points([1, 2, 3]);
+
+	check('loading ids from 3 shards reads 3 cache entries, not all ' . Apiship::POINTS_INDEX_SHARDS, count($big_registry->get('cache')->gets) == 3, (string)count($big_registry->get('cache')->gets));
+
+	$mem->requests = [];
+	$mem->responses = ['lists/points' => ['rows' => [['id' => 5, 'code' => 'P5']]]];
+
+	$dup = $mem->apiship_points([5, '5', 5]);
+
+	check('points: duplicate ids are requested once and returned once', count($dup) == 1 && count($mem->requests) == 1 && str_contains($mem->requests[0], urlencode('id=[5]')), count($dup) . ' / ' . implode(' | ', $mem->requests));
 
 	$log_lines = array_filter($mem_registry->get('log')->lines, fn($line) => str_starts_with($line, 'shipping_apiship points'));
 
