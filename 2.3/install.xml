@@ -2,7 +2,7 @@
 
 	<name>ApiShip</name>
 	<code>ApiShip</code>
-	<version>1.2 (OpenCart 2.3)</version>
+	<version>1.4 (OpenCart 2.3)</version>
 	<author>ApiShip</author>
 	<link>https://apiship.ru</link>
 
@@ -15,9 +15,10 @@
 		    $data['heading_title'] = $this->language->get('heading_title');
 			$this->load->language('extension/shipping/apiship');
 
-	    	$data['shipping_apiship_export_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/export_order&id=".$order_id. "&key=" . $this->config->get('shipping_apiship_cron_key');
+	    	// Действия с заказом: POST на витрину с token администратора, cron-ключ в html не попадает
+	    	$data['shipping_apiship_export_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/export_order";
     		$data['entry_shipping_apiship_export_title'] = $this->language->get('entry_shipping_apiship_export_title');
-	    	$data['shipping_apiship_export_cancel_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/cancel_order&id=".$order_id. "&key=" . $this->config->get('shipping_apiship_cron_key');
+	    	$data['shipping_apiship_export_cancel_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/cancel_order";
     		$data['entry_shipping_apiship_export_cancel_title'] = $this->language->get('entry_shipping_apiship_cancel_export_title');
             $data['entry_shipping_apiship_paid'] = $this->language->get('entry_shipping_apiship_paid');
             $data['entry_shipping_apiship_place_dimensions'] = $this->language->get('entry_shipping_apiship_place_dimensions');
@@ -26,7 +27,7 @@
             $data['entry_shipping_apiship_tracking_url_not_found'] = $this->language->get('entry_shipping_apiship_tracking_url_not_found');
             $data['entry_shipping_apiship_order_status_not_export'] = $this->language->get('entry_shipping_apiship_order_status_not_export');
 
-            $data['shipping_apiship_get_order_params_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_order_params&id=".$order_id;
+            $data['shipping_apiship_get_order_params_url'] = ($this->request->server['HTTPS'] ? HTTPS_CATALOG : HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/get_order_params";
 
 			$data['show_apiship_export_order'] = (strpos($order_info['shipping_code'], 'apiship')===false)?'style="display:none;"':'';
 
@@ -291,11 +292,37 @@
 			<!-- apiship start -->
 			
 				<script type="text/javascript"><!--
+
+				function apiship_escape(value) {
+					return String(value == null ? '' : value)
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;')
+						.replace(/"/g, '&quot;')
+						.replace(/'/g, '&#39;');
+				}
+
+				function apiship_alert(type, html) {
+					$('#content > .container-fluid').prepend('<div class="alert alert-' + type + '"><i class="fa fa-' + (type == 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + html + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+				}
+
+				function apiship_file_links(files) {
+					var html = [];
+					for (var index = 0; index < (files || []).length; ++index) {
+						if (!/^https?:\/\//i.test(String(files[index]['url']))) continue;
+						html.push('<a target="_blank" rel="noopener noreferrer" href="' + apiship_escape(files[index]['url']) + '">' + apiship_escape(files[index]['name']) + '</a>');
+					}
+					return html;
+				}
+
 				$('#shipping_apiship_export').on('click', function() {
 					$.ajax({
 						url: '<?php echo $shipping_apiship_export_url; ?>',
+						type: 'POST',
 						dataType: 'json',
 						data: { 
+						    id: <?php echo $order_id; ?>,
+						    token: '<?php echo $token; ?>',
 						    shipping_apiship_pickup_type: $('#shipping_apiship_pickup_type').val(),
 						    shipping_apiship_place_length: $('#shipping_apiship_place_length').val(),
 						    shipping_apiship_place_width: $('#shipping_apiship_place_width').val(),
@@ -314,11 +341,11 @@
 							$('.alert-dismissible').remove();
 								
                 			if (json['error']) {
-                				$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                				apiship_alert('danger', apiship_escape(json['error']));
                 			}
                 
                 			if (json['success']) {
-                				$('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                				apiship_alert('success', apiship_escape(json['success']));
                 			}   
                 			
                             $('#history').load('index.php?route=sale/order/history&token=<?php echo $token; ?>&order_id=<?php echo $order_id; ?>');                          
@@ -336,7 +363,9 @@
     				if (confirm('<?php echo $entry_shipping_apiship_cancel_confirm; ?>')) {
     					$.ajax({
     						url: '<?php echo $shipping_apiship_export_cancel_url; ?>',
+						type: 'POST',
 						dataType: 'json',
+						data: { id: <?php echo $order_id; ?>, token: '<?php echo $token; ?>' },
 						beforeSend: function() {
 							$('#shipping_apiship_export_cancel').button('loading');
 						},
@@ -347,11 +376,11 @@
 							$('.alert-dismissible').remove();
 								
                 			if (json['error']) {
-                				$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                				apiship_alert('danger', apiship_escape(json['error']));
                 			}
                 
                 			if (json['success']) {
-                				$('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                				apiship_alert('success', apiship_escape(json['success']));
                 			}  
                 			
                             $('#history').load('index.php?route=sale/order/history&token=<?php echo $token; ?>&order_id=<?php echo $order_id; ?>');
@@ -371,8 +400,16 @@
                 function init_apiship_export_button() {
                 	$.ajax({
 						url: '<?php echo $shipping_apiship_get_order_params_url; ?>',
+						type: 'POST',
 						dataType: 'json',
+						data: { id: <?php echo $order_id; ?>, token: '<?php echo $token; ?>' },
 						success: function(json) {
+						    if (json['error']) {
+						        $('.alert-dismissible').remove();
+						        apiship_alert('danger', apiship_escape(json['error']));
+						        return false;
+						    }
+
 	
 	                        $('#shipping_apiship_place_length').val(json['place_length']);
 	                        $('#shipping_apiship_place_width').val(json['place_width']);
@@ -381,7 +418,7 @@
 
                             $('#shipping_apiship_pickup_type').val(json['pickup_type']);
 	                        if (json['order_status'].length > 0) {
-	                            $('#shipping_apiship_order_status').html(json['order_status']);
+	                            $('#shipping_apiship_order_status').text(json['order_status']);
 	                        } else {
 	                            $('#shipping_apiship_order_status').html('<?php echo $entry_shipping_apiship_order_status_not_export; ?>');
 	                        }
@@ -441,7 +478,7 @@
 						url: '<?php echo $shipping_apiship_label_url; ?>',
 						dataType: 'json',
                         type: 'POST',
-                        data: {'id': <?php echo $order_id;?>},
+                        data: {'id': <?php echo $order_id; ?>, 'token': '<?php echo $token; ?>' },
                             beforeSend: function() {
                                 $('#shipping_apiship_label').button('loading');
     						},
@@ -451,20 +488,17 @@
     						success: function(json) {
     
     							if (json['error'] && (is_export == true)) {
-                    				$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                    				apiship_alert('danger', apiship_escape(json['error']));
     							}
     								
-    							html = [];
-    							for (index = 0; index < json['labels'].length; ++index) {
-                                    html.push('<a target="_blank" href="' + json['labels'][index]['url'] + '">' + json['labels'][index]['name'] + '</a>')
-                                }
+html = apiship_file_links(json['labels']);
     	                            
                                 if (json['error']) {
-                                    $('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                                    apiship_alert('danger', apiship_escape(json['error']));
                                 }
 		                
                                 if (html != '')
-                                    $('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + '<?php echo $entry_shipping_apiship_label_title; ?>: ' + html.join(', ') + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                                    apiship_alert('success', '<?php echo $entry_shipping_apiship_label_title; ?>: ' + html.join(', '));
 
                             				
 						},
@@ -480,7 +514,7 @@
 						url: '<?php echo $shipping_apiship_waybill_url; ?>',
 						dataType: 'json',
 						type: 'POST',
-                        data: {'id': <?php echo $order_id;?>},
+                        data: {'id': <?php echo $order_id; ?>, 'token': '<?php echo $token; ?>' },
                             beforeSend: function() {
                                 $('#shipping_apiship_waybill').button('loading');
     						},
@@ -490,22 +524,19 @@
     						success: function(json) {
     
     							if (json['error'] && (is_export == true)) {
-                    				$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                    				apiship_alert('danger', apiship_escape(json['error']));
     							}
     							
-    							html = [];
-    							for (index = 0; index < json['waybills'].length; ++index) {
-                                    html.push('<a target="_blank" href="' + json['waybills'][index]['url'] + '">' + json['waybills'][index]['name'] + '</a>')
-                                }
+html = apiship_file_links(json['waybills']);
                                 
     							//$('#shipping_apiship_waybill_span').html('<?php echo $entry_shipping_apiship_waybill_title; ?>: ' + html.join(', ') );
 
                                 if (json['error']) {
-                                    $('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                                    apiship_alert('danger', apiship_escape(json['error']));
                                 }
 		                
                                 if (html != '')
-                                    $('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + '<?php echo $entry_shipping_apiship_waybill_title; ?>: ' + html.join(', ') + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                                    apiship_alert('success', '<?php echo $entry_shipping_apiship_waybill_title; ?>: ' + html.join(', '));
     							
                                 
 						},
@@ -541,8 +572,30 @@
 				</div>
 			
 				<script type="text/javascript"><!--
-				
-				function get_selected_id() {
+
+				function apiship_escape(value) {
+					return String(value == null ? '' : value)
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;')
+						.replace(/"/g, '&quot;')
+						.replace(/'/g, '&#39;');
+				}
+
+				function apiship_alert(type, html) {
+					$('#content > .container-fluid').prepend('<div class="alert alert-' + type + '"><i class="fa fa-' + (type == 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + html + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+				}
+
+				function apiship_file_links(files) {
+					var html = [];
+					for (var index = 0; index < (files || []).length; ++index) {
+						if (!/^https?:\/\//i.test(String(files[index]['url']))) continue;
+						html.push('<a target="_blank" rel="noopener noreferrer" href="' + apiship_escape(files[index]['url']) + '">' + apiship_escape(files[index]['name']) + '</a>');
+					}
+					return html;
+				}
+
+					function get_selected_id() {
 					var ids = [];
     				var selected = $('input[name^=\'selected\']:checked');
     
@@ -566,20 +619,17 @@
 						url: '<?php echo $shipping_apiship_label_url; ?>',
 						type: 'POST',
 						dataType: 'json',
-                        data: {'id': ids.join()},
+                            data: {'id': ids.join(), 'token': '<?php echo $token; ?>'},
 						success: function(json) {
 								
-						html = [];
-						for (index = 0; index < json['labels'].length; ++index) {
-                            html.push('<a target="_blank" href="' + json['labels'][index]['url'] + '">' + json['labels'][index]['name'] + '</a>')
-                        }
+html = apiship_file_links(json['labels']);
                             
                         if (json['error']) {
-            				$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+            				apiship_alert('danger', apiship_escape(json['error']));
             			}
                 
             			if (html != '')
-                			$('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + html.join(', ') + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                			apiship_alert('success', html.join(', '));
                 			   
 						},
 						error: function(xhr, ajaxOptions, thrownError) {
@@ -603,21 +653,18 @@
 						url: '<?php echo $shipping_apiship_waybill_url; ?>',
 						type: 'POST',
 						dataType: 'json',
-                        data: {'id': ids.join()},
+                            data: {'id': ids.join(), 'token': '<?php echo $token; ?>'},
 						success: function(json) {
 
-						html = [];
-						for (index = 0; index < json['waybills'].length; ++index) {
-                            html.push('<a target="_blank" href="' + json['waybills'][index]['url'] + '">' + json['waybills'][index]['name'] + '</a>')
-                        }
+html = apiship_file_links(json['waybills']);
                             
 
                         if (json['error']) {
-            				$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+            				apiship_alert('danger', apiship_escape(json['error']));
             			}
                 
             			if (html != '')
-                			$('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + html.join(', ') + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                			apiship_alert('success', html.join(', '));
                 			   
 						},
 						error: function(xhr, ajaxOptions, thrownError) {

@@ -188,3 +188,6 @@ $_['error_shipping_apiship_cancel_export_status']                 = 'Необх�
 $_['error_shipping_apiship_group_export_status_ready']            = 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_group_export_status_ok']               = 'Необходимо заполнить поле!';
 $_['error_shipping_apiship_group_export_status_error']            = 'Необходимо заполнить поле!';
+
+$_['entry_shipping_apiship_cron_example']                         = 'Пример команды cron';
+$_['help_shipping_apiship_cron']                                  = 'Cron-эндпоинты принимают только POST; ключ передаётся заголовком X-Apiship-Key (или POST-полем key), в адресе ключ не принимается. Действия с заказом из админки (выгрузка, отмена, ярлыки, акты) доступны администраторам с правом на изменение заказов.';

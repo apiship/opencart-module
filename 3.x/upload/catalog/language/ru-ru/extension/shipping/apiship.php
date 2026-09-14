@@ -26,3 +26,21 @@ $_['shipping_apiship_error_params']                 = "Ошибка переда
 $_['shipping_apiship_error_calculator']             = "Ошибка расчета стоимости";
 $_['shipping_apiship_no_shipping']                  = "Нет доставок для города %s";
 $_['shipping_apiship_error_no_export_order']        = "Заказ %s не выгружен";
+
+$_['shipping_apiship_error_key']                    = "Неверный ключ";
+$_['shipping_apiship_error_method']                 = "Метод не поддерживается: используйте POST";
+$_['shipping_apiship_error_permission']             = "Нет прав на изменение заказов";
+$_['shipping_apiship_error_no_points']              = "Пункты выдачи не найдены";
+$_['shipping_apiship_error_map_load']               = "Не удалось загрузить карту. Обновите страницу";
+
+$_['shipping_apiship_map_title']                    = 'Пункты самовывоза';
+$_['shipping_apiship_map_cost']                     = 'Стоимость';
+$_['shipping_apiship_map_take_here']                = 'Забрать отсюда';
+$_['shipping_apiship_map_point_type']               = 'Тип точки';
+$_['shipping_apiship_map_provider']                 = 'СД';
+$_['shipping_apiship_map_payment_cash']             = 'Оплата наличными';
+$_['shipping_apiship_map_payment_card']             = 'Оплата картой';
+$_['shipping_apiship_map_type_1']                   = 'Пункт выдачи заказа';
+$_['shipping_apiship_map_type_2']                   = 'Постамат';
+$_['shipping_apiship_map_type_3']                   = 'Отделение Почты России';
+$_['shipping_apiship_map_type_4']                   = 'Терминал';

@@ -662,16 +662,27 @@
           <div class="form-group">
             <label class="col-sm-4 control-label" for="shipping_apiship_export_cron_url"><?php echo $entry_shipping_apiship_export_cron_url; ?></label>
             <div class="col-sm-8" style='display:flex;'>
-		  	<input type="text" id="shipping_apiship_export_cron_url" value="<?php echo $shipping_apiship_export_cron_url; ?>&key=<?php echo $shipping_apiship_cron_key; ?>" class="form-control" />
-			<button id="shipping_apiship_export_cron_url_copy_button" title="<?php echo $text_shipping_apiship_cron_url_copy; ?>"><i class="fa fa-clipboard"></i></button>
+		  	<input type="text" id="shipping_apiship_export_cron_url" value="<?php echo $shipping_apiship_export_cron_url; ?>" class="form-control" readonly />
+			<button type="button" class="shipping_apiship_copy_button" data-target="shipping_apiship_export_cron_url" title="<?php echo $text_shipping_apiship_cron_url_copy; ?>"><i class="fa fa-clipboard"></i></button>
             </div>
           </div>	
 
           <div class="form-group">
             <label class="col-sm-4 control-label" for="shipping_apiship_import_cron_url"><?php echo $entry_shipping_apiship_import_cron_url; ?></label>
             <div class="col-sm-8" style='display:flex;'>
-		  	<input type="text" id="shipping_apiship_import_cron_url" value="<?php echo $shipping_apiship_import_cron_url; ?>&key=<?php echo $shipping_apiship_cron_key; ?>" class="form-control" />
-			<button id="shipping_apiship_import_cron_url_copy_button" title="<?php echo $text_shipping_apiship_cron_url_copy; ?>"><i class="fa fa-clipboard"></i></button>
+		  	<input type="text" id="shipping_apiship_import_cron_url" value="<?php echo $shipping_apiship_import_cron_url; ?>" class="form-control" readonly />
+			<button type="button" class="shipping_apiship_copy_button" data-target="shipping_apiship_import_cron_url" title="<?php echo $text_shipping_apiship_cron_url_copy; ?>"><i class="fa fa-clipboard"></i></button>
+            </div>
+          </div>	
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" for="shipping_apiship_cron_example"><?php echo $entry_shipping_apiship_cron_example; ?></label>
+            <div class="col-sm-8">
+              <div style='display:flex;'>
+		  	<input type="text" id="shipping_apiship_cron_example" value="curl -X POST -H &quot;X-Apiship-Key: <?php echo $shipping_apiship_cron_key; ?>&quot; &quot;<?php echo $shipping_apiship_export_cron_url; ?>&quot;" class="form-control" readonly />
+			<button type="button" class="shipping_apiship_copy_button" data-target="shipping_apiship_cron_example" title="<?php echo $text_shipping_apiship_cron_url_copy; ?>"><i class="fa fa-clipboard"></i></button>
+              </div>
+              <span class="help-block"><?php echo $help_shipping_apiship_cron; ?></span>
             </div>
           </div>	
 
@@ -882,25 +893,15 @@
 
 <script>
 
-$('#shipping_apiship_import_cron_url_copy_button').click(function() {
-	var copyText = document.getElementById("shipping_apiship_import_cron_url");
+$('.shipping_apiship_copy_button').click(function() {
+	var copyText = document.getElementById($(this).attr('data-target'));
 	copyText.select();
-	document.execCommand("copy");
-	$('#shipping_apiship_cron_url_copy_button').tooltip('enable')
-	$('#shipping_apiship_cron_url_copy_button').tooltip('show');
-	$('#shipping_apiship_cron_url_copy_button').tooltip('disable')
+	if (navigator.clipboard) {
+		navigator.clipboard.writeText(copyText.value);
+	} else {
+		document.execCommand("copy");
+	}
 	return false;
-
-});
-$('#shipping_apiship_export_cron_url_copy_button').click(function() {
-	var copyText = document.getElementById("shipping_apiship_export_cron_url");
-	copyText.select();
-	document.execCommand("copy");
-	$('#shipping_apiship_cron_url_copy_button').tooltip('enable')
-	$('#shipping_apiship_cron_url_copy_button').tooltip('show');
-	$('#shipping_apiship_cron_url_copy_button').tooltip('disable')
-	return false;
-
 });
 
 
@@ -983,8 +984,7 @@ jQuery('.shipping_apiship_mapping_checkbox_use').each(function() {
 var input = document.getElementById('shipping_apiship_cron_key'); 
 
 input.oninput = function() {
-    document.getElementById('shipping_apiship_export_cron_url').value = '<?php echo $shipping_apiship_export_cron_url; ?>&key=' + input.value;
-    document.getElementById('shipping_apiship_import_cron_url').value = '<?php echo $shipping_apiship_import_cron_url; ?>&key=' + input.value;
+    document.getElementById('shipping_apiship_cron_example').value = 'curl -X POST -H "X-Apiship-Key: ' + input.value + '" "<?php echo $shipping_apiship_export_cron_url; ?>"';
 };
 
 </script>
