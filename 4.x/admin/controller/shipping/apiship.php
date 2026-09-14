@@ -361,8 +361,8 @@ class Apiship extends \Opencart\System\Engine\Controller {
 			// Действия с заказом (экспорт, отмена, ярлыки) — отдельный admin-контроллер, право на него выдаём группе установившего
 			$this->load->model('user/user_group');
 
-			$this->model_user_user_group->addPermission($this->user->getGroupId(), 'access', 'extension/apiship/shipping/order');
-			$this->model_user_user_group->addPermission($this->user->getGroupId(), 'modify', 'extension/apiship/shipping/order');
+			$this->model_user_user_group->addPermission($this->user->getGroupId(), 'access', 'extension/apiship/sale/order');
+			$this->model_user_user_group->addPermission($this->user->getGroupId(), 'modify', 'extension/apiship/sale/order');
 
 			// События вместо OCMOD-патчей ядра
 			$this->load->model('setting/event');

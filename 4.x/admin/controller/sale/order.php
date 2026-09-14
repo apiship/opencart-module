@@ -1,5 +1,5 @@
 <?php
-namespace Opencart\Admin\Controller\Extension\Apiship\Shipping;
+namespace Opencart\Admin\Controller\Extension\Apiship\Sale;
 /**
  * Class Order
  *
@@ -9,12 +9,12 @@ namespace Opencart\Admin\Controller\Extension\Apiship\Shipping;
  * установившего; другим группам — вручную (README). Cron-ключ сюда не попадает.
  * Модель витрины вызывается через экземпляр магазина (как sale/order.call в ядре OC4).
  *
- * Маршруты: index.php?route=extension/apiship/shipping/order.<method>&user_token=…
+ * Маршруты: index.php?route=extension/apiship/sale/order.<method>&user_token=…
  *
- * @package Opencart\Admin\Controller\Extension\Apiship\Shipping
+ * @package Opencart\Admin\Controller\Extension\Apiship\Sale
  */
 class Order extends \Opencart\System\Engine\Controller {
-	private const ROUTE = 'extension/apiship/shipping/order';
+	private const ROUTE = 'extension/apiship/sale/order';
 
 	/**
 	 * Проверка прав: любое действие с заказом требует modify на этот маршрут и на sale/order

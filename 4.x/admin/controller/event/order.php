@@ -4,7 +4,7 @@ namespace Opencart\Admin\Controller\Extension\Apiship\Event;
  * Class Order
  *
  * Обработчики событий админки (регистрируются при установке модуля). Действия с заказом выполняет
- * admin-контроллер extension/apiship/shipping/order: ядро OC4 пускает на него только с правом access,
+ * admin-контроллер extension/apiship/sale/order: ядро OC4 пускает на него только с правом access,
  * сам контроллер требует modify на этот маршрут и на sale/order. При установке права выдаются группе
  * установившего; другим группам их выдают в Группах пользователей (см. README), иначе вкладка показывает
  * предупреждение, а кнопок в списке заказов нет.
@@ -15,7 +15,7 @@ namespace Opencart\Admin\Controller\Extension\Apiship\Event;
  * @package Opencart\Admin\Controller\Extension\Apiship\Event
  */
 class Order extends \Opencart\System\Engine\Controller {
-	private const ROUTE = 'extension/apiship/shipping/order';
+	private const ROUTE = 'extension/apiship/sale/order';
 
 	/**
 	 * Может ли пользователь выполнять действия ApiShip: те же права, что проверяют ядро (access на маршрут)
@@ -72,11 +72,11 @@ class Order extends \Opencart\System\Engine\Controller {
 		$tab_data['user_token'] = $this->session->data['user_token'];
 		// Нет прав на маршрут действий — вкладка с подсказкой, какие права выдать, вместо молчащих кнопок
 		$tab_data['apiship_permission_error'] = $this->can_act() ? '' : sprintf($this->language->get('error_shipping_apiship_order_permission'), self::ROUTE);
-		$tab_data['export_url'] = $this->url->link('extension/apiship/shipping/order.export', $token, true);
-		$tab_data['export_cancel_url'] = $this->url->link('extension/apiship/shipping/order.cancel', $token, true);
-		$tab_data['get_order_params_url'] = $this->url->link('extension/apiship/shipping/order.params', $token . '&order_id=' . $order_id, true);
-		$tab_data['label_url'] = $this->url->link('extension/apiship/shipping/order.label', $token, true);
-		$tab_data['waybill_url'] = $this->url->link('extension/apiship/shipping/order.waybill', $token, true);
+		$tab_data['export_url'] = $this->url->link('extension/apiship/sale/order.export', $token, true);
+		$tab_data['export_cancel_url'] = $this->url->link('extension/apiship/sale/order.cancel', $token, true);
+		$tab_data['get_order_params_url'] = $this->url->link('extension/apiship/sale/order.params', $token . '&order_id=' . $order_id, true);
+		$tab_data['label_url'] = $this->url->link('extension/apiship/sale/order.label', $token, true);
+		$tab_data['waybill_url'] = $this->url->link('extension/apiship/sale/order.waybill', $token, true);
 		$tab_data['history_url'] = $this->url->link('sale/order.history', $token . '&order_id=' . $order_id, true);
 
 		if (!isset($data['tabs']) || !is_array($data['tabs'])) {
@@ -130,8 +130,8 @@ class Order extends \Opencart\System\Engine\Controller {
 
 		$token = 'user_token=' . $this->session->data['user_token'];
 
-		$list_data['label_url'] = $this->url->link('extension/apiship/shipping/order.label', $token, true);
-		$list_data['waybill_url'] = $this->url->link('extension/apiship/shipping/order.waybill', $token, true);
+		$list_data['label_url'] = $this->url->link('extension/apiship/sale/order.label', $token, true);
+		$list_data['waybill_url'] = $this->url->link('extension/apiship/sale/order.waybill', $token, true);
 
 		$output = $this->inject($output, $this->load->view('extension/apiship/event/order_list', $list_data));
 	}

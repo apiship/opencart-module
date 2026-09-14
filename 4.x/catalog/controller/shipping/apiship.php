@@ -4,7 +4,7 @@ namespace Opencart\Catalog\Controller\Extension\Apiship\Shipping;
  * Class Apiship
  *
  * Эндпоинты витрины: ajax чекаута (сессия покупателя) и cron (ключ из настроек).
- * Действия с заказами из админки идут через admin-контроллер extension/apiship/shipping/order.
+ * Действия с заказами из админки идут через admin-контроллер extension/apiship/sale/order.
  * Маршруты: index.php?route=extension/apiship/shipping/apiship.<method>
  *
  * @package Opencart\Catalog\Controller\Extension\Apiship\Shipping
