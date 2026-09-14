@@ -1,8 +1,26 @@
-<script src="../extension/apiship/admin/view/javascript/apiship_order.js" type="text/javascript"></script>
+<script src="../extension/apiship/admin/view/javascript/apiship_order.js?v={{ apiship_js_version }}" type="text/javascript"></script>
 <script type="text/javascript"><!--
 // ApiShip: поиск ПВЗ в модалке выбора способа доставки при редактировании заказа
 (function() {
     var timer = null;
+
+    // Ядро OC 4.1.0.4 (catalog/controller/api/shipping_method) проверяет cost и tax_class_id через empty():
+    // строка '0' не проходит, и способ ApiShip без класса налога (или бесплатный) не выбирается —
+    // «Необходимо выбрать способ доставки!». Строка '0.0' проверку проходит, ядро приводит её к (int) 0 и (float) 0.
+    function apiship_fix_zero() {
+        if (String($('#input-shipping-method-code').val()).indexOf('apiship.') !== 0) {
+            return;
+        }
+
+        $('#input-shipping-method-cost, #input-shipping-method-tax-class').each(function() {
+            if ($(this).val() !== '' && parseFloat($(this).val()) === 0) {
+                $(this).val('0.0');
+            }
+        });
+    }
+
+    // Обработчик ядра на этот же change привязан раньше и уже заполнил скрытые поля выбранным способом
+    $('#modal-shipping-method').on('change', 'input[name=\'choose_shipping\']', apiship_fix_zero);
 
     function apiship_render_methods(json) {
         var html = '';
@@ -62,6 +80,8 @@
     }
 
     $('#modal-shipping-method').on('shown.bs.modal', function() {
+        apiship_fix_zero();
+
         if (!$('#shipping-methods input[value^=\'apiship.\']').length) {
             return;
         }

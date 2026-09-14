@@ -23,6 +23,18 @@ class Order extends \Opencart\System\Engine\Controller {
 	 *
 	 * @return bool
 	 */
+	/**
+	 * Версия apiship_order.js для параметра ?v= в теге script: браузер и nginx кешируют файл надолго,
+	 * без параметра после обновления модуля страница работает со старым файлом («apiship_escape is not defined»)
+	 *
+	 *  string
+	 */
+	private function js_version(): string {
+		$mtime = @filemtime(DIR_EXTENSION . 'apiship/admin/view/javascript/apiship_order.js');
+
+		return $mtime ? (string)$mtime : \Opencart\Admin\Controller\Extension\Apiship\Shipping\Apiship::VERSION;
+	}
+
 	private function can_act(): bool {
 		return $this->user->hasPermission('access', self::ROUTE) && $this->user->hasPermission('modify', self::ROUTE) && $this->user->hasPermission('modify', 'sale/order');
 	}
@@ -70,6 +82,7 @@ class Order extends \Opencart\System\Engine\Controller {
 
 		$tab_data['order_id'] = $order_id;
 		$tab_data['user_token'] = $this->session->data['user_token'];
+		$tab_data['apiship_js_version'] = $this->js_version();
 		// Нет прав на маршрут действий — вкладка с подсказкой, какие права выдать, вместо молчащих кнопок
 		$tab_data['apiship_permission_error'] = $this->can_act() ? '' : sprintf($this->language->get('error_shipping_apiship_order_permission'), self::ROUTE);
 		$tab_data['export_url'] = $this->url->link('extension/apiship/sale/order.export', $token, true);
@@ -107,6 +120,7 @@ class Order extends \Opencart\System\Engine\Controller {
 		$script_data = $this->language->all();
 
 		$script_data['user_token'] = $this->session->data['user_token'];
+		$script_data['apiship_js_version'] = $this->js_version();
 
 		$output = $this->inject($output, $this->load->view('extension/apiship/event/order_shipping_search', $script_data));
 	}
@@ -127,6 +141,8 @@ class Order extends \Opencart\System\Engine\Controller {
 		$this->load->language('extension/apiship/shipping/apiship');
 
 		$list_data = $this->language->all();
+
+		$list_data['apiship_js_version'] = $this->js_version();
 
 		$token = 'user_token=' . $this->session->data['user_token'];
 
