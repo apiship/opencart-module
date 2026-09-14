@@ -1,0 +1,61 @@
+<script src="../extension/apiship/admin/view/javascript/apiship_order.js?v={{ apiship_js_version }}" type="text/javascript"></script>
+<script type="text/javascript"><!--
+(function() {
+    var toolbar = $('#content .page-header .float-end');
+
+    if (!toolbar.length) {
+        return;
+    }
+
+    toolbar.prepend('<button type="button" id="shipping_apiship_label" data-bs-toggle="tooltip" title="{{ entry_shipping_apiship_label_title|escape('js') }}" class="btn btn-success"><i class="fa-solid fa-tags"></i></button> <button type="button" id="shipping_apiship_waybill" data-bs-toggle="tooltip" title="{{ entry_shipping_apiship_waybill_title|escape('js') }}" class="btn btn-success"><i class="fa-solid fa-file-lines"></i></button> ');
+
+    function get_selected_id() {
+        var ids = [];
+
+        $('#content input[name^=\'selected\']:checked').each(function() {
+            ids.push($(this).val());
+        });
+
+        return ids;
+    }
+
+    function apiship_documents(element, url, key, title) {
+        var ids = get_selected_id();
+
+        if (ids.length == 0) {
+            apiship_alert('danger', '{{ error_shipping_apiship_select_orders|escape('js') }}');
+
+            return;
+        }
+
+        $.ajax({
+            url: url,
+            type: 'post',
+            dataType: 'json',
+            data: {'id': ids.join()},
+            beforeSend: function() {
+                $(element).button('loading');
+            },
+            complete: function() {
+                $(element).button('reset');
+            },
+            success: function(json) {
+                $('.alert-dismissible').remove();
+
+                apiship_files(json, key, title);
+            },
+            error: function(xhr, ajaxOptions, thrownError) {
+                console.log(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+            }
+        });
+    }
+
+    $('#shipping_apiship_label').on('click', function() {
+        apiship_documents(this, '{{ label_url }}', 'labels', '{{ entry_shipping_apiship_label_title|escape('js') }}');
+    });
+
+    $('#shipping_apiship_waybill').on('click', function() {
+        apiship_documents(this, '{{ waybill_url }}', 'waybills', '{{ entry_shipping_apiship_waybill_title|escape('js') }}');
+    });
+})();
+//--></script>

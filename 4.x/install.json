@@ -1,0 +1,8 @@
+{
+  "name": "ApiShip",
+  "code": "apiship",
+  "version": "1.3",
+  "author": "ApiShip",
+  "link": "https://apiship.ru",
+  "description": "Расчет доставки и передача заказов в 40+ служб доставки через платформу ApiShip. OpenCart 4.1.x"
+}

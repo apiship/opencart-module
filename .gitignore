@@ -1,2 +1,5 @@
 .idea
 .DS_Store
+/*.ocmod.zip
+/.revmux/tasks/
+__pycache__/

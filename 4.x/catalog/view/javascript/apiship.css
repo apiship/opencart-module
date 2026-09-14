@@ -1,0 +1,91 @@
+.apiship_points {
+	text-decoration: underline;
+}
+
+.apiship_img_providers {
+	vertical-align: middle;
+	width: 60px;
+}
+
+.apiship_loading {
+	display: inline-block;
+	background-image: url('../image/apiship_loading.gif');
+	width: 16px;
+	height: 16px;
+	background-size: contain;
+}
+
+#apiship_yandex_map_container {
+	width: 100%;
+	height: 100%;
+	border: 1px solid #ccc;
+	padding: 5px;
+}
+
+.apiship_cluster {
+	border: solid 2px #1e98ff;
+	border-radius: 2em;
+	box-shadow: black 0.5em 0.5em 0.3em;
+	padding: 5px 20px 5px 20px;
+	background: #FFFFFF;
+	white-space: nowrap;
+	display: inline-block;
+}
+
+/* Модалка карты поверх модалки выбора доставки (Bootstrap 5: modal 1055, backdrop 1050) */
+.apiship_modal {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	overflow: hidden;
+	padding-right: 0px !important;
+	z-index: 1070;
+}
+
+.apiship_modal-header {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	border: none;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.apiship_modal-header h4 {
+	display: inline-block;
+	margin: 0;
+}
+
+.apiship_modal-content {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	border-radius: 0;
+	box-shadow: none;
+	margin: 7px;
+}
+
+.apiship_modal-body {
+	position: absolute;
+	top: 50px;
+	bottom: 0;
+	font-size: 15px;
+	overflow: auto;
+	margin-bottom: 15px;
+	padding: 0 15px 0;
+	width: 100%;
+}
+
+.apiship_modal-dialog {
+	width: 100%;
+	max-width: 100%;
+	min-height: 100%;
+	padding: 0;
+	margin: 0;
+}

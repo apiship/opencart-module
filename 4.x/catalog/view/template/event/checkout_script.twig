@@ -1,0 +1,210 @@
+<link rel="stylesheet" href="extension/apiship/catalog/view/javascript/apiship.css?v={{ version }}" type="text/css"/>
+<script type="text/javascript" src="extension/apiship/catalog/view/javascript/apiship.js?v={{ version }}"></script>
+<script type="text/javascript"><!--
+var apiship_config = {
+    get_points_url: '{{ get_points_url|escape('js') }}',
+    set_point_url: '{{ set_point_url|escape('js') }}',
+    tracing_url: '{{ tracing_url|escape('js') }}',
+    selected_url: '{{ selected_url|escape('js') }}',
+    confirm_url: '{{ confirm_url|escape('js') }}',
+    yandex_api_key: '{{ yandex_api_key|escape('js') }}',
+    image_path: '{{ image_path|escape('js') }}',
+    texts: {
+        from: '{{ text_from|escape('js') }}',
+        select_point: '{{ text_select_point|escape('js') }}',
+        change_point: '{{ text_change_point|escape('js') }}',
+        map_title: '{{ text_map_title|escape('js') }}',
+        map_cost: '{{ text_map_cost|escape('js') }}',
+        map_take_here: '{{ text_map_take_here|escape('js') }}',
+        map_type: '{{ text_map_type|escape('js') }}',
+        map_provider: '{{ text_map_provider|escape('js') }}',
+        map_cash: '{{ text_map_cash|escape('js') }}',
+        map_card: '{{ text_map_card|escape('js') }}',
+        map_no_points: '{{ text_map_no_points|escape('js') }}',
+        map_load: '{{ text_map_load|escape('js') }}',
+        recalculate: '{{ text_recalculate|escape('js') }}'
+    }
+};
+
+function get_yandex_api_key() {
+    return apiship_config.yandex_api_key;
+}
+
+// Разметка варианта доставки ApiShip в модалке выбора способа доставки
+function apiship_render_quote_label(label, quote) {
+    var esc = ApishipMap.escapeHtml;
+    var html = '';
+
+    if (quote.apiship_image) {
+        html += '<img src="' + esc(quote.apiship_image) + '"' + (quote.apiship_image_class ? ' class="' + esc(quote.apiship_image_class) + '"' : '') + '> ';
+    }
+
+    var text = quote.name + ' - ' + esc(quote.text);
+
+    if (quote.code.indexOf('point_') !== -1 && quote.code.indexOf('error') !== -1) {
+        text = quote.name + ' ' + esc(apiship_config.texts.from) + ' ' + esc(quote.text);
+    }
+
+    html += text;
+
+    if (quote.apiship_link) {
+        html += ' <a class="' + esc(quote.apiship_link_class || '') + '" href="#" onclick="' + esc(quote.apiship_link) + '">' + esc(quote.apiship_link_text || '') + '<div id="apiship_loading_' + esc(quote.code) + '" class="apiship_loading" style="visibility:hidden;"></div></a>';
+    }
+
+    label.html(html);
+}
+
+var apiship_quotes = {};
+
+function apiship_decorate(json) {
+    if (!json || !json.shipping_methods || !json.shipping_methods.apiship || !json.shipping_methods.apiship.quote) {
+        return;
+    }
+
+    var quotes = json.shipping_methods.apiship.quote;
+
+    for (var key in quotes) {
+        var quote = quotes[key];
+
+        apiship_quotes[quote.code] = quote;
+
+        var input = $('#modal-shipping input[name=\'shipping_method\'][value=\'' + quote.code + '\']');
+
+        if (input.length) {
+            apiship_render_quote_label(input.parent().find('label'), quote);
+        }
+    }
+}
+
+// Текст выбранного способа в форме чекаута без ссылки «сменить ПВЗ» и html из шаблона
+function apiship_method_text(quote) {
+    return $('<div>').html(quote.name).text().replace(/\s+/g, ' ').trim() + ' - ' + quote.text;
+}
+
+$(document).ajaxSuccess(function(event, xhr, settings) {
+    if (!settings.url || !xhr.responseJSON) {
+        return;
+    }
+
+    if (settings.url.indexOf('checkout/shipping_method.quote') !== -1) {
+        apiship_decorate(xhr.responseJSON);
+
+        // x-tracing-id последнего расчёта — по нему поддержка ApiShip находит запрос
+        $.get(apiship_config.tracing_url, function(id) {
+            console.log(id);
+        });
+    }
+
+    if (settings.url.indexOf('checkout/shipping_method.save') !== -1 && xhr.responseJSON.success) {
+        var code = $('#input-shipping-code').val();
+
+        if (apiship_quotes[code]) {
+            $('#input-shipping-method').val(apiship_method_text(apiship_quotes[code]));
+        }
+    }
+
+    // После выбора оплаты сервер пересчитывает вариант ApiShip (наложенный платёж): обновляем текст в форме,
+    // а если пересчёт не удался и способ доставки сброшен — очищаем поле, чтобы покупатель выбрал доставку заново
+    if (settings.url.indexOf('checkout/payment_method.save') !== -1) {
+        $.getJSON(apiship_config.selected_url, function(quote) {
+            if (quote && quote.code) {
+                apiship_quotes[quote.code] = quote;
+
+                $('#input-shipping-method').val(apiship_method_text(quote));
+            } else if (String($('#input-shipping-code').val()).indexOf('apiship.') === 0) {
+                $('#modal-payment').modal('hide');
+
+                $('#input-shipping-method').val('');
+                $('#input-shipping-code').val('');
+
+                // Блок подтверждения перерисовываем: ядро делает это только при успешном сохранении оплаты
+                $('#checkout-confirm').load(apiship_config.confirm_url, function() {
+                    $('#alert').prepend('<div class="alert alert-danger alert-dismissible"><i class="fa-solid fa-circle-exclamation"></i> ' + apiship_config.texts.recalculate + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+                });
+            }
+        });
+    }
+});
+
+// Открыть карту ПВЗ для варианта доставки
+function apiship_open(code) {
+    $.ajax({
+        url: apiship_config.get_points_url,
+        type: 'post',
+        dataType: 'json',
+        data: {'code': code},
+        beforeSend: function() {
+            var el = document.getElementById('apiship_loading_' + code);
+
+            if (el) el.style.visibility = 'visible';
+        },
+        complete: function() {
+            var el = document.getElementById('apiship_loading_' + code);
+
+            if (el) el.style.visibility = 'hidden';
+        },
+        success: function(data_points) {
+            if (data_points['error'] == 'no_error') {
+                if (!data_points['points'] || !data_points['points'].length) {
+                    alert(apiship_config.texts.map_no_points);
+
+                    return;
+                }
+
+                var apiship = new ApishipMap(apiship_config);
+
+                apiship.open(data_points['points'], apiship_function, code);
+
+                return;
+            }
+
+            if (data_points['error'] == 'no_products' || data_points['error'] == 'no_city') {
+                window.location.reload();
+
+                return;
+            }
+
+            alert(data_points['error']);
+        },
+        error: function(xhr, ajaxOptions, thrownError) {
+            console.log(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+        }
+    });
+}
+
+// Точка выбрана на карте: сохраняем в сессии и обновляем вариант в модалке
+function apiship_function(result, code) {
+    $.ajax({
+        url: apiship_config.set_point_url,
+        type: 'post',
+        data: {shipping_apiship_point: result},
+        dataType: 'json',
+        success: function(data) {
+            if (typeof data.error !== 'undefined') {
+                alert(data.error);
+
+                return;
+            }
+
+            apiship_quotes[data.code] = data;
+
+            var input = $('#modal-shipping input[name=\'shipping_method\'][value=\'' + code + '\']');
+
+            if (input.length) {
+                input.val(data.code);
+
+                apiship_render_quote_label(input.parent().find('label'), data);
+
+                input.prop('checked', true).trigger('change');
+            } else if ($('#input-shipping-code').length) {
+                // Модалка закрыта: обновляем выбранный способ в форме чекаута
+                $('#input-shipping-code').val(data.code);
+                $('#input-shipping-method').val(apiship_method_text(data));
+            }
+        },
+        error: function(xhr, ajaxOptions, thrownError) {
+            console.log(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+        }
+    });
+}
+//--></script>
