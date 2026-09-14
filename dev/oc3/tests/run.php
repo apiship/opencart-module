@@ -275,7 +275,13 @@ $address = $lib->get_address(array(
 
 check('region address with postcode and block', $address === '141400, Московская обл, г Химки, ул Ленина д. 7 корпус 2', $address);
 
-check('trimmed point (no streetType) does not warn', $lib->get_address(array('regionType' => 'г', 'region' => 'Москва', 'city' => 'Москва', 'street' => 'Тверская')) === 'Москва, ,  Тверская' || true);
+// Обрезанная точка без streetType/cityType (только поля из fields): адрес строится без notice
+$warnings = array();
+set_error_handler(function($errno, $errstr) use (&$warnings) { $warnings[] = $errstr; return true; });
+$trimmed = $lib->get_address(array('regionType' => 'г', 'region' => 'Москва', 'city' => 'Москва', 'street' => 'Тверская', 'house' => '3'));
+restore_error_handler();
+
+check('trimmed point (no streetType/cityType) builds address without warnings', $trimmed === 'Москва,  Тверская, д.3' && !$warnings, $trimmed . ' ' . implode('; ', $warnings));
 
 echo "session data\n";
 
@@ -331,16 +337,20 @@ check('providers loaded', count($providers) == 2);
 check('second call served from cache (one request)', $lib->requests_to('lists/providers') == 1, (string)$lib->requests_to('lists/providers'));
 check('short page → no extra empty-page request', $lib->requests_to('lists/providers') == 1);
 
-$other = library(array(), registry());
-$other->responses = $lib->responses;
+// Другой покупатель: свой Registry и своя сессия, общий только кеш магазина
+function other_customer($lib, $params = array()) {
+	$registry = registry();
+	$registry->set('cache', $lib->reg->get('cache'));
 
-check('lists cache is shared across customers (same cache, other session)', true);
+	return library($params, $registry);
+}
 
-$shared = new StubApi($lib->reg, array('shipping_apiship_token' => 'test', 'shipping_apiship_mode' => 'shipping_apiship_mode_debug'), $lib->reg->get('log'));
+$shared = other_customer($lib);
 $shared->responses = $lib->responses;
 $shared->apiship_providers();
 
-check('another customer with same store cache: no API request', count($shared->requests) == 0, (string)count($shared->requests));
+check('another customer (own session, same store cache): no API request', count($shared->requests) == 0, (string)count($shared->requests));
+check('other customer session stays empty (lists are not in the session)', empty($shared->reg->get('session')->data));
 
 $lib->responses['lists/points'] = array('rows' => array(
 	array('id' => 5, 'code' => 'P5', 'providerKey' => 'cdek', 'name' => 'ПВЗ 5', 'type' => 1, 'lat' => 1, 'lng' => 2, 'regionType' => 'г', 'region' => 'Москва', 'cityType' => 'г', 'city' => 'Москва', 'street' => 'Тверская', 'streetType' => 'ул', 'house' => '1', 'postIndex' => '101000', 'phone' => '1', 'timetable' => 'пн-пт', 'description' => 'd', 'paymentCash' => 1, 'paymentCard' => 0, 'extraHuge' => str_repeat('x', 100), 'workTime' => 'x')
@@ -449,11 +459,12 @@ $lib->apiship_calculator('RU', 'Москва', 'Химки', '', '', array(), $p
 
 check('different address → new request', $lib->requests_to('calculator') == 2);
 
-$other = new StubApi($lib->reg, array('shipping_apiship_token' => 'test', 'shipping_apiship_mode' => 'shipping_apiship_mode_debug', 'shipping_apiship_rub_select' => 'RUB', 'shipping_apiship_gr_select' => 1, 'shipping_apiship_cm_select' => 1, 'shipping_apiship_provider' => array(), 'shipping_apiship_parcel_length' => 10, 'shipping_apiship_parcel_width' => 10, 'shipping_apiship_parcel_height' => 10, 'shipping_apiship_parcel_weight' => 500), $lib->reg->get('log'));
+$other = other_customer($lib);
 $other->responses = array('calculator' => $calc_ok);
 $other->apiship_calculator('RU', 'Москва', 'Москва', '', '', array(), $products, 200.0, false);
 
-check('other customer, same cart and address: no request', count($other->requests) == 0);
+check('other customer (own session), same cart and address: no request', count($other->requests) == 0);
+check('calculator result is not in the session', empty($other->reg->get('session')->data));
 
 $log = $lib->reg->get('log')->text();
 

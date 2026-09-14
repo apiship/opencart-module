@@ -16,10 +16,11 @@ class Apiship {
 	private $curl = null;
 
 	/**
-	 * TTL кеша (минуты): справочники (точки, службы, статусы, подключения) меняются редко — 6 часов;
-	 * расчёт стоимости зависит от корзины и адреса — 10 минут.
-	 * У кеша OpenCart 2/3 срок жизни файла фиксированный (config cache_expire, по умолчанию час),
-	 * поэтому свой срок хранится внутри значения и проверяется при чтении
+	 * TTL кеша (минуты). Срок хранится внутри значения и проверяется при чтении, но он только сокращает
+	 * жизнь записи: файл кеша OpenCart 2/3 удаляется через config cache_expire (по умолчанию 3600 с),
+	 * продлить его из модуля нельзя. Справочники (точки, службы, статусы, подключения) поэтому живут
+	 * min(CACHE_LISTS_MINUTES, cache_expire) — по умолчанию час, 6 часов только при cache_expire >= 21600;
+	 * расчёт стоимости зависит от корзины и адреса — 10 минут
 	 */
 	const CACHE_LISTS_MINUTES = 360;
 	const CACHE_CALCULATOR_MINUTES = 10;
@@ -212,10 +213,6 @@ class Apiship {
 	 */
 	public static function trim_point($point) {
 		return array_intersect_key($point, array_flip(self::$point_fields));
-	}
-
-	public static function point_fields() {
-		return self::$point_fields;
 	}
 
 	/**
