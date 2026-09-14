@@ -46,7 +46,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '1.2 (OpenCart 3.x)';
+		$data['shipping_apiship_version'] = '1.4 (OpenCart 3.x)';
 		$data['shipping_apiship_version_js_mod'] = rand();
 
 		$data['button_save'] = $this->language->get('button_save');
@@ -116,6 +116,8 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['entry_shipping_apiship_import_cron_url'] = $this->language->get('entry_shipping_apiship_import_cron_url');
 		$data['entry_shipping_apiship_export_cron_url'] = $this->language->get('entry_shipping_apiship_export_cron_url');
 		$data['entry_shipping_apiship_cron_key'] = $this->language->get('entry_shipping_apiship_cron_key');
+		$data['entry_shipping_apiship_cron_example'] = $this->language->get('entry_shipping_apiship_cron_example');
+		$data['help_shipping_apiship_cron'] = $this->language->get('help_shipping_apiship_cron');
 
 		$data['entry_main_settings'] = $this->language->get('entry_main_settings');
 		$data['entry_sending_address'] = $this->language->get('entry_sending_address');
@@ -219,11 +221,12 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['shipping_apiship_integrator_statuses'] = [];
 
 		if ($data['shipping_apiship_token'] != '') {
+			// Строки из API (названия служб, статусов, адреса точек, сообщение об ошибке) выводятся в html без autoescape: экранируем
 			$apiship_providers = $this->model_extension_shipping_apiship->get_providers();
-			if (!empty($apiship_providers['message'])) $this->error['warning'] = $apiship_providers['message'];		
-			$data['shipping_apiship_providers'] = $apiship_providers['providers'];
-			$data['shipping_apiship_providers_points'] = $this->model_extension_shipping_apiship->get_providers_points();
-			$data['shipping_apiship_integrator_statuses'] = $this->model_extension_shipping_apiship->get_integrator_statuses();
+			if (!empty($apiship_providers['message'])) $this->error['warning'] = $this->escape_html($apiship_providers['message']);
+			$data['shipping_apiship_providers'] = $this->escape_html($apiship_providers['providers']);
+			$data['shipping_apiship_providers_points'] = $this->escape_html($this->model_extension_shipping_apiship->get_providers_points());
+			$data['shipping_apiship_integrator_statuses'] = $this->escape_html($this->model_extension_shipping_apiship->get_integrator_statuses());
 		}
 
 		if (isset($this->request->post['shipping_apiship_title'])) {
@@ -712,8 +715,9 @@ class ControllerExtensionShippingApiship extends Controller {
 		
 		$data['cancel'] = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=shipping', true);
 
-		$data['shipping_apiship_import_cron_url'] = (($this->request->server['HTTPS'])?HTTPS_CATALOG:HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/import_orders";
-		$data['shipping_apiship_export_cron_url'] = (($this->request->server['HTTPS'])?HTTPS_CATALOG:HTTP_CATALOG) . "index.php?route=extension/shipping/apiship/export_orders";
+		// Cron: только POST, ключ — заголовком X-Apiship-Key; в URL ключ не передаётся
+		$data['shipping_apiship_import_cron_url'] = $server . "index.php?route=extension/shipping/apiship/import_orders";
+		$data['shipping_apiship_export_cron_url'] = $server . "index.php?route=extension/shipping/apiship/export_orders";
 
 
 		$data['header'] = $this->load->controller('common/header');
@@ -832,6 +836,23 @@ class ControllerExtensionShippingApiship extends Controller {
 	public function install() {
 		$this->load->model('extension/shipping/apiship');
 		$this->model_extension_shipping_apiship->install();
+	}
+
+	// htmlspecialchars для строки или всех строк массива (ключи не трогаются: это ключи служб и статусов, они экранируются как значения там, где выводятся)
+	private function escape_html($value) {
+		if (is_array($value)) {
+			foreach ($value as $key => $item) {
+				$value[$key] = $this->escape_html($item);
+			}
+
+			return $value;
+		}
+
+		if (is_string($value)) {
+			return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+		}
+
+		return $value;
 	}
 
 	private function generateRandomString($length = 10) {

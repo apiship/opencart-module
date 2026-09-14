@@ -188,3 +188,6 @@ $_['error_shipping_apiship_cancel_export_status']                 = 'Fill the fi
 $_['error_shipping_apiship_group_export_status_ready']            = 'Fill the field!';
 $_['error_shipping_apiship_group_export_status_ok']               = 'Fill the field!';
 $_['error_shipping_apiship_group_export_status_error']            = 'Fill the field!';
+
+$_['entry_shipping_apiship_cron_example']                         = 'Cron command example';
+$_['help_shipping_apiship_cron']                                  = 'Cron endpoints accept POST only; the key is passed in the X-Apiship-Key header (or the POST field key), a key in the URL is rejected. Order actions in the admin (export, cancel, labels, waybills) require the permission to modify orders.';

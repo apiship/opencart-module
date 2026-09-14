@@ -26,3 +26,21 @@ $_['shipping_apiship_error_params']                 = "Parameter transfer error"
 $_['shipping_apiship_error_calculator']             = "Cost calculation error";
 $_['shipping_apiship_no_shipping']                  = "No deliveries for this city %s";
 $_['shipping_apiship_error_no_export_order']        = "Order %s dont export";
+
+$_['shipping_apiship_error_key']                    = "Invalid key";
+$_['shipping_apiship_error_method']                 = "Method not supported: use POST";
+$_['shipping_apiship_error_permission']             = "No permission to modify orders";
+$_['shipping_apiship_error_no_points']              = "No pickup points found";
+$_['shipping_apiship_error_map_load']               = "Failed to load the map. Reload the page";
+
+$_['shipping_apiship_map_title']                    = 'Pickup points';
+$_['shipping_apiship_map_cost']                     = 'Cost';
+$_['shipping_apiship_map_take_here']                = 'Pick up here';
+$_['shipping_apiship_map_point_type']               = 'Point type';
+$_['shipping_apiship_map_provider']                 = 'Carrier';
+$_['shipping_apiship_map_payment_cash']             = 'Cash payment';
+$_['shipping_apiship_map_payment_card']             = 'Card payment';
+$_['shipping_apiship_map_type_1']                   = 'Pickup point';
+$_['shipping_apiship_map_type_2']                   = 'Parcel locker';
+$_['shipping_apiship_map_type_3']                   = 'Russian Post office';
+$_['shipping_apiship_map_type_4']                   = 'Terminal';
