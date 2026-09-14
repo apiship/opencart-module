@@ -1072,7 +1072,7 @@ EOT;
 			];
 		}
 
-		// Первая точка — центр карты: самая дешёвая, как и раньше
+		// Точки по самому дешёвому тарифу любой службы; get_points() после отсечения служб сортирует заново — первая точка это центр карты
 		usort($map_points, function($a, $b) use ($map_tariffs) {
 			$cost_a = $map_tariffs[$a['tariffs'][0]]['cost'];
 			$cost_b = $map_tariffs[$b['tariffs'][0]]['cost'];
@@ -1189,6 +1189,14 @@ EOT;
 			unset($point['_title']);
 			$points[] = $point;
 		}
+
+		// Тарифы других служб отсечены: первой снова ставим самую дешёвую по оставшимся точку — она центр карты
+		usort($points, function($a, $b) use ($tariffs) {
+			$cost_a = $tariffs[$a['tariffs'][0]]['cost'];
+			$cost_b = $tariffs[$b['tariffs'][0]]['cost'];
+			if ($cost_a == $cost_b) return 0;
+			return ($cost_a < $cost_b) ? -1 : 1;
+		});
 
 		if ($data['error'] == 'no_error' && !$points) {
 			$data['error'] = $this->language->get('shipping_apiship_error_no_points');

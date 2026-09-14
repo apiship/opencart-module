@@ -894,7 +894,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 			];
 		}
 
-		// Первая точка — центр карты: самая дешёвая, как и раньше
+		// Точки по самому дешёвому тарифу любой службы; get_points() после отсечения служб сортирует заново — первая точка это центр карты
 		usort($map_points, function($a, $b) use ($map_tariffs) {
 			return $map_tariffs[$a['tariffs'][0]]['cost'] <=> $map_tariffs[$b['tariffs'][0]]['cost'];
 		});
@@ -1007,6 +1007,11 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 			$points[] = $point;
 		}
+
+		// Тарифы других служб отсечены: первой снова ставим самую дешёвую по оставшимся точку — она центр карты
+		usort($points, function($a, $b) use ($tariffs) {
+			return $tariffs[$a['tariffs'][0]]['cost'] <=> $tariffs[$b['tariffs'][0]]['cost'];
+		});
 
 		if ($data['error'] == 'no_error' && !$points) {
 			return ['error' => $this->language->get('shipping_apiship_error_no_points'), 'points' => [], 'tariffs' => []];
