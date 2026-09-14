@@ -199,12 +199,17 @@ class Apiship {
 		$rows = [];
 		$x_tracing_ids = [];
 		$url = '';
+		$is_points = ($cmd == 'lists/points');
 
 		do {
 			$url = $this->apiship_params['shipping_apiship_url'] . $cmd . '?limit=' . $limit . '&offset=' . $offset;
 
 			if ($filter_list) {
 				$url .= '&filter=' . urlencode(implode(';', $filter_list));
+			}
+
+			if ($is_points) {
+				$url .= self::point_fields_query();
 			}
 
 			$output = $this->curl_get($url);
@@ -229,7 +234,7 @@ class Apiship {
 				return [];
 			}
 
-			$rows = array_merge($rows, $data['rows']);
+			$rows = array_merge($rows, $is_points ? array_map([self::class, 'trim_point'], $data['rows']) : $data['rows']);
 
 			$rows_count = count($data['rows']);
 			$offset += $rows_count;
@@ -308,6 +313,55 @@ class Apiship {
 	 */
 	public const CACHE_LISTS_MINUTES = 360;
 	public const CACHE_CALCULATOR_MINUTES = 10;
+
+	/**
+	 * Поля точки lists/points, которые использует модуль (карта, адрес ПВЗ, выбор в чекауте, экспорт, поиск в админке).
+	 * Только они запрашиваются у API (параметр fields) и хранятся в кеше: полная строка точки в PHP — около 5 КБ,
+	 * для Москвы это десятки тысяч точек и выход за memory_limit
+	 */
+	public const POINT_FIELDS = [
+		'id', 'code', 'providerKey', 'name', 'type', 'lat', 'lng',
+		'regionType', 'region', 'area', 'cityType', 'city', 'communityType', 'community',
+		'streetType', 'street', 'house', 'block', 'office', 'postIndex',
+		'phone', 'timetable', 'description', 'paymentCash', 'paymentCard'
+	];
+
+	/**
+	 * Индекс точек в кеше разбит на шарды по id: точечный запрос (выбранный ПВЗ, экспорт) декодирует один
+	 * файл, а не весь справочник. 32 шарда по 1000 обрезанных точек (около 500 байт в JSON каждая) —
+	 * до 32000 точек, файл шарда около 500 КБ
+	 */
+	public const POINTS_INDEX_SHARDS = 32;
+	public const POINTS_INDEX_SHARD_LIMIT = 1000;
+
+	/**
+	 * Ключ шарда индекса для id точки
+	 *
+	 * @param string $id
+	 *
+	 * @return string
+	 */
+	public static function points_shard_key(string $id): string {
+		return 'apiship_points_index.' . ((int)$id % self::POINTS_INDEX_SHARDS);
+	}
+
+	/**
+	 * Оставляет в строке точки только поля из POINT_FIELDS
+	 *
+	 * @param array<string, mixed> $point
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function trim_point(array $point): array {
+		return array_intersect_key($point, array_flip(self::POINT_FIELDS));
+	}
+
+	/**
+	 * @return string параметр fields для lists/points
+	 */
+	private static function point_fields_query(): string {
+		return '&fields=' . urlencode(implode(',', self::POINT_FIELDS));
+	}
 
 	/**
 	 * Кеш ответов API (калькулятор, точки, списки) в кеше OpenCart, не в сессии
@@ -421,61 +475,80 @@ class Apiship {
 	}
 
 	/**
-	 * Точки по списку id (порциями по 1000)
+	 * Точки по списку id: сначала из индекса в кеше, у API запрашиваются только недостающие (порциями по 1000,
+	 * только нужные поля). Индекс пополняется один раз после загрузки. Отдельного кеша по набору id нет:
+	 * он дублировал индекс и на Москве (десятки тысяч точек) не помещался в memory_limit при json_encode
 	 *
-	 * @param array<int, mixed> $points
+	 * @param array<int, mixed> $points id точек
 	 *
-	 * @return array<mixed>
+	 * @return array<int, array<string, mixed>>
 	 */
 	public function apiship_points(array $points): array {
-		$data_hash = md5(print_r($points, true));
-		$data_key = 'apiship_points.' . $data_hash;
+		$by_shard = [];
 
-		$data = $this->cacheGet($data_key);
-
-		if ($data !== null && isset($data['data_hash']) && $data['data_hash'] == $data_hash) {
-			$this->toLog($data_key . ' cached');
-
-			return $data['all_points'];
+		foreach (array_unique(array_map('strval', $points)) as $id) {
+			$by_shard[self::points_shard_key($id)][] = $id;
 		}
 
 		$all_points = [];
-		$limit = 1000;
-		$offset = 0;
+		$missing = [];
 
-		while ($offset * $limit < count($points)) {
-			$part_points = array_slice($points, $offset * $limit, $limit);
+		// Шарды декодируются по одному: в памяти одновременно один файл индекса, а не весь справочник
+		foreach ($by_shard as $shard_key => $ids) {
+			$shard = $this->cacheGet($shard_key);
 
-			$url = $this->apiship_params['shipping_apiship_url'] . 'lists/points?limit=10000&offset=0&filter=' . urlencode('id=[' . implode(',', $part_points) . ']');
+			foreach ($ids as $id) {
+				if (is_array($shard) && isset($shard[$id])) {
+					$all_points[] = $shard[$id];
+				} else {
+					$missing[] = $id;
+				}
+			}
+		}
+
+		unset($by_shard, $shard);
+
+		if ($missing) {
+			$this->toLog('shipping_apiship points index', ['cached' => count($all_points), 'missing' => count($missing)]);
+		}
+
+		$loaded = [];
+
+		foreach (array_chunk($missing, 1000) as $part_points) {
+			$url = $this->apiship_params['shipping_apiship_url'] . 'lists/points?limit=10000&offset=0&filter=' . urlencode('id=[' . implode(',', $part_points) . ']') . self::point_fields_query();
 
 			$output = $this->curl_get($url);
 
 			$data = json_decode((string)$output['body'], true);
 
+			$x_tracing_id = $output['headers']['x-tracing-id'][0] ?? '?';
+
 			if (isset($data['errors'])) {
-				$this->toLog('shipping_apiship points error ', ['url' => $url, 'output' => $output], true);
+				$this->toLog('shipping_apiship points error ', ['url' => $url, 'x_tracing_id' => $x_tracing_id, 'output' => $output], true);
 
 				return [];
 			}
 
 			if (!isset($data['rows'])) {
-				$this->toLog('shipping_apiship points error2 ', ['url' => $url, 'output' => $output], true);
+				$this->toLog('shipping_apiship points error2 ', ['url' => $url, 'x_tracing_id' => $x_tracing_id, 'output' => $output], true);
 
 				return [];
 			}
 
-			$all_points = array_merge($all_points, $data['rows']);
+			foreach ($data['rows'] as $row) {
+				$loaded[] = self::trim_point($row);
+			}
 
-			$this->remember_points($data['rows']);
+			$this->toLog('shipping_apiship points ', ['url' => $url, 'x_tracing_id' => $x_tracing_id, 'rows' => count($data['rows'])]);
 
-			$this->toLog('shipping_apiship points ', ['url' => $url, 'rows' => count($data['rows'])]);
-
-			$offset++;
+			unset($data, $output);
 		}
 
-		$this->cacheSet($data_key, ['all_points' => $all_points, 'data_hash' => $data_hash], self::CACHE_LISTS_MINUTES);
+		if ($loaded) {
+			$this->remember_points($loaded);
+		}
 
-		return $all_points;
+		return array_merge($all_points, $loaded);
 	}
 
 	/**
@@ -492,7 +565,7 @@ class Apiship {
 			return [];
 		}
 
-		$cached = $this->cacheGet('apiship_points_index');
+		$cached = $this->cacheGet(self::points_shard_key($id));
 
 		if (is_array($cached) && isset($cached[$id])) {
 			return $cached[$id];
@@ -510,8 +583,9 @@ class Apiship {
 	}
 
 	/**
-	 * Индекс точек по id в кеше: пополняется каждым ответом lists/points, чтобы точечные запросы
-	 * (выбранный ПВЗ в чекауте, экспорт заказа) не ходили в API повторно
+	 * Индекс точек по id в кеше (шарды по id, см. points_shard_key): пополняется каждым ответом lists/points,
+	 * чтобы точечные запросы (выбранный ПВЗ в чекауте, экспорт заказа) и повторные расчёты не ходили в API.
+	 * Каждый затронутый шард читается и пишется один раз за вызов
 	 *
 	 * @param array<int, array<string, mixed>> $points
 	 *
@@ -522,24 +596,30 @@ class Apiship {
 			return;
 		}
 
-		$index = $this->cacheGet('apiship_points_index');
-
-		if (!is_array($index)) {
-			$index = [];
-		}
+		$by_shard = [];
 
 		foreach ($points as $point) {
 			if (isset($point['id'])) {
-				$index[(string)$point['id']] = $point;
+				$by_shard[self::points_shard_key((string)$point['id'])][(string)$point['id']] = self::trim_point($point);
 			}
 		}
 
-		// Ограничение размера индекса: старые записи вытесняются
-		if (count($index) > 5000) {
-			$index = array_slice($index, -5000, null, true);
-		}
+		foreach ($by_shard as $shard_key => $shard_points) {
+			$index = $this->cacheGet($shard_key);
 
-		$this->cacheSet('apiship_points_index', $index, self::CACHE_LISTS_MINUTES);
+			if (!is_array($index)) {
+				$index = [];
+			}
+
+			$index = $shard_points + $index;
+
+			// Ограничение размера шарда: старые записи вытесняются
+			if (count($index) > self::POINTS_INDEX_SHARD_LIMIT) {
+				$index = array_slice($index, 0, self::POINTS_INDEX_SHARD_LIMIT, true);
+			}
+
+			$this->cacheSet($shard_key, $index, self::CACHE_LISTS_MINUTES);
+		}
 	}
 
 	/**

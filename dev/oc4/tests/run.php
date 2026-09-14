@@ -39,6 +39,7 @@ namespace ApishipTests {
 
 	class StubCache {
 		public array $items = [];
+		public array $sets = [];
 
 		public function get(string $key) {
 			return $this->items[$key] ?? [];
@@ -46,6 +47,7 @@ namespace ApishipTests {
 
 		public function set(string $key, $value, int $expire = 0): void {
 			$this->items[$key] = $value;
+			$this->sets[] = $key;
 		}
 
 		public function delete(string $key): void {
@@ -510,7 +512,8 @@ namespace ApishipTests {
 
 	$cache_keys = array_keys($registry_points->get('cache')->items);
 
-	check('index stored under token-scoped key', count($cache_keys) == 1 && str_starts_with($cache_keys[0], 'apiship.'), implode(',', $cache_keys));
+	check('index stored under token-scoped keys', $cache_keys && count(array_filter($cache_keys, fn($key) => str_starts_with($key, 'apiship.'))) == count($cache_keys), implode(',', $cache_keys));
+	check('index is split into shards by id: ids 7 and 8 land in different cache entries', count($cache_keys) == 2, implode(',', $cache_keys));
 
 	$other_session = registry();
 	$other_session->set('cache', $registry_points->get('cache'));
@@ -536,7 +539,72 @@ namespace ApishipTests {
 		'shipping_apiship_provider'   => []
 	], $other_session->get('log'));
 
-	check('another token does not see the index', $other_token->cacheGet('apiship_points_index') === [] || $other_token->cacheGet('apiship_points_index') === null);
+	check('another token does not see the index', $other_token->cacheGet(Apiship::points_shard_key('7')) === [] || $other_token->cacheGet(Apiship::points_shard_key('7')) === null);
+
+	echo "points loading: memory (OCM-99, Moscow 10k points)\n";
+
+	$full_point = [
+		'id' => 1, 'code' => 'P1', 'providerKey' => 'cdek', 'name' => 'Точка 1', 'lat' => 55.7, 'lng' => 37.6, 'type' => 1,
+		'regionType' => 'г', 'region' => 'Москва', 'city' => 'Москва', 'cityType' => 'г', 'street' => 'Тверская', 'streetType' => 'ул', 'house' => '1',
+		'phone' => '+7', 'timetable' => '9-18', 'description' => 'desc', 'paymentCash' => 1, 'paymentCard' => 1,
+		'countryCode' => 'RU', 'fittingRoom' => 1, 'availableOperation' => 3, 'limits' => ['maxWeight' => 30000], 'url' => 'http://x', 'email' => 'a@b'
+	];
+
+	$mem_registry = registry();
+	$mem = new StubApi($mem_registry, $api_params + ['shipping_apiship_rub_select' => 'RUB', 'shipping_apiship_gr_select' => 1, 'shipping_apiship_cm_select' => 1, 'shipping_apiship_mode' => 'shipping_apiship_mode_debug', 'shipping_apiship_provider' => []], $mem_registry->get('log'));
+	$mem->responses = ['lists/points' => ['rows' => [$full_point, ['id' => 2, 'code' => 'P2', 'lat' => 1, 'lng' => 2, 'limits' => []]]]];
+
+	$loaded = $mem->apiship_points([1, 2]);
+
+	check('points: rows are trimmed to the fields the module uses', isset($loaded[0]['lat'], $loaded[0]['street'], $loaded[0]['paymentCash']) && !isset($loaded[0]['limits'], $loaded[0]['fittingRoom'], $loaded[0]['url']), json_encode(array_keys($loaded[0] ?? [])));
+	check('points: request asks the API only for the fields it needs', str_contains($mem->requests[0] ?? '', 'fields=id%2Ccode%2C'), $mem->requests[0] ?? '');
+	check('points: nothing is cached besides the index shards (no per-id-list copy)', count($mem_registry->get('cache')->items) == 2 && $mem->cacheGet(Apiship::points_shard_key('1'))['1']['code'] == 'P1' && $mem->cacheGet(Apiship::points_shard_key('2'))['2']['code'] == 'P2', implode(',', array_keys($mem_registry->get('cache')->items)));
+
+	$mem->requests = [];
+	$mem->responses = ['lists/points' => ['rows' => [['id' => 3, 'code' => 'P3', 'lat' => 1, 'lng' => 2]]]];
+
+	$loaded = $mem->apiship_points([1, 3, 2]);
+
+	check('points: ids already in the index are not requested again', count($mem->requests) == 1 && str_contains($mem->requests[0], urlencode('id=[3]')), implode(' | ', $mem->requests));
+	check('points: result joins index hits and freshly loaded rows', count($loaded) == 3, (string)count($loaded));
+
+	$mem->requests = [];
+	$mem_registry->get('cache')->sets = [];
+	$mem->responses = ['lists/points' => ['rows' => [['id' => 9, 'code' => 'P9']]]];
+
+	$mem->apiship_points(range(100, 2600));
+
+	check('points: 2501 missing ids → 3 batches of 1000', count($mem->requests) == 3, (string)count($mem->requests));
+	check('points: each index shard is written once per load, not once per batch', count($mem_registry->get('cache')->sets) == count(array_unique($mem_registry->get('cache')->sets)), (string)count($mem_registry->get('cache')->sets));
+
+	$big_registry = registry();
+	$big = new StubApi($big_registry, $api_params + ['shipping_apiship_rub_select' => 'RUB', 'shipping_apiship_gr_select' => 1, 'shipping_apiship_cm_select' => 1, 'shipping_apiship_mode' => 'shipping_apiship_mode_normal', 'shipping_apiship_provider' => []], $big_registry->get('log'));
+	$big->remember_points(array_map(fn($id) => ['id' => $id, 'code' => 'P' . $id], range(1, 12000)));
+
+	check('index keeps 12000 points (Moscow) without evicting', $big->apiship_point('1')['code'] == 'P1' && $big->apiship_point('12000')['code'] == 'P12000' && $big->requests === [], implode(' | ', $big->requests));
+
+	$big_reads = 0;
+	$big_registry->get('cache')->items = array_map(function($item) use (&$big_reads) { return $item; }, $big_registry->get('cache')->items);
+	$shard_bytes = max(array_map(fn($item) => strlen(json_encode($item)), $big_registry->get('cache')->items));
+
+	check('single point lookup reads one shard, not the whole index', $shard_bytes < strlen(json_encode($big_registry->get('cache')->items)) / 8, (string)$shard_bytes);
+
+	$log_lines = array_filter($mem_registry->get('log')->lines, fn($line) => str_starts_with($line, 'shipping_apiship points'));
+
+	check('points: x-tracing-id of every batch is logged', $log_lines && str_contains(implode("\n", $log_lines), 't-1'), implode("\n", array_slice($log_lines, 0, 1)));
+
+	$mem->requests = [];
+	$mem->responses = ['lists/points' => ['rows' => [$full_point]]];
+
+	$by_params = $mem->apiship_point_by_params(['providerKey=cdek']);
+
+	check('point_by_params: rows are trimmed too', isset($by_params[0]['code']) && !isset($by_params[0]['limits']), json_encode(array_keys($by_params[0] ?? [])));
+	check('point_by_params: request asks the API only for the fields it needs', str_contains($mem->requests[0] ?? '', 'fields=id%2Ccode%2C'), $mem->requests[0] ?? '');
+
+	$mem_other = new StubApi($mem_registry, $api_params + ['shipping_apiship_rub_select' => 'RUB', 'shipping_apiship_gr_select' => 1, 'shipping_apiship_cm_select' => 1, 'shipping_apiship_mode' => 'shipping_apiship_mode_normal', 'shipping_apiship_provider' => []], $mem_registry->get('log'));
+	$mem_other->responses = ['lists/providers' => ['rows' => [$full_point]]];
+
+	check('other lists are not trimmed', isset($mem_other->apiship_providers()[0]['limits']));
 
 	echo "\n" . ($failures ? "FAILED: $failures, passed: $passed" : "All $passed tests passed") . "\n";
 

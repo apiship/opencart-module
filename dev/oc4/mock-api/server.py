@@ -8,6 +8,7 @@ calculator, orders/sync, orders/{id}, orders/{id}/status, orders/{id}/cancel,
 orders/status?clientNumber=, orders/statuses/date/{date}, orders/labels, orders/waybills.
 """
 import json
+import os
 import re
 import sys
 import uuid
@@ -16,6 +17,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, unquote
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8085
+
+# Число массовых ПВЗ (id с 100): MOCK_POINTS=12000 для проверки памяти на объёме Москвы
+MASS_POINTS = int(os.environ.get("MOCK_POINTS", "300"))
 
 # Третья служба и последний статус — с html в имени: страница настроек модуля обязана показать их как текст
 PROVIDERS = [
@@ -61,6 +65,20 @@ def point(pid, provider, code, name, ptype, lat, lng, street, house, post_index=
         "paymentCash": 1,
         "paymentCard": 1 if pid % 2 else 0,
         "availableOperation": 3,
+        # Поля реального ответа, которые модуль не использует: без них замер памяти нерепрезентативен
+        "countryCode": "RU",
+        "url": "https://www.example.com/pvz/%d" % pid,
+        "email": "pvz%d@example.com" % pid,
+        "cod": 1,
+        "fittingRoom": 1,
+        "multiplaceDeliveryAllowed": 0,
+        "updated": "2026-09-01T00:00:00+03:00",
+        "cityGuid": "0c5b2444-70a0-4932-980c-b4dc0d3f02b5",
+        "fiasId": "0c5b2444-70a0-4932-980c-b4dc0d3f02b5",
+        "kladr": "7700000000000",
+        "limits": {"maxWeight": 30000, "maxLength": 120, "maxWidth": 80, "maxHeight": 80, "maxCost": 100000, "maxSumWeight": 30000, "minWeight": 0, "maxVolume": 0.5},
+        "workTime": [{"day": d, "from": "10:00", "to": "20:00", "breakFrom": "14:00", "breakTo": "15:00"} for d in range(1, 8)],
+        "extraParams": {"fittingRoomSize": "small", "parking": True, "wheelchair": False},
     }
 
 
@@ -75,7 +93,7 @@ POINTS = [
 
 # Реалистичный объём: у магазина с несколькими службами калькулятор возвращает сотни ПВЗ на город.
 # Сессия OC4 хранится одной JSON-строкой (колонка text, 64 КБ) — справочник в сессии её переполнит.
-for _n in range(300):
+for _n in range(MASS_POINTS):
     _pid = 100 + _n
     POINTS.append(point(_pid, "cdek" if _n % 2 else "boxberry", "MASS%03d" % _n, "ПВЗ №%d, вход со двора, 1 этаж, рядом с аптекой" % _pid, 1 + (_n % 2), 55.60 + (_n % 30) * 0.01, 37.40 + (_n // 30) * 0.02, "Улица имени Героев Панфиловцев", str(_n + 1)))
 
@@ -140,7 +158,7 @@ def calculator(body):
                         "deliveryCost": base + cod,
                         "deliveryCostOriginal": base,
                         "pickupTypes": [1, 2],
-                        "pointIds": [1, 2, 3] + [100 + n for n in range(300) if n % 2],
+                        "pointIds": [1, 2, 3] + [100 + n for n in range(MASS_POINTS) if n % 2],
                     }
                 ],
             },
@@ -156,7 +174,7 @@ def calculator(body):
                         "deliveryCost": base - 50 + cod,
                         "deliveryCostOriginal": base - 50,
                         "pickupTypes": [1, 2],
-                        "pointIds": [4, 5] + [100 + n for n in range(300) if not n % 2],
+                        "pointIds": [4, 5] + [100 + n for n in range(MASS_POINTS) if not n % 2],
                     }
                 ],
             },
