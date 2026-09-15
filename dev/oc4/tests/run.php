@@ -665,6 +665,25 @@ namespace ApishipTests {
 
 	check('tariff without a known point is dropped', $unused['tariffs'] === [] && $unused['points'] === []);
 
+	// Один tariffId в двух записях калькулятора (зоны): своя цена и свой набор точек у каждой
+	$zones = Apiship::map_tariffs([['providerKey' => 'cdek', 'tariffs' => [
+		['tariffId' => 136, 'tariffName' => 'Зона 1', 'deliveryCost' => 350, 'pickupTypes' => [1], 'pointIds' => [1, 3]],
+		['tariffId' => 136, 'tariffName' => 'Зона 2', 'deliveryCost' => 450, 'pickupTypes' => [1], 'pointIds' => [2, 3]]
+	]]], ['cdek' => [1]]);
+
+	check('same tariffId twice: two tariffs with distinct keys', array_keys($zones) == ['cdek_136_1', 'cdek_136_1_2'] && $zones['cdek_136_1']['cost'] === 350.0 && $zones['cdek_136_1_2']['cost'] === 450.0, implode(',', array_keys($zones)));
+	check('same tariffId twice: same code template (set_point resolves by point id)', $zones['cdek_136_1']['code_template'] === $zones['cdek_136_1_2']['code_template']);
+
+	$zoned = Apiship::map_points($zones, [['id' => 1], ['id' => 2], ['id' => 3]]);
+
+	check('zones: each point references the record with its own price', $zoned['points']['1']['tariffs'] == ['cdek_136_1'] && $zoned['points']['2']['tariffs'] == ['cdek_136_1_2'], json_encode(array_map(fn($p) => $p['tariffs'], $zoned['points'])));
+	check('zones: point in both records keeps the last one, as set_point does', $zoned['points']['3']['tariffs'] == ['cdek_136_1_2'], implode(',', $zoned['points']['3']['tariffs']));
+	check('zones: both tariffs stay in the dictionary', count($zoned['tariffs']) == 2);
+
+	$only_dup = Apiship::map_points($zones, [['id' => 3]]);
+
+	check('zones: a record left without points after dedupe is dropped', array_keys($only_dup['tariffs']) == ['cdek_136_1_2'], implode(',', array_keys($only_dup['tariffs'])));
+
 	echo "map: point_code\n";
 
 	$map_code = Apiship::point_code($map_tariffs['cdek_136_2'], '3');

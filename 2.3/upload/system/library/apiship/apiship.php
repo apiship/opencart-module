@@ -1145,10 +1145,11 @@ class Apiship {
 	const POINT_ID_PLACEHOLDER = '{point_id}';
 
 	/**
-	 * Тарифы до ПВЗ из ответа калькулятора для карты: одна запись на тариф и тип забора,
-	 * ключ {providerKey}_{tariffId}_{pickupType}. Тип забора берётся, если он есть и в тарифе, и в настройках
-	 * службы доставки. Цена, название и сроки в ответе калькулятора заданы на тариф, а не на точку, поэтому
-	 * карта получает их один раз, а точки ссылаются на тарифы ключами (map_points)
+	 * Тарифы до ПВЗ из ответа калькулятора для карты: одна запись на запись калькулятора и тип забора,
+	 * ключ {providerKey}_{tariffId}_{pickupType}. Один tariffId может прийти несколько раз (зоны: своя цена и свой
+	 * набор точек) — каждая такая запись остаётся отдельным тарифом с суффиксом _2, _3… в ключе. Тип забора берётся,
+	 * если он есть и в тарифе, и в настройках службы доставки. Цена, название и сроки заданы на запись калькулятора,
+	 * а не на точку, поэтому карта получает их один раз, а точки ссылаются на тарифы ключами (map_points)
 	 *
 	 * @param array $providers                deliveryToPoint ответа калькулятора
 	 * @param array $pickup_types_by_provider providerKey => включённые в настройках типы забора
@@ -1179,6 +1180,10 @@ class Apiship {
 
 					$key = $provider_key . '_' . $tariff_id . '_' . $pickup_type;
 
+					for ($n = 2; isset($tariffs[$key]); $n++) {
+						$key = $provider_key . '_' . $tariff_id . '_' . $pickup_type . '_' . $n;
+					}
+
 					$tariffs[$key] = array(
 						'provider_key'  => $provider_key,
 						'tariff_id'     => $tariff_id,
@@ -1200,7 +1205,9 @@ class Apiship {
 
 	/**
 	 * Точки для карты: каждая точка один раз со списком ключей тарифов (map_tariffs), которые её обслуживают.
-	 * Точки, которых нет в $points (не вернул lists/points), пропускаются, тарифы без единой точки — тоже
+	 * Точки, которых нет в $points (не вернул lists/points), пропускаются, тарифы без единой точки — тоже.
+	 * Если точка входит в несколько записей калькулятора с одним кодом варианта (один tariffId, разные цены),
+	 * у неё остаётся последняя — её же берёт set_point при выборе этого кода
 	 *
 	 * @param array $tariffs результат map_tariffs
 	 * @param array $points  строки lists/points
@@ -1217,9 +1224,11 @@ class Apiship {
 		}
 
 		$map_points = array();
-		$used = array();
+		$codes = array();
 
 		foreach ($tariffs as $key => $tariff) {
+			$code = isset($tariff['code_template']) ? (string)$tariff['code_template'] : (string)$key;
+
 			foreach ($tariff['point_ids'] as $point_id) {
 				if (!isset($by_id[$point_id])) {
 					continue;
@@ -1229,14 +1238,22 @@ class Apiship {
 					$map_points[$point_id] = array('point' => $by_id[$point_id], 'tariffs' => array());
 				}
 
-				$map_points[$point_id]['tariffs'][$key] = true;
+				if (isset($codes[$point_id][$code])) {
+					unset($map_points[$point_id]['tariffs'][$codes[$point_id][$code]]);
+				}
 
-				$used[$key] = true;
+				$codes[$point_id][$code] = $key;
+
+				$map_points[$point_id]['tariffs'][$key] = true;
 			}
 		}
 
+		$used = array();
+
 		foreach ($map_points as $point_id => $item) {
 			$map_points[$point_id]['tariffs'] = array_keys($item['tariffs']);
+
+			$used += $item['tariffs'];
 		}
 
 		$map_tariffs = array();
