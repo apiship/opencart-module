@@ -552,6 +552,115 @@ $lib->responses = array('orders/5/status' => 'garbage');
 
 check('non-json status → empty array', $lib->apiship_order_status(5) === array());
 
+echo "map: tariffs and points\n";
+
+$map_providers = array(
+	array('providerKey' => 'cdek', 'tariffs' => array(
+		array('tariffId' => 136, 'tariffName' => 'Склад-склад', 'tariffDescription' => 'до ПВЗ', 'daysMin' => 2, 'daysMax' => 4, 'deliveryCost' => 350, 'pickupTypes' => array(1, 2), 'pointIds' => array(1, 2, 3)),
+		array('tariffId' => 137, 'tariffName' => 'Экспресс', 'daysMin' => 1, 'daysMax' => 2, 'deliveryCost' => 500, 'pickupTypes' => array(1), 'pointIds' => array(1, 99))
+	)),
+	array('providerKey' => 'boxberry', 'tariffs' => array(
+		array('tariffId' => 1, 'tariffName' => 'Boxberry', 'daysMin' => 3, 'daysMax' => 5, 'deliveryCost' => 300, 'pickupTypes' => array(1, 2), 'pointIds' => array(4))
+	)),
+	array('providerKey' => 'off', 'tariffs' => array(
+		array('tariffId' => 5, 'tariffName' => 'Off', 'deliveryCost' => 100, 'pickupTypes' => array(1, 2), 'pointIds' => array(1))
+	))
+);
+
+$map_tariffs = Apiship::map_tariffs($map_providers, array('cdek' => array(1, 2), 'boxberry' => array(2), 'off' => array()));
+
+check('one tariff per tariff and pickup type enabled both in tariff and settings', array_keys($map_tariffs) == array('cdek_136_1', 'cdek_136_2', 'cdek_137_1', 'boxberry_1_2'), implode(',', array_keys($map_tariffs)));
+check('code template: provider, tariff, pickup type around the point placeholder', $map_tariffs['cdek_136_2']['code_template'] == 'apiship.point_cdek_136_' . Apiship::POINT_ID_PLACEHOLDER . '_2', $map_tariffs['cdek_136_2']['code_template']);
+check('tariff fields: name, cost, days, point ids as strings', $map_tariffs['cdek_136_1']['name'] == 'Склад-склад' && $map_tariffs['cdek_136_1']['cost'] === 350.0 && $map_tariffs['cdek_136_1']['days_min'] == 2 && $map_tariffs['cdek_136_1']['days_max'] == 4 && $map_tariffs['cdek_136_1']['point_ids'] === array('1', '2', '3'));
+check('missing tariffDescription is an empty string', $map_tariffs['cdek_137_1']['description'] === '');
+check('no providers → no tariffs', Apiship::map_tariffs(array(), array()) === array());
+
+$map_rows = array(
+	array('id' => 1, 'name' => 'A', 'type' => 1, 'lat' => 55.1, 'lng' => 37.1),
+	array('id' => 2, 'name' => 'B', 'type' => 1, 'lat' => 55.2, 'lng' => 37.2),
+	array('id' => 4, 'name' => 'D', 'type' => 2, 'lat' => 55.4, 'lng' => 37.4)
+);
+
+$grouped = Apiship::map_points($map_tariffs, $map_rows);
+
+check('each point once, keyed by id', array_keys($grouped['points']) == array('1', '2', '4'), implode(',', array_keys($grouped['points'])));
+check('point lists every tariff serving it', $grouped['points']['1']['tariffs'] == array('cdek_136_1', 'cdek_136_2', 'cdek_137_1'), implode(',', $grouped['points']['1']['tariffs']));
+check('point keeps its lists/points row', $grouped['points']['4']['point']['name'] == 'D' && $grouped['points']['4']['tariffs'] == array('boxberry_1_2'));
+check('points absent from lists/points are skipped', !isset($grouped['points']['3']) && !isset($grouped['points']['99']));
+check('tariffs lose point_ids, all used tariffs kept', count($grouped['tariffs']) == 4 && !isset($grouped['tariffs']['cdek_136_1']['point_ids']));
+
+$unused = Apiship::map_points(array('x_1_1' => array('point_ids' => array('7'))), $map_rows);
+
+check('tariff without a known point is dropped', $unused['tariffs'] === array() && $unused['points'] === array());
+
+// Один tariffId и одно название в двух записях калькулятора (зоны): своя цена, сроки и набор точек у каждой
+$zones = Apiship::map_tariffs(array(array('providerKey' => 'cdek', 'tariffs' => array(
+	array('tariffId' => 136, 'tariffName' => 'Посылка склад-склад', 'daysMin' => 1, 'daysMax' => 2, 'deliveryCost' => 350, 'pickupTypes' => array(1), 'pointIds' => array(1, 3)),
+	array('tariffId' => 136, 'tariffName' => 'Посылка склад-склад', 'daysMin' => 3, 'daysMax' => 5, 'deliveryCost' => 450, 'pickupTypes' => array(1), 'pointIds' => array(2, 3))
+))), array('cdek' => array(1)));
+
+check('same tariffId twice: two tariffs with distinct keys', array_keys($zones) == array('cdek_136_1', 'cdek_136_1_2') && $zones['cdek_136_1']['cost'] === 350.0 && $zones['cdek_136_1_2']['cost'] === 450.0, implode(',', array_keys($zones)));
+check('same tariffId twice: same code template (set_point resolves by point id)', $zones['cdek_136_1']['code_template'] === $zones['cdek_136_1_2']['code_template']);
+check('same tariffId twice (same tariffName): each record keeps its own days', $zones['cdek_136_1']['days_min'] == 1 && $zones['cdek_136_1']['days_max'] == 2 && $zones['cdek_136_1_2']['days_min'] == 3 && $zones['cdek_136_1_2']['days_max'] == 5 && $zones['cdek_136_1']['name'] === $zones['cdek_136_1_2']['name']);
+
+$zoned = Apiship::map_points($zones, array(array('id' => 1), array('id' => 2), array('id' => 3)));
+
+check('zones: each point references the record with its own price', $zoned['points']['1']['tariffs'] == array('cdek_136_1') && $zoned['points']['2']['tariffs'] == array('cdek_136_1_2'), json_encode($zoned['points']));
+check('zones: point in both records keeps the last one, as set_point does', $zoned['points']['3']['tariffs'] == array('cdek_136_1_2'), implode(',', $zoned['points']['3']['tariffs']));
+check('zones: both tariffs stay in the dictionary', count($zoned['tariffs']) == 2);
+
+$only_dup = Apiship::map_points($zones, array(array('id' => 3)));
+
+check('zones: a record left without points after dedupe is dropped', array_keys($only_dup['tariffs']) == array('cdek_136_1_2'), implode(',', array_keys($only_dup['tariffs'])));
+
+echo "map: point_code\n";
+
+$map_code = Apiship::point_code($map_tariffs['cdek_136_2'], '3');
+$map_parsed = library()->parce_code($map_code);
+
+check('code with point id', $map_code == 'apiship.point_cdek_136_3_2', $map_code);
+check('round trip through parce_code', $map_parsed['provider'] == 'cdek' && $map_parsed['tariff_id'] == '136' && $map_parsed['point_id'] == '3' && $map_parsed['pickup_type'] == '2');
+check('tariff without template → empty code', Apiship::point_code(array(), '3') === '');
+
+// Приёмка: 321 точки по три варианта — каждая точка один раз, набор пар «точка, тариф, цена» равен прежнему перечислению
+$big_ids = range(1000, 1320);
+$big_providers = array(array('providerKey' => 'cdek', 'tariffs' => array(
+	array('tariffId' => 136, 'tariffName' => 'A', 'deliveryCost' => 350, 'pickupTypes' => array(1, 2), 'pointIds' => $big_ids),
+	array('tariffId' => 137, 'tariffName' => 'B', 'deliveryCost' => 500, 'pickupTypes' => array(1), 'pointIds' => $big_ids)
+)));
+$big_rows = array();
+
+foreach ($big_ids as $id) {
+	$big_rows[] = array('id' => $id, 'name' => 'P' . $id, 'type' => 1, 'lat' => 55, 'lng' => 37);
+}
+
+$big_map = Apiship::map_points(Apiship::map_tariffs($big_providers, array('cdek' => array(1, 2))), $big_rows);
+
+$expected_pairs = array();
+
+foreach ($big_providers[0]['tariffs'] as $tariff) {
+	foreach ($tariff['pointIds'] as $pid) {
+		foreach ($tariff['pickupTypes'] as $pt) {
+			$expected_pairs[] = 'apiship.point_cdek_' . $tariff['tariffId'] . '_' . $pid . '_' . $pt . '=' . $tariff['deliveryCost'];
+		}
+	}
+}
+
+$actual_pairs = array();
+
+foreach ($big_map['points'] as $pid => $item) {
+	foreach ($item['tariffs'] as $key) {
+		$actual_pairs[] = Apiship::point_code($big_map['tariffs'][$key], (string)$pid) . '=' . $big_map['tariffs'][$key]['cost'];
+	}
+}
+
+sort($expected_pairs);
+sort($actual_pairs);
+
+check('321 points: each point once', count($big_map['points']) == 321, (string)count($big_map['points']));
+check('321 points: (point, tariff, cost) pairs equal the per-pair enumeration (963 codes)', $expected_pairs === $actual_pairs && count($actual_pairs) == 963, (string)count($actual_pairs));
+check('321 points: tariffs dictionary has 3 entries, not 963', count($big_map['tariffs']) == 3, (string)count($big_map['tariffs']));
+
 echo "\n$passed passed, $failures failed\n";
 
 exit($failures ? 1 : 0);

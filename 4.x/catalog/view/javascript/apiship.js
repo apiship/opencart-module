@@ -1,6 +1,7 @@
 /**
  * ApiShip: карта пунктов выдачи (Яндекс.Карты 2.1) в модальном окне Bootstrap 5.
- * Использование: new ApishipMap(config).open(points, callback, code)
+ * Использование: new ApishipMap(config).open(data, callback, code), data — ответ get_points ({points, tariffs}):
+ * каждая точка один раз, тарифы (цена, название, код варианта по шаблону) отдельным словарём, точка ссылается на них ключами.
  * config.texts — подписи, config.image_path — путь к иконкам модуля.
  */
 class ApishipMap {
@@ -74,6 +75,7 @@ class ApishipMap {
 
 		this.yandexMaps = {
 			points: [],
+			tariffs: {},
 			initApi: () => {
 				let yandex_api_key = this.getApiKey();
 				let script_src;
@@ -121,9 +123,9 @@ class ApishipMap {
 					suppressMapOpenBlock: true
 				});
 
-				this.yandexMaps.createPlacemarks(this.yandexMaps.points, this.Mymap);
+				this.yandexMaps.createPlacemarks(this.yandexMaps.points, this.yandexMaps.tariffs, this.Mymap);
 			},
-			createPlacemarks: (points, map) => {
+			createPlacemarks: (points, tariffs, map) => {
 				const texts = this.texts;
 
 				let objectManager = new ymaps.ObjectManager({
@@ -177,15 +179,40 @@ class ApishipMap {
 				const esc = ApishipMap.escapeHtml;
 
 				for (const point of points) {
-					if (!point_types.includes(point.type)) point_types.push(point.type);
-					if (!providers.includes(point.provider)) providers.push(point.provider);
+					// Тарифы точки по возрастанию цены; точка без тарифов на карту не попадает
+					const point_tariffs = ApishipMap.pointTariffs(point, tariffs);
 
-					// Адрес, тариф, стоимость приходят из API — в html только экранированными
-					const balloonContentBody =
+					if (point_tariffs.length === 0) continue;
+
+					const cheapest = point_tariffs[0];
+					const point_providers = [];
+
+					for (const tariff of point_tariffs) {
+						if (!point_providers.includes(tariff.provider)) point_providers.push(tariff.provider);
+						if (!providers.includes(tariff.provider)) providers.push(tariff.provider);
+					}
+
+					if (!point_types.includes(point.type)) point_types.push(point.type);
+
+					// Подпись метки: точная цена при одном тарифе, «от минимальной» — если цены тарифов различаются
+					const has_price_range = point_tariffs.some((tariff) => tariff.cost !== cheapest.cost);
+					const icon_text = (has_price_range ? esc(texts.from) + ' ' : '') + esc(cheapest.text);
+
+					// Адрес, тарифы, стоимость приходят из API — в html только экранированными
+					let balloonContentBody =
 						'<h3 style="font-size: 1.3em;font-weight: bold;margin-bottom: 0.5em;">' + esc(point.address) + '</h3>' +
-						'<b>' + esc(texts.map_cost) + ': </b>' + esc(point.text) + '<br>' +
 						(point.paymentCash == 1 ? '<img title="' + esc(texts.map_cash) + '" src="' + esc(this.image_path) + 'apiship_cash.png">' : '') + ' ' +
 						(point.paymentCard == 1 ? '<img title="' + esc(texts.map_card) + '" src="' + esc(this.image_path) + 'apiship_card.png">' : '');
+
+					// Все тарифы точки в одном балуне, у каждого своя кнопка с кодом варианта
+					for (const tariff of point_tariffs) {
+						balloonContentBody +=
+							'<div class="apiship_balloon_tariff" style="margin-top: 0.7em;">' +
+							'<b>' + esc(tariff.tariff) + '</b><br>' +
+							esc(texts.map_cost) + ': ' + esc(tariff.text) + ' ' +
+							'<a href=# data-placemarkid="' + esc(tariff.code) + '" class="list_item btn btn-success btn-sm">' + esc(texts.map_take_here) + '</a>' +
+							'</div>';
+					}
 
 					objectManager.add({
 						type: 'Feature',
@@ -196,19 +223,18 @@ class ApishipMap {
 						},
 						properties: {
 							type: point.type,
-							provider: point.provider,
-							providerKey: point.provider_key,
-							cost: parseFloat(point.cost),
-							text: point.text,
-							balloonContentHeader: esc(point.tariff),
-							balloonContentBody: balloonContentBody,
-							balloonContentFooter: '<a href=# data-placemarkid="' + esc(point.code) + '" class="list_item btn btn-success">' + esc(texts.map_take_here) + '</a>'
+							providers: point_providers,
+							providerKey: cheapest.provider_key,
+							cost: cheapest.cost,
+							text: cheapest.text,
+							balloonContentHeader: esc(point_providers.join(', ')),
+							balloonContentBody: balloonContentBody
 						},
 						options: {
 							iconLayout: 'default#imageWithContent',
 							iconImageHref: '',
 							iconContentLayout: ymaps.templateLayoutFactory.createClass(
-								'<span class="apiship_cluster"><img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + encodeURIComponent(point.provider_key) + '.svg"> ' + esc(point.text) + '</span>'
+								'<span class="apiship_cluster"><img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + encodeURIComponent(cheapest.provider_key) + '.svg"> ' + icon_text + '</span>'
 							),
 							iconImageSize: [140, 40],
 							iconImageOffset: [0, 0],
@@ -298,7 +324,7 @@ class ApishipMap {
 					const providerFilters = listBoxControlProviders.state.get('filters');
 
 					objectManager.setFilter((obj) => {
-						return types[obj.properties.type] && providerFilters[obj.properties.provider];
+						return types[obj.properties.type] && obj.properties.providers.some((provider) => providerFilters[provider]);
 					});
 				};
 
@@ -323,6 +349,28 @@ class ApishipMap {
 				if (el !== null) el.remove();
 			}
 		};
+	}
+
+	// Тарифы точки из словаря ответа сервера: с кодом варианта для этой точки, по возрастанию цены.
+	// Код собирается по code_template тарифа — подстановка id точки вместо {point_id} (Apiship::POINT_ID_PLACEHOLDER)
+	static pointTariffs(point, tariffs) {
+		const keys = (point && Array.isArray(point.tariffs)) ? point.tariffs : [];
+		const result = [];
+
+		for (const key of keys) {
+			const tariff = (tariffs && Object.prototype.hasOwnProperty.call(tariffs, key)) ? tariffs[key] : null;
+
+			if (!tariff || typeof tariff.code_template !== 'string') continue;
+
+			result.push(Object.assign({}, tariff, {
+				code: tariff.code_template.split('{point_id}').join(String(point.id)),
+				cost: parseFloat(tariff.cost)
+			}));
+		}
+
+		result.sort((a, b) => a.cost - b.cost);
+
+		return result;
 	}
 
 	// Экранирование строки для вставки в html (данные точек приходят из API)
@@ -369,8 +417,11 @@ class ApishipMap {
 		return this;
 	}
 
-	open(points, callback, code) {
-		if (!Array.isArray(points) || points.length === 0) {
+	open(data, callback, code) {
+		const points = (data && Array.isArray(data.points)) ? data.points : [];
+		const tariffs = (data && data.tariffs && typeof data.tariffs === 'object') ? data.tariffs : {};
+
+		if (points.length === 0) {
 			alert(this.texts.map_no_points);
 			return;
 		}
@@ -388,6 +439,7 @@ class ApishipMap {
 
 		this.yandexMaps.createContainer();
 		this.yandexMaps.points = points;
+		this.yandexMaps.tariffs = tariffs;
 
 		// Ожидаем загрузку Яндекс.Карт: не дольше 15 секунд, иначе закрываем модалку с сообщением
 		if (typeof ymaps !== 'undefined') {

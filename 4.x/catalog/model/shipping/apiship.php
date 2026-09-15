@@ -548,24 +548,37 @@ class Apiship extends \Opencart\System\Engine\Model {
 			$points_data = $this->get_points_array($country, $region, $city, $postcode, $ext_address);
 
 			if ($points_data['error'] == 'no_error') {
-				foreach ($points_data['points'] as $i => $point) {
-					$points_data['points'][$i]['name'] = $this->point_title($point);
+				// Пары точка–тариф с заголовком по шаблону: поиск и сортировка идут по заголовку
+				$rows = [];
+
+				foreach ($points_data['points'] as $point) {
+					foreach ($point['tariffs'] as $key) {
+						$tariff = $points_data['tariffs'][$key];
+
+						$point_code = \Opencart\System\Library\Extension\Apiship\Apiship::point_code($tariff, $point['id']);
+
+						$rows[] = [
+							'code'       => $point_code,
+							'name'       => $this->point_title($point, $tariff, $point_code),
+							'cost_value' => $tariff['cost_value']
+						];
+					}
 				}
 
-				usort($points_data['points'], function($a, $b) {
+				usort($rows, function($a, $b) {
 					return strcmp($a['name'], $b['name']);
 				});
 
 				$limit = 10;
 				$count = 0;
 
-				foreach ($points_data['points'] as $point) {
-					$parce_code = $this->apiship->parce_code($point['code']);
+				foreach ($rows as $row) {
+					$parce_code = $this->apiship->parce_code($row['code']);
 
-					$is_current = ($current_code != '' && $point['code'] == $current_code);
+					$is_current = ($current_code != '' && $row['code'] == $current_code);
 
 					if (!$is_current) {
-						if ($search != '' && mb_stripos($point['name'], $search) === false) {
+						if ($search != '' && mb_stripos($row['name'], $search) === false) {
 							continue;
 						}
 
@@ -576,7 +589,7 @@ class Apiship extends \Opencart\System\Engine\Model {
 						$count++;
 					}
 
-					$quote_data[$parce_code['short_code']] = $this->build_quote($parce_code['short_code'], $point['name'], (float)$point['cost_value'], '', '', false);
+					$quote_data[$parce_code['short_code']] = $this->build_quote($parce_code['short_code'], $row['name'], (float)$row['cost_value'], '', '', false);
 				}
 			}
 		}
@@ -742,7 +755,8 @@ class Apiship extends \Opencart\System\Engine\Model {
 	}
 
 	/**
-	 * Все ПВЗ по адресу с тарифами (для карты и полного списка)
+	 * Все ПВЗ по адресу с тарифами (для карты и полного списка в админке): каждая точка один раз,
+	 * тарифы отдельным словарём, точка ссылается на них ключами
 	 *
 	 * @param string             $country
 	 * @param string             $region
@@ -751,7 +765,9 @@ class Apiship extends \Opencart\System\Engine\Model {
 	 * @param string             $ext_address
 	 * @param array<int, string> $provider
 	 *
-	 * @return array<string, mixed>
+	 * @return array{error: string, points: array<int, array<string, mixed>>, tariffs: array<string, array<string, mixed>>}
+	 *               points: id, lat, lon, address, type, paymentCash, paymentCard, tariffs (ключи), _title;
+	 *               tariffs: code_template, tariff, description, text, cost, cost_value, provider, provider_key, pickup_type, days_min, days_max
 	 */
 	private function get_points_array(string $country, string $region, string $city, string $postcode, string $ext_address, array $provider = []): array {
 		$this->apiship->toLog('get_points_array', [
@@ -763,18 +779,16 @@ class Apiship extends \Opencart\System\Engine\Model {
 			'provider'    => $provider
 		]);
 
-		$data_points = [];
-		$all_points = [];
 		$apiship_providers = [];
 
 		$products = $this->cart->getProducts();
 
 		if (empty($products)) {
-			return ['error' => 'no_products', 'points' => []];
+			return ['error' => 'no_products', 'points' => [], 'tariffs' => []];
 		}
 
 		if (empty($city)) {
-			return ['error' => 'no_city', 'points' => []];
+			return ['error' => 'no_city', 'points' => [], 'tariffs' => []];
 		}
 
 		$apiship_providers_data = $this->apiship->apiship_providers();
@@ -798,107 +812,94 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 		$data = $apiship_calculator_data['body'];
 
-		$points_ids = [];
-
 		$providers = $data['deliveryToPoint'] ?? [];
 
+		$pickup_types = [];
+
 		foreach ($providers as $provider) {
-			$tariffs = $provider['tariffs'] ?? [];
+			$provider_key = (string)($provider['providerKey'] ?? '');
 
-			foreach ($tariffs as $tariff) {
-				foreach ($this->tariff_pickup_types($tariff, $provider['providerKey']) as $pickup_type) {
+			$pickup_types[$provider_key] = $this->get_pickup_types($provider_key);
+		}
 
-					foreach ($tariff['pointIds'] as $point_id) {
-						if (!in_array($point_id, $points_ids)) {
-							$points_ids[] = $point_id;
-						}
-					}
-				}
+		$tariffs = \Opencart\System\Library\Extension\Apiship\Apiship::map_tariffs($providers, $pickup_types);
+
+		$points_ids = [];
+
+		foreach ($tariffs as $tariff) {
+			foreach ($tariff['point_ids'] as $point_id) {
+				$points_ids[$point_id] = true;
 			}
 		}
+
+		$points_ids = array_keys($points_ids);
 
 		$points = $this->apiship->apiship_points($points_ids);
 
 		// Калькулятор вернул ПВЗ, а справочник точек — нет (ошибка или таймаут lists/points): это ошибка, а не пустая карта
 		if ($points_ids && !$points) {
-			return ['error' => $this->language->get('shipping_apiship_error_no_points'), 'points' => []];
+			return ['error' => $this->language->get('shipping_apiship_error_no_points'), 'points' => [], 'tariffs' => []];
 		}
 
-		foreach ($points as $point) {
-			$description = str_replace(["\r\n", "\r", "\n"], '', strip_tags((string)($point['description'] ?? '')));
+		$grouped = \Opencart\System\Library\Extension\Apiship\Apiship::map_points($tariffs, $points);
 
-			$data_points[$point['id']] = [
-				'address'      => $this->apiship->get_address($point),
-				'note'         => $description,
-				'lon'          => $point['lng'],
-				'lat'          => $point['lat'],
-				'name'         => $point['name'],
-				'city'         => $point['city'],
-				'tax_class_id' => (int)$this->apiship_params['shipping_apiship_tax_class_id'],
-				'type'         => $point['type'],
-				'phone'        => $point['phone'] ?? '',
-				'workTime'     => $point['timetable'] ?? '',
-				'paymentCash'  => $point['paymentCash'] ?? 0,
-				'paymentCard'  => $point['paymentCard'] ?? 0
+		// Тарифы один раз: цена в валюте магазина с налогом, служба по имени; код варианта — по code_template с id точки
+		$map_tariffs = [];
+
+		foreach ($grouped['tariffs'] as $key => $tariff) {
+			$cost = $this->currency->convert($tariff['cost'], (string)$this->apiship_params['shipping_apiship_rub_select'], (string)$this->config->get('config_currency'));
+			$cost_with_tax = $this->tax->calculate($cost, (int)$this->apiship_params['shipping_apiship_tax_class_id'], (bool)$this->config->get('config_tax'));
+
+			$map_tariffs[$key] = [
+				'code_template' => $tariff['code_template'],
+				'tariff'        => $tariff['name'],
+				'description'   => $tariff['description'],
+				'text'          => $this->currency->format($cost_with_tax, $this->session->data['currency']),
+				'cost'          => $cost_with_tax,
+				'cost_value'    => $tariff['cost'],
+				'provider'      => $apiship_providers[$tariff['provider_key']] ?? $tariff['provider_key'],
+				'provider_key'  => $tariff['provider_key'],
+				'pickup_type'   => $tariff['pickup_type'],
+				'days_min'      => $tariff['days_min'],
+				'days_max'      => $tariff['days_max']
 			];
 		}
 
-		foreach ($providers as $provider) {
-			$tariffs = $provider['tariffs'] ?? [];
+		// Каждая точка один раз, только то, что нужно карте; ключи тарифов — по возрастанию цены.
+		// Заголовок по шаблону (для списка ПВЗ в админке) считается отдельно в point_title() из _title
+		$map_points = [];
 
-			foreach ($tariffs as $tariff) {
-				if (!isset($tariff['tariffDescription'])) {
-					$tariff['tariffDescription'] = '';
-				}
+		foreach ($grouped['points'] as $point_id => $item) {
+			$point = $item['point'];
 
-				foreach ($tariff['pointIds'] as $point_id) {
-					foreach ($this->tariff_pickup_types($tariff, $provider['providerKey']) as $pickup_type) {
+			$tariff_keys = $item['tariffs'];
 
-						$code = 'point_' . $provider['providerKey'] . '_' . $tariff['tariffId'] . '_' . $point_id . '_' . $pickup_type;
+			usort($tariff_keys, function($a, $b) use ($map_tariffs) {
+				return $map_tariffs[$a]['cost'] <=> $map_tariffs[$b]['cost'];
+			});
 
-						if (!isset($data_points[$point_id])) {
-							continue;
-						}
-
-						$point = $data_points[$point_id];
-
-						$cost = $this->currency->convert((float)$tariff['deliveryCost'], (string)$this->apiship_params['shipping_apiship_rub_select'], (string)$this->config->get('config_currency'));
-						$cost_with_tax = $this->tax->calculate($cost, (int)$this->apiship_params['shipping_apiship_tax_class_id'], (bool)$this->config->get('config_tax'));
-
-						// Только то, что нужно карте; заголовок по шаблону (для админки) считается отдельно в point_title()
-						$all_points[] = [
-							'lon'          => $point['lon'],
-							'lat'          => $point['lat'],
-							'code'         => 'apiship.' . $code,
-							'tariff'       => $tariff['tariffName'],
-							'text'         => $this->currency->format($cost_with_tax, $this->session->data['currency']),
-							'cost'         => $this->currency->format($cost_with_tax, $this->session->data['currency'], 0, false),
-							'cost_value'   => (float)$tariff['deliveryCost'],
-							'type'         => $apiship_point_types[(int)$point['type']] ?? (string)$point['type'],
-							'provider'     => $apiship_providers[$provider['providerKey']] ?? $provider['providerKey'],
-							'provider_key' => $provider['providerKey'],
-							'address'      => $point['address'],
-							'paymentCash'  => (int)$point['paymentCash'],
-							'paymentCard'  => (int)$point['paymentCard'],
-							'_title'       => [
-								'sub_type'          => $point['type'],
-								'pointName'         => $point['name'],
-								'tariffName'        => $tariff['tariffName'],
-								'daysMin'           => $tariff['daysMin'],
-								'daysMax'           => $tariff['daysMax'],
-								'tariffDescription' => $tariff['tariffDescription']
-							]
-						];
-					}
-				}
-			}
+			$map_points[] = [
+				'id'          => (string)$point_id,
+				'lon'         => $point['lng'],
+				'lat'         => $point['lat'],
+				'address'     => $this->apiship->get_address($point),
+				'type'        => $apiship_point_types[(int)$point['type']] ?? (string)$point['type'],
+				'paymentCash' => (int)($point['paymentCash'] ?? 0),
+				'paymentCard' => (int)($point['paymentCard'] ?? 0),
+				'tariffs'     => $tariff_keys,
+				'_title'      => [
+					'sub_type'  => $point['type'],
+					'pointName' => $point['name']
+				]
+			];
 		}
 
-		usort($all_points, function($a, $b) {
-			return $a['cost_value'] <=> $b['cost_value'];
+		// Точки по самому дешёвому тарифу любой службы; get_points() после отсечения служб сортирует заново — первая точка это центр карты
+		usort($map_points, function($a, $b) use ($map_tariffs) {
+			return $map_tariffs[$a['tariffs'][0]]['cost'] <=> $map_tariffs[$b['tariffs'][0]]['cost'];
 		});
 
-		return ['error' => 'no_error', 'points' => $all_points];
+		return ['error' => 'no_error', 'points' => $map_points, 'tariffs' => $map_tariffs];
 	}
 
 	/**
@@ -931,27 +932,29 @@ class Apiship extends \Opencart\System\Engine\Model {
 	}
 
 	/**
-	 * Заголовок точки по шаблону из настроек (нужен только списку ПВЗ в админке, на карте не используется)
+	 * Заголовок пары точка–тариф по шаблону из настроек (нужен только списку ПВЗ в админке, на карте не используется)
 	 *
-	 * @param array<string, mixed> $point элемент get_points_array
+	 * @param array<string, mixed> $point  элемент points из get_points_array
+	 * @param array<string, mixed> $tariff элемент tariffs из get_points_array
+	 * @param string               $code   код варианта apiship.point_…
 	 *
 	 * @return string
 	 */
-	private function point_title(array $point): string {
+	private function point_title(array $point, array $tariff, string $code): string {
 		$t = $point['_title'] ?? [];
 
 		return $this->fill_template([
 			'template'          => $this->apiship_params['shipping_apiship_title_point_template'],
 			'type'              => 'point',
 			'sub_type'          => $t['sub_type'] ?? '',
-			'providerKey'       => $point['provider_key'],
-			'tariffName'        => $t['tariffName'] ?? '',
+			'providerKey'       => $tariff['provider_key'],
+			'tariffName'        => $tariff['tariff'],
 			'pointName'         => $t['pointName'] ?? '',
 			'pointAddress'      => $point['address'],
-			'daysMin'           => $t['daysMin'] ?? '',
-			'daysMax'           => $t['daysMax'] ?? '',
-			'tariffDescription' => $t['tariffDescription'] ?? '',
-			'code'              => $point['code']
+			'daysMin'           => $tariff['days_min'],
+			'daysMax'           => $tariff['days_max'],
+			'tariffDescription' => $tariff['description'],
+			'code'              => $code
 		]);
 	}
 
@@ -978,21 +981,43 @@ class Apiship extends \Opencart\System\Engine\Model {
 
 		$data = $this->get_points_array($country, $region, $city, $postcode, $ext_address);
 
-		$points = [];
+		// Без группировки карта показывает только службу выбранного варианта
+		$tariffs = [];
 
-		foreach ($data['points'] as $point) {
-			if ($this->apiship_params['shipping_apiship_group_points'] || $point['provider_key'] == $parce_code['provider']) {
-				unset($point['_title'], $point['cost_value']);
+		foreach ($data['tariffs'] as $key => $tariff) {
+			if ($this->apiship_params['shipping_apiship_group_points'] || $tariff['provider_key'] == $parce_code['provider']) {
+				unset($tariff['cost_value']);
 
-				$points[] = $point;
+				$tariffs[$key] = $tariff;
 			}
 		}
 
-		if ($data['error'] == 'no_error' && !$points) {
-			return ['error' => $this->language->get('shipping_apiship_error_no_points'), 'points' => []];
+		$points = [];
+
+		foreach ($data['points'] as $point) {
+			$point['tariffs'] = array_values(array_filter($point['tariffs'], function($key) use ($tariffs) {
+				return isset($tariffs[$key]);
+			}));
+
+			if (!$point['tariffs']) {
+				continue;
+			}
+
+			unset($point['_title']);
+
+			$points[] = $point;
 		}
 
-		return ['error' => $data['error'], 'points' => $points];
+		// Тарифы других служб отсечены: первой снова ставим самую дешёвую по оставшимся точку — она центр карты
+		usort($points, function($a, $b) use ($tariffs) {
+			return $tariffs[$a['tariffs'][0]]['cost'] <=> $tariffs[$b['tariffs'][0]]['cost'];
+		});
+
+		if ($data['error'] == 'no_error' && !$points) {
+			return ['error' => $this->language->get('shipping_apiship_error_no_points'), 'points' => [], 'tariffs' => []];
+		}
+
+		return ['error' => $data['error'], 'points' => $points, 'tariffs' => $tariffs];
 	}
 
 	/**

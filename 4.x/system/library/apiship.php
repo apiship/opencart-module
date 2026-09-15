@@ -1348,6 +1348,150 @@ class Apiship {
 	}
 
 	/**
+	 * Подстановка id точки в code_template тарифа карты (map_tariffs)
+	 */
+	public const POINT_ID_PLACEHOLDER = '{point_id}';
+
+	/**
+	 * Тарифы до ПВЗ из ответа калькулятора для карты: одна запись на запись калькулятора и тип забора,
+	 * ключ {providerKey}_{tariffId}_{pickupType}. Один tariffId может прийти несколько раз (зоны: своя цена и свой
+	 * набор точек) — каждая такая запись остаётся отдельным тарифом с суффиксом _2, _3… в ключе. Тип забора берётся,
+	 * если он есть и в тарифе, и в настройках службы доставки. Цена, название и сроки заданы на запись калькулятора,
+	 * а не на точку, поэтому карта получает их один раз, а точки ссылаются на тарифы ключами (map_points)
+	 *
+	 * @param array<int, array<string, mixed>> $providers                deliveryToPoint ответа калькулятора
+	 * @param array<string, array<int, int>>   $pickup_types_by_provider providerKey => включённые в настройках типы забора
+	 *
+	 * @return array<string, array<string, mixed>> ключ => тариф: provider_key, tariff_id, pickup_type, code_template, name, description, days_min, days_max, cost, point_ids
+	 */
+	public static function map_tariffs(array $providers, array $pickup_types_by_provider): array {
+		$tariffs = [];
+
+		foreach ($providers as $provider) {
+			$provider_key = (string)($provider['providerKey'] ?? '');
+
+			$allowed_types = $pickup_types_by_provider[$provider_key] ?? [];
+
+			$provider_tariffs = is_array($provider['tariffs'] ?? null) ? $provider['tariffs'] : [];
+
+			foreach ($provider_tariffs as $tariff) {
+				$tariff_id = (string)($tariff['tariffId'] ?? '');
+
+				$tariff_types = is_array($tariff['pickupTypes'] ?? null) ? $tariff['pickupTypes'] : [];
+
+				$point_ids = is_array($tariff['pointIds'] ?? null) ? array_map('strval', $tariff['pointIds']) : [];
+
+				foreach ([1, 2] as $pickup_type) {
+					if (!in_array($pickup_type, $tariff_types) || !in_array($pickup_type, $allowed_types)) {
+						continue;
+					}
+
+					$key = $provider_key . '_' . $tariff_id . '_' . $pickup_type;
+
+					for ($n = 2; isset($tariffs[$key]); $n++) {
+						$key = $provider_key . '_' . $tariff_id . '_' . $pickup_type . '_' . $n;
+					}
+
+					$tariffs[$key] = [
+						'provider_key'  => $provider_key,
+						'tariff_id'     => $tariff_id,
+						'pickup_type'   => $pickup_type,
+						'code_template' => 'apiship.point_' . $provider_key . '_' . $tariff_id . '_' . self::POINT_ID_PLACEHOLDER . '_' . $pickup_type,
+						'name'          => (string)($tariff['tariffName'] ?? ''),
+						'description'   => (string)($tariff['tariffDescription'] ?? ''),
+						'days_min'      => $tariff['daysMin'] ?? '',
+						'days_max'      => $tariff['daysMax'] ?? '',
+						'cost'          => (float)($tariff['deliveryCost'] ?? 0),
+						'point_ids'     => $point_ids
+					];
+				}
+			}
+		}
+
+		return $tariffs;
+	}
+
+	/**
+	 * Точки для карты: каждая точка один раз со списком ключей тарифов (map_tariffs), которые её обслуживают.
+	 * Точки, которых нет в $points (не вернул lists/points), пропускаются, тарифы без единой точки — тоже.
+	 * Если точка входит в несколько записей калькулятора с одним кодом варианта (один tariffId, разные цены),
+	 * у неё остаётся последняя — её же берёт set_point при выборе этого кода
+	 *
+	 * @param array<string, array<string, mixed>> $tariffs результат map_tariffs
+	 * @param array<int, array<string, mixed>>    $points  строки lists/points
+	 *
+	 * @return array{tariffs: array<string, array<string, mixed>>, points: array<string, array{point: array<string, mixed>, tariffs: array<int, string>}>}
+	 *               tariffs — только использованные, без point_ids; points — id => точка и ключи её тарифов
+	 */
+	public static function map_points(array $tariffs, array $points): array {
+		$by_id = [];
+
+		foreach ($points as $point) {
+			if (isset($point['id'])) {
+				$by_id[(string)$point['id']] = $point;
+			}
+		}
+
+		$map_points = [];
+		$codes = [];
+
+		foreach ($tariffs as $key => $tariff) {
+			$code = (string)($tariff['code_template'] ?? $key);
+
+			foreach ($tariff['point_ids'] as $point_id) {
+				if (!isset($by_id[$point_id])) {
+					continue;
+				}
+
+				if (!isset($map_points[$point_id])) {
+					$map_points[$point_id] = ['point' => $by_id[$point_id], 'tariffs' => []];
+				}
+
+				if (isset($codes[$point_id][$code])) {
+					unset($map_points[$point_id]['tariffs'][$codes[$point_id][$code]]);
+				}
+
+				$codes[$point_id][$code] = $key;
+
+				$map_points[$point_id]['tariffs'][$key] = true;
+			}
+		}
+
+		$used = [];
+
+		foreach ($map_points as $point_id => $item) {
+			$map_points[$point_id]['tariffs'] = array_keys($item['tariffs']);
+
+			$used += $item['tariffs'];
+		}
+
+		$map_tariffs = [];
+
+		foreach ($tariffs as $key => $tariff) {
+			if (isset($used[$key])) {
+				unset($tariff['point_ids']);
+
+				$map_tariffs[$key] = $tariff;
+			}
+		}
+
+		return ['tariffs' => $map_tariffs, 'points' => $map_points];
+	}
+
+	/**
+	 * Код варианта доставки до ПВЗ: code_template тарифа карты с подставленным id точки
+	 * (apiship.point_{provider}_{tariff}_{point}_{pickup}, разбирается parce_code)
+	 *
+	 * @param array<string, mixed> $tariff элемент map_tariffs
+	 * @param string               $point_id
+	 *
+	 * @return string
+	 */
+	public static function point_code(array $tariff, string $point_id): string {
+		return str_replace(self::POINT_ID_PLACEHOLDER, $point_id, (string)($tariff['code_template'] ?? ''));
+	}
+
+	/**
 	 * Расчёт грузоместа и позиций по товарам корзины/заказа
 	 *
 	 * @param array<mixed> $products  товары с price в базовой валюте магазина

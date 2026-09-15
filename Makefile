@@ -9,7 +9,7 @@ COMPOSE := docker compose -f dev/oc4/docker-compose.yml
 
 PHP_OC3_IMAGES ?= php:7.4-cli php:8.3-cli
 
-.PHONY: build build-oc4 lint test lint-oc3 test-oc3 oc4-up oc4-down oc4-logs oc4-sync
+.PHONY: build build-oc4 lint test test-js lint-oc3 test-oc3 oc4-up oc4-down oc4-logs oc4-sync
 
 # Rule for archiving folders
 build: build-oc4
@@ -31,6 +31,10 @@ lint:
 # Юнит-тесты библиотеки пакета 4.x
 test:
 	@docker run --rm -v "$(CURDIR):/app" -w /app $(PHP_IMAGE) php dev/oc4/tests/run.php
+
+# Тест хелпера скрипта карты ПВЗ (все пакеты, node без браузера)
+test-js:
+	@node dev/oc4/tests/map.js
 
 # Проверка синтаксиса пакетов 2.1/2.3/3.x на каждой версии PHP из PHP_OC3_IMAGES
 # (код пакетов пишется в синтаксисе PHP 5.6: без ??, типов свойств и стрелочных функций)
