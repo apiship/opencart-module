@@ -667,12 +667,13 @@ namespace ApishipTests {
 
 	// Один tariffId в двух записях калькулятора (зоны): своя цена и свой набор точек у каждой
 	$zones = Apiship::map_tariffs([['providerKey' => 'cdek', 'tariffs' => [
-		['tariffId' => 136, 'tariffName' => 'Зона 1', 'deliveryCost' => 350, 'pickupTypes' => [1], 'pointIds' => [1, 3]],
-		['tariffId' => 136, 'tariffName' => 'Зона 2', 'deliveryCost' => 450, 'pickupTypes' => [1], 'pointIds' => [2, 3]]
+		['tariffId' => 136, 'tariffName' => 'Зона 1', 'daysMin' => 1, 'daysMax' => 2, 'deliveryCost' => 350, 'pickupTypes' => [1], 'pointIds' => [1, 3]],
+		['tariffId' => 136, 'tariffName' => 'Зона 2', 'daysMin' => 3, 'daysMax' => 5, 'deliveryCost' => 450, 'pickupTypes' => [1], 'pointIds' => [2, 3]]
 	]]], ['cdek' => [1]]);
 
 	check('same tariffId twice: two tariffs with distinct keys', array_keys($zones) == ['cdek_136_1', 'cdek_136_1_2'] && $zones['cdek_136_1']['cost'] === 350.0 && $zones['cdek_136_1_2']['cost'] === 450.0, implode(',', array_keys($zones)));
 	check('same tariffId twice: same code template (set_point resolves by point id)', $zones['cdek_136_1']['code_template'] === $zones['cdek_136_1_2']['code_template']);
+	check('same tariffId twice: each record keeps its own days and name', $zones['cdek_136_1']['days_min'] == 1 && $zones['cdek_136_1']['days_max'] == 2 && $zones['cdek_136_1_2']['days_min'] == 3 && $zones['cdek_136_1_2']['days_max'] == 5 && $zones['cdek_136_1_2']['name'] == 'Зона 2');
 
 	$zoned = Apiship::map_points($zones, [['id' => 1], ['id' => 2], ['id' => 3]]);
 
