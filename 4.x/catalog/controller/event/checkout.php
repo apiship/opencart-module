@@ -33,7 +33,7 @@ class Checkout extends \Opencart\System\Engine\Controller {
 			'selected_url'       => $this->url->link('extension/apiship/shipping/apiship.get_selected', $language, true),
 			'confirm_url'        => $this->url->link('checkout/confirm.confirm', $language, true),
 			'yandex_api_key'     => (string)$this->config->get('shipping_apiship_yandex_api_key'),
-			'version'            => (string)($this->config->get('shipping_apiship_version_js_mod') ?: '1.3'),
+			'version'            => (string)($this->config->get('shipping_apiship_version_js_mod') ?: '1.4'),
 			'image_path'         => 'extension/apiship/catalog/view/image/',
 			'text_from'          => $this->language->get('shipping_apiship_title_from'),
 			'text_select_point'  => $this->language->get('shipping_apiship_select_point'),
