@@ -37,6 +37,13 @@ class StubSession {
 	public $data = array();
 }
 
+// Язык ядра: возвращает сам ключ, чтобы проверить состав набора подписей карты
+class StubLanguage {
+	public function get($key) {
+		return 'L:' . $key;
+	}
+}
+
 // Кеш OpenCart 2/3: set($key, $value) без TTL, get() возвращает false/пустой массив при промахе
 class StubCache {
 	public $items = array();
@@ -660,6 +667,51 @@ sort($actual_pairs);
 check('321 points: each point once', count($big_map['points']) == 321, (string)count($big_map['points']));
 check('321 points: (point, tariff, cost) pairs equal the per-pair enumeration (963 codes)', $expected_pairs === $actual_pairs && count($actual_pairs) == 963, (string)count($actual_pairs));
 check('321 points: tariffs dictionary has 3 entries, not 963', count($big_map['tariffs']) == 3, (string)count($big_map['tariffs']));
+
+echo "map: point card headline (OCM-138)\n";
+
+$headline = Apiship::point_headline(array(
+	'streetType' => 'ул',
+	'street' => 'М.К. Тихонравова',
+	'house' => '35',
+	'block' => '2',
+	'cityType' => 'г',
+	'city' => 'Королёв',
+	'regionType' => 'обл',
+	'region' => 'Московская',
+	'postIndex' => '141070'
+));
+
+check('headline: street and house in the title, city and region below', $headline['title'] === 'ул М.К. Тихонравова, 35, корп. 2' && $headline['subtitle'] === 'Королёв, Московская обл, 141070', json_encode($headline, JSON_UNESCAPED_UNICODE));
+
+$headline = Apiship::point_headline(array(
+	'streetType' => 'ш',
+	'street' => 'Волоколамское',
+	'house' => '142',
+	'office' => '25',
+	'cityType' => 'г',
+	'city' => 'Москва',
+	'regionType' => 'г',
+	'region' => 'Москва',
+	'postIndex' => '125371'
+), array('block' => 'корп.', 'office' => 'офис'));
+
+check('headline: a federal city is not repeated in the subtitle', $headline['title'] === 'ш Волоколамское, 142, офис 25' && $headline['subtitle'] === 'Москва, 125371', json_encode($headline, JSON_UNESCAPED_UNICODE));
+
+$headline = Apiship::point_headline(array('cityType' => 'пгт', 'city' => 'Октябрьский', 'regionType' => 'обл', 'region' => 'Московская', 'house' => '4', 'street' => 'Ленина', 'streetType' => 'ул'), array('block' => 'bldg', 'office' => 'office'));
+
+check('headline: settlement type stays in the subtitle', $headline['subtitle'] === 'пгт Октябрьский, Московская обл', json_encode($headline, JSON_UNESCAPED_UNICODE));
+
+$headline = Apiship::point_headline(array('city' => 'Химки', 'cityType' => 'г', 'block' => '2', 'office' => '3'));
+
+check('headline: without street and house there is no title (the card shows the full address)', $headline['title'] === '' && $headline['subtitle'] === '', json_encode($headline, JSON_UNESCAPED_UNICODE));
+
+echo "map: texts for the map script (OCM-138)\n";
+
+$map_texts = Apiship::map_texts(new StubLanguage());
+
+check('map_texts: keys of the script config are filled from the language file', $map_texts['map_how_to_get'] === 'L:shipping_apiship_map_how_to_get' && $map_texts['from'] === 'L:shipping_apiship_title_from' && $map_texts['map_no_points'] === 'L:shipping_apiship_error_no_points', json_encode(array_slice($map_texts, 0, 3)));
+check('map_texts: plural forms come as triples', $map_texts['map_days'] === array('L:shipping_apiship_map_days_1', 'L:shipping_apiship_map_days_2', 'L:shipping_apiship_map_days_5') && count($map_texts['map_points']) == 3 && count($map_texts['map_ways']) == 3, json_encode($map_texts['map_days']));
 
 echo "\n$passed passed, $failures failed\n";
 

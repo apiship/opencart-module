@@ -9,21 +9,7 @@ var apiship_config = {
     confirm_url: '{{ confirm_url|escape('js') }}',
     yandex_api_key: '{{ yandex_api_key|escape('js') }}',
     image_path: '{{ image_path|escape('js') }}',
-    texts: {
-        from: '{{ text_from|escape('js') }}',
-        select_point: '{{ text_select_point|escape('js') }}',
-        change_point: '{{ text_change_point|escape('js') }}',
-        map_title: '{{ text_map_title|escape('js') }}',
-        map_cost: '{{ text_map_cost|escape('js') }}',
-        map_take_here: '{{ text_map_take_here|escape('js') }}',
-        map_type: '{{ text_map_type|escape('js') }}',
-        map_provider: '{{ text_map_provider|escape('js') }}',
-        map_cash: '{{ text_map_cash|escape('js') }}',
-        map_card: '{{ text_map_card|escape('js') }}',
-        map_no_points: '{{ text_map_no_points|escape('js') }}',
-        map_load: '{{ text_map_load|escape('js') }}',
-        recalculate: '{{ text_recalculate|escape('js') }}'
-    }
+    texts: {{ texts_json|raw }}
 };
 
 function get_yandex_api_key() {

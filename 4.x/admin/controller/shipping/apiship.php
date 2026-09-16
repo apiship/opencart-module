@@ -8,7 +8,7 @@ namespace Opencart\Admin\Controller\Extension\Apiship\Shipping;
  * @package Opencart\Admin\Controller\Extension\Apiship\Shipping
  */
 class Apiship extends \Opencart\System\Engine\Controller {
-	public const VERSION = '1.4';
+	public const VERSION = \Opencart\System\Library\Extension\Apiship\Apiship::VERSION;
 
 	/**
 	 * @var array<string, string>

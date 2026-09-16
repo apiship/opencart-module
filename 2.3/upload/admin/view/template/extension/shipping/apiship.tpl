@@ -690,6 +690,7 @@
             <label class="col-sm-4 control-label" for="shipping_apiship_yandex_api_key"><?php echo $entry_shipping_apiship_yandex_api_key; ?></label>
             <div class="col-sm-8">
               <input type="text" name="shipping_apiship_yandex_api_key" value="<?php echo $shipping_apiship_yandex_api_key; ?>" placeholder="" id="shipping_apiship_yandex_api_key" class="form-control" />
+              <div class="help-block"><?php echo $help_shipping_apiship_yandex_api_key; ?></div>
             </div>
           </div>
 

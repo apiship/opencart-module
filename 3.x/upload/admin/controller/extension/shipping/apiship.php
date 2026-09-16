@@ -1,4 +1,5 @@
 <?php
+require_once DIR_SYSTEM . 'library/apiship/apiship.php';
 class ControllerExtensionShippingApiship extends Controller { 
 	private $error = array();
 	
@@ -46,7 +47,7 @@ class ControllerExtensionShippingApiship extends Controller {
 		$data['text_none'] = $this->language->get('text_none');
 		$data['text_shipping_apiship_cron_url_copy'] = $this->language->get('text_shipping_apiship_cron_url_copy');
 
-		$data['shipping_apiship_version'] = '1.4 (OpenCart 3.x)';
+		$data['shipping_apiship_version'] = Apiship::VERSION . ' (OpenCart 3.x)';
 		$data['shipping_apiship_version_js_mod'] = rand();
 
 		$data['button_save'] = $this->language->get('button_save');
@@ -88,6 +89,7 @@ class ControllerExtensionShippingApiship extends Controller {
 
 		$data['entry_shipping_apiship_sort_order'] = $this->language->get('entry_shipping_apiship_sort_order');
 		$data['entry_shipping_apiship_yandex_api_key'] = $this->language->get('entry_shipping_apiship_yandex_api_key');
+		$data['help_shipping_apiship_yandex_api_key'] = $this->language->get('help_shipping_apiship_yandex_api_key');
 		$data['entry_shipping_apiship_status'] = $this->language->get('entry_shipping_apiship_status');
 		$data['entry_shipping_apiship_rub_select'] = $this->language->get('entry_shipping_apiship_rub_select');
 		$data['entry_shipping_apiship_gr_select'] = $this->language->get('entry_shipping_apiship_gr_select');

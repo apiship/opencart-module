@@ -33,21 +33,14 @@ class Checkout extends \Opencart\System\Engine\Controller {
 			'selected_url'       => $this->url->link('extension/apiship/shipping/apiship.get_selected', $language, true),
 			'confirm_url'        => $this->url->link('checkout/confirm.confirm', $language, true),
 			'yandex_api_key'     => (string)$this->config->get('shipping_apiship_yandex_api_key'),
-			'version'            => (string)($this->config->get('shipping_apiship_version_js_mod') ?: '1.4'),
+			// Адрес скрипта и стилей меняется и при обновлении модуля, и при пересохранении настроек
+			'version'            => \Opencart\System\Library\Extension\Apiship\Apiship::VERSION . '-' . (string)($this->config->get('shipping_apiship_version_js_mod') ?: '0'),
 			'image_path'         => 'extension/apiship/catalog/view/image/',
-			'text_from'          => $this->language->get('shipping_apiship_title_from'),
-			'text_select_point'  => $this->language->get('shipping_apiship_select_point'),
-			'text_change_point'  => $this->language->get('shipping_apiship_change_point'),
-			'text_map_title'     => $this->language->get('shipping_apiship_map_title'),
-			'text_map_cost'      => $this->language->get('shipping_apiship_map_cost'),
-			'text_map_take_here' => $this->language->get('shipping_apiship_map_take_here'),
-			'text_map_type'      => $this->language->get('shipping_apiship_map_point_type'),
-			'text_map_provider'  => $this->language->get('shipping_apiship_map_provider'),
-			'text_map_cash'      => $this->language->get('shipping_apiship_map_payment_cash'),
-			'text_map_card'      => $this->language->get('shipping_apiship_map_payment_card'),
-			'text_map_no_points' => $this->language->get('shipping_apiship_error_no_points'),
-			'text_map_load'      => $this->language->get('shipping_apiship_error_map_load'),
-			'text_recalculate'   => $this->language->get('shipping_apiship_error_recalculate')
+			// Подписи карты одним json: набор общий для всех пакетов модуля и собирается в библиотеке
+			'texts_json'         => json_encode(
+				\Opencart\System\Library\Extension\Apiship\Apiship::map_texts($this->language),
+				JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+			)
 		];
 
 		$output .= $this->load->view('extension/apiship/event/checkout_script', $script_data);

@@ -78,6 +78,7 @@ $_['entry_shipping_apiship_package_weight']                       = 'Вес уп
 
 $_['entry_shipping_apiship_sort_order']                           = 'Порядок сортировки';
 $_['entry_shipping_apiship_yandex_api_key']                       = 'Ключ Яндекс API';
+$_['help_shipping_apiship_yandex_api_key']                        = 'Ключ Яндекс Карт с доступом к JavaScript API 3.0: без него карта пунктов выдачи не откроется. Поиск по адресу в карте дополнительно требует Search API — без него строка поиска ищет среди адресов пунктов выдачи.';
 $_['entry_shipping_apiship_status']                               = 'Статус';
 $_['entry_shipping_apiship_export_status']                        = 'Статус заказа после одиночного экспорта';
 $_['entry_shipping_apiship_cancel_export_status']                 = 'Статус заказа после отмены одиночного экспорта';
