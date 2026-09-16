@@ -13,6 +13,9 @@ class ApishipMap {
 
 		// Сторона грида кластеризации в пикселях экрана: примерно ширина пина с ценой
 		this.CLUSTER_GRID = 96;
+		// Предельный зум карты и радиус, на который разводятся точки, которые дальше уже не разделить
+		this.MAX_ZOOM = 21;
+		this.SPREAD_RADIUS = 46;
 		this.PROVIDER_ICONS = 'https://storage.apiship.ru/icons/providers/svg/';
 
 		this.config = config || (typeof apiship_config !== 'undefined' ? apiship_config : {});
@@ -66,6 +69,7 @@ class ApishipMap {
 		this.selected_point = null;
 		this.selected_tariffs = [];
 		this.selected_index = 0;
+		this.selected_coordinates = null;
 		this.selected_code = null;
 		this.expanded = false;
 		this.location = null;
@@ -140,10 +144,16 @@ class ApishipMap {
 		return result;
 	}
 
-	// Форма слова для числа: [1 пункт, 2 пункта, 5 пунктов]; в языках без склонения все три формы совпадают
+	// Форма слова для числа: [1 пункт, 2 пункта, 5 пунктов]
 	static plural(count, forms) {
 		const list = Array.isArray(forms) ? forms : [forms, forms, forms];
-		const n = Math.abs(Math.floor(Number(count) || 0)) % 100;
+		const value = Math.abs(Math.floor(Number(count) || 0));
+
+		// В языках без склонения вторая и третья формы одинаковы (point/points/points):
+		// там единственное число только у единицы, иначе английское «21 point»
+		if (list[1] === list[2]) return value === 1 ? list[0] : list[2];
+
+		const n = value % 100;
 		const n1 = n % 10;
 
 		if (n > 10 && n < 20) return list[2];
@@ -219,9 +229,11 @@ class ApishipMap {
 	}
 
 	// Строка раскрытия «Ещё N способов доставки» и подсказка о самом быстром из скрытых.
-	// point_tariffs отсортированы по цене, первый уже показан отдельно; null — скрывать нечего
-	static moreWays(point_tariffs, texts) {
-		const rest = point_tariffs.slice(1);
+	// Скрыты все тарифы точки, кроме показанного отдельно (selected_index), — от него же считается подсказка.
+	// null — скрывать нечего
+	static moreWays(point_tariffs, texts, selected_index) {
+		const selected = parseInt(selected_index, 10) || 0;
+		const rest = point_tariffs.filter((tariff, index) => index !== selected);
 
 		if (!rest.length) return null;
 
@@ -230,17 +242,18 @@ class ApishipMap {
 			ways: ApishipMap.plural(rest.length, texts.map_ways)
 		});
 
-		const providers = ApishipMap.pointProviders(point_tariffs).map((provider) => provider.name).join(', ');
+		// Службы и логотипы — только скрытых тарифов: показанный уже виден строкой выше
+		const providers_list = ApishipMap.pointProviders(rest);
 
-		// Подсказка нужна, только когда среди скрытых есть заметно более быстрый тариф
-		const cheapest_days = ApishipMap.tariffDays(point_tariffs[0]);
+		// Подсказка нужна, только когда среди скрытых есть более быстрый тариф, чем показанный
+		const selected_days = ApishipMap.tariffDays(point_tariffs[selected]);
 		let fastest = null;
 
 		for (const tariff of rest) {
 			const days = ApishipMap.tariffDays(tariff);
 
 			if (days === null) continue;
-			if (cheapest_days !== null && days >= cheapest_days) continue;
+			if (selected_days !== null && days >= selected_days) continue;
 			if (fastest === null || days < ApishipMap.tariffDays(fastest)) fastest = tariff;
 		}
 
@@ -249,7 +262,12 @@ class ApishipMap {
 			price: fastest.text
 		}) : '';
 
-		return {title: title, providers: providers, hint: hint};
+		return {
+			title: title,
+			providers: providers_list.map((provider) => provider.name).join(', '),
+			providers_list: providers_list,
+			hint: hint
+		};
 	}
 
 	// Службы всех точек со счётчиком точек, по алфавиту: строки фильтра служб
@@ -359,6 +377,16 @@ class ApishipMap {
 
 			return {key: key, items: bucket.items, lon: center.lon, lat: center.lat};
 		});
+	}
+
+	// Координаты точки, смещённые по кругу: на предельном зуме совпадающие точки иначе не разделить
+	static spreadCoordinates(lon, lat, zoom, index, total, radius) {
+		if (total < 2) return {lon: Number(lon), lat: Number(lat)};
+
+		const pixels = ApishipMap.project(lon, lat, zoom);
+		const angle = 2 * Math.PI * index / total;
+
+		return ApishipMap.unproject(pixels.x + Math.cos(angle) * radius, pixels.y + Math.sin(angle) * radius, zoom);
 	}
 
 	// Самый дешёвый тариф группы точек и признак разброса цен: подпись пина «от N ₽» или «N ₽»
@@ -638,6 +666,13 @@ class ApishipMap {
 
 			if (!price) continue;
 
+			// Дальше приближать некуда: разводим точки кластера по кругу, иначе к ним не добраться кликом
+			if (cluster.items.length > 1 && zoom >= this.MAX_ZOOM) {
+				this.addSpreadMarkers(cluster, zoom, wanted);
+
+				continue;
+			}
+
 			const single = cluster.items.length === 1 ? cluster.items[0] : null;
 			const active = single && this.selected_point && single.point.id === this.selected_point.id;
 
@@ -671,8 +706,35 @@ class ApishipMap {
 		}
 	}
 
+	// Точки кластера, который зум уже не разделит: каждая получает свой пин, смещённый по кругу
+	addSpreadMarkers(cluster, zoom, wanted) {
+		for (let index = 0; index < cluster.items.length; index++) {
+			const item = cluster.items[index];
+			const price = ApishipMap.groupPrice([item]);
+
+			if (!price) continue;
+
+			const active = this.selected_point && item.point.id === this.selected_point.id;
+			const logo = this.provider_filter.length ? ':' + price.tariff.provider_key : '';
+			const key = 'spread:' + item.point.id + ':' + cluster.items.length + ':' + price.tariff.cost + logo + (active ? ':active' : '');
+
+			wanted[key] = true;
+
+			if (this.markers[key]) continue;
+
+			const spread = ApishipMap.spreadCoordinates(item.point.lon, item.point.lat, zoom, index, cluster.items.length, this.SPREAD_RADIUS);
+			const coordinates = [spread.lon, spread.lat];
+			const element = this.buildPin(cluster, price, item, active, coordinates);
+
+			const marker = new ymaps3.YMapMarker({coordinates: coordinates, zIndex: active ? 900 : 700}, element);
+
+			this.markers[key] = marker;
+			this.map.addChild(marker);
+		}
+	}
+
 	// Пин: иконка, цена «от N ₽» и логотип службы, когда фильтр служб включён. Кликается вся площадь (OCM-76)
-	buildPin(cluster, price, single, active) {
+	buildPin(cluster, price, single, active, coordinates) {
 		const element = document.createElement('div');
 		const prefix = price.range ? ApishipMap.escapeHtml(this.texts.from) + ' ' : '';
 
@@ -692,10 +754,22 @@ class ApishipMap {
 			event.stopPropagation();
 
 			if (single) {
-				this.openCard(single);
-			} else {
-				this.map.setLocation({center: [cluster.lon, cluster.lat], zoom: Math.min(21, (this.location.zoom || 12) + 2), duration: 250});
+				this.openCard(single, coordinates);
+
+				return;
 			}
+
+			const zoom = this.location.zoom || 12;
+			const closer = Math.min(this.MAX_ZOOM, zoom + 2);
+
+			// Ближе карта не станет — открываем первую точку кластера, чтобы клик не оставался без ответа
+			if (closer <= zoom) {
+				this.openCard(cluster.items[0], [cluster.lon, cluster.lat]);
+
+				return;
+			}
+
+			this.map.setLocation({center: [cluster.lon, cluster.lat], zoom: closer, duration: 250});
 		});
 
 		return element;
@@ -705,11 +779,13 @@ class ApishipMap {
 	 * Карточка пункта выдачи
 	 * ------------------------------------------------------------------ */
 
-	openCard(item) {
+	openCard(item, coordinates) {
 		this.selected_point = item.point;
 		this.selected_tariffs = item.tariffs;
 		this.selected_index = 0;
 		this.expanded = false;
+		// Разведённый пин стоит не на координатах точки: карточка держится за пин, иначе хвостик уйдёт в сторону
+		this.selected_coordinates = (coordinates && coordinates.length === 2) ? coordinates : [Number(item.point.lon), Number(item.point.lat)];
 
 		this.showCard();
 		this.moveToCard();
@@ -724,6 +800,7 @@ class ApishipMap {
 		this.card = null;
 		this.selected_point = null;
 		this.selected_tariffs = [];
+		this.selected_coordinates = null;
 	}
 
 	// Карточка привязана к точке отдельной меткой: при перетаскивании карты она едет вместе с пином
@@ -745,7 +822,7 @@ class ApishipMap {
 		element.addEventListener('click', (event) => this.onCardClick(event));
 
 		this.card = new ymaps3.YMapMarker({
-			coordinates: [Number(point.lon), Number(point.lat)],
+			coordinates: this.selected_coordinates,
 			zIndex: 1000
 		}, element);
 
@@ -754,26 +831,23 @@ class ApishipMap {
 
 	// Точка в верхней половине экрана — места над ней нет, карточка раскрывается под пином
 	cardBelow() {
-		const point = this.selected_point;
 		const center = this.location && this.location.center;
 
-		if (!point || !center) return false;
+		if (!this.selected_point || !center) return false;
 
-		return Number(point.lat) > Number(center[1]);
+		return this.selected_coordinates[1] > Number(center[1]);
 	}
 
 	// Сдвигаем карту, а не карточку: точка уходит ниже или выше центра, чтобы карточка целиком попала в окно
 	moveToCard() {
-		const point = this.selected_point;
-
-		if (!point || !this.map || !this.location) return;
+		if (!this.selected_point || !this.map || !this.location) return;
 
 		const bounds = this.location.bounds;
 		const span = (bounds && bounds[0] && bounds[1]) ? Math.abs(bounds[0][1] - bounds[1][1]) : 0;
 		const shift = this.cardBelow() ? -span * 0.22 : span * 0.22;
 
 		this.map.setLocation({
-			center: [Number(point.lon), Number(point.lat) + shift],
+			center: [this.selected_coordinates[0], this.selected_coordinates[1] + shift],
 			zoom: this.location.zoom,
 			duration: 250
 		});
@@ -812,10 +886,10 @@ class ApishipMap {
 			'<div class="apiship_card_section_title">' + esc(texts.map_delivery_here) + '</div>' +
 			this.tariffRowHtml(this.selected_tariffs[this.selected_index], this.selected_index);
 
-		const more = ApishipMap.moreWays(this.selected_tariffs, texts);
+		const more = ApishipMap.moreWays(this.selected_tariffs, texts, this.selected_index);
 
 		if (more) {
-			const logos = ApishipMap.pointProviders(this.selected_tariffs)
+			const logos = more.providers_list
 				.map((provider) => this.providerLogo(provider.key, provider.name)).join('');
 
 			html +=
@@ -991,7 +1065,7 @@ class ApishipMap {
 			if (step) {
 				const delta = parseInt(step.getAttribute('data-apiship-zoom'), 10);
 
-				this.map.setLocation({zoom: Math.max(2, Math.min(21, (this.location.zoom || 12) + delta)), duration: 200});
+				this.map.setLocation({zoom: Math.max(2, Math.min(this.MAX_ZOOM, (this.location.zoom || 12) + delta)), duration: 200});
 
 				return;
 			}
@@ -1171,7 +1245,10 @@ class ApishipMap {
 				zoom: Math.max(this.location.zoom || 12, 13),
 				duration: 300
 			});
-		}, () => {});
+		}, () => {
+			// Покупатель запретил доступ к геопозиции, вышел таймаут или страница открыта по http:
+			// кнопка просто ничего не делает, карта остаётся там же, где была
+		});
 	}
 
 	// Поиск по адресу через Search API; если он не подключён к ключу, ищем среди адресов точек

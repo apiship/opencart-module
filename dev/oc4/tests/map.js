@@ -71,17 +71,24 @@ check('escapeHtml', ApishipMap.escapeHtml('<b>"x"</b>') === '&lt;b&gt;&quot;x&qu
 check('format substitutes every placeholder', ApishipMap.format('{n} из {total}', {n: 3, total: 9}) === '3 из 9');
 check('plural picks the form by the number', ApishipMap.plural(1, texts.map_points) === 'пункт' && ApishipMap.plural(3, texts.map_points) === 'пункта' && ApishipMap.plural(12, texts.map_points) === 'пунктов' && ApishipMap.plural(21, texts.map_points) === 'пункт');
 check('plural works with a single form (languages without declension)', ApishipMap.plural(5, 'points') === 'points');
+check('a language without declension keeps the plural for counts ending in one', ApishipMap.plural(21, ['point', 'points', 'points']) === 'points' && ApishipMap.plural(1, ['point', 'points', 'points']) === 'point' && ApishipMap.plural(101, ['day', 'days', 'days']) === 'days');
 
 check('days of a tariff as a range', ApishipMap.tariffDaysText(tariffs.bb_1_1, texts) === '2–3 дня', ApishipMap.tariffDaysText(tariffs.bb_1_1, texts));
 check('days of a tariff as a single number', ApishipMap.tariffDaysText(tariffs.bb_3_1, texts) === '1 день', ApishipMap.tariffDaysText(tariffs.bb_3_1, texts));
 check('tariff without days gives an empty string', ApishipMap.tariffDaysText({}, texts) === '' && ApishipMap.tariffDays({}) === null);
 
-const more = ApishipMap.moreWays(list, texts);
+const more = ApishipMap.moreWays(list, texts, 0);
 
-check('more ways: the rest of the tariffs with carrier names', more.title === 'Ещё 2 способа доставки' && more.providers === 'Boxberry, СДЭК', JSON.stringify(more));
+check('more ways: carriers of the hidden tariffs only, not of the one already shown', more.title === 'Ещё 2 способа доставки' && more.providers === 'СДЭК, Boxberry', JSON.stringify(more));
 check('more ways: the hint shows the fastest hidden tariff', more.hint === 'Быстрее — 1 день за 260 ₽', more.hint);
-check('more ways: nothing to expand for a single tariff', ApishipMap.moreWays([list[0]], texts) === null);
-check('more ways: no hint when the cheapest is also the fastest', ApishipMap.moreWays(ApishipMap.pointTariffs(points[0], {bb_1_1: tariffs.bb_1_1, cdek_2_1: tariffs.cdek_2_1}), texts).hint === '');
+check('more ways: nothing to expand for a single tariff', ApishipMap.moreWays([list[0]], texts, 0) === null);
+check('more ways: no hint when the shown tariff is also the fastest', ApishipMap.moreWays(ApishipMap.pointTariffs(points[0], {bb_1_1: tariffs.bb_1_1, cdek_2_1: tariffs.cdek_2_1}), texts, 0).hint === '');
+
+// Покупатель выбрал не самый дешёвый тариф: скрыты все остальные, подсказка считается от выбранного
+const more_selected = ApishipMap.moreWays(list, texts, 2);
+
+check('more ways: choosing another tariff hides the rest, including the cheapest', more_selected.title === 'Ещё 2 способа доставки' && more_selected.providers === 'Boxberry, СДЭК', JSON.stringify(more_selected));
+check('more ways: no hint when the chosen tariff is the fastest one', more_selected.hint === '', more_selected.hint);
 
 const providers = ApishipMap.providerCounts(points, tariffs);
 
@@ -119,6 +126,12 @@ check('projection round trip returns the same point', Math.abs(back.lon - 37.6) 
 const clusters_far = ApishipMap.clusterItems(all, 12, 96);
 
 check('clustering: neighbours in one cell, a point in another city on its own', clusters_far.length === 2 && clusters_far[0].items.length === 2, JSON.stringify(clusters_far.map((c) => c.items.length)));
+
+const same_place = ApishipMap.spreadCoordinates(37.6, 55.75, 21, 0, 2, 46);
+const same_place_second = ApishipMap.spreadCoordinates(37.6, 55.75, 21, 1, 2, 46);
+
+check('points that zoom can no longer separate are spread apart', same_place.lon !== same_place_second.lon && Math.abs(same_place.lon - 37.6) < 0.001 && Math.abs(same_place.lat - 55.75) < 0.001, JSON.stringify([same_place, same_place_second]));
+check('a single point is not moved', ApishipMap.spreadCoordinates(37.6, 55.75, 21, 0, 1, 46).lon === 37.6);
 
 const clusters_close = ApishipMap.clusterItems(all, 19, 96);
 
