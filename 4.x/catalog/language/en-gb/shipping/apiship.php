@@ -27,6 +27,7 @@ $_['shipping_apiship_error_calculator']             = "Cost calculation error";
 $_['shipping_apiship_no_shipping']                  = "No deliveries for this city %s";
 $_['shipping_apiship_error_no_export_order']        = "Order %s dont export";
 $_['shipping_apiship_map_title']                    = 'Pickup points';
+// The map script no longer reads these: kept for third-party template mods that print them
 $_['shipping_apiship_map_cost']                     = 'Cost';
 $_['shipping_apiship_map_take_here']                = 'Pick up here';
 $_['shipping_apiship_map_point_type']               = 'Point type';
@@ -41,6 +42,7 @@ $_['shipping_apiship_map_type_4']                   = 'Terminal';
 // Pickup point card and map filters
 $_['shipping_apiship_map_block']                    = 'bldg';
 $_['shipping_apiship_map_office']                   = 'office';
+$_['shipping_apiship_map_area']                     = 'district';
 $_['shipping_apiship_map_badge_card']               = 'Card';
 $_['shipping_apiship_map_badge_cash']               = 'Cash';
 $_['shipping_apiship_map_fitting_room']             = 'Fitting room';

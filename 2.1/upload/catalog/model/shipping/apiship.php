@@ -1053,7 +1053,8 @@ EOT;
 			// Без улицы и дома в данных заголовком становится весь адрес
 			$headline = Apiship::point_headline($point, [
 				'block' => $this->language->get('shipping_apiship_map_block'),
-				'office' => $this->language->get('shipping_apiship_map_office')
+				'office' => $this->language->get('shipping_apiship_map_office'),
+				'area' => $this->language->get('shipping_apiship_map_area')
 			]);
 
 			$map_points[] = [

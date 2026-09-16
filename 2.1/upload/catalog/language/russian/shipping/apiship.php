@@ -34,6 +34,7 @@ $_['shipping_apiship_error_no_points']              = "Пункты выдачи
 $_['shipping_apiship_error_map_load']               = "Не удалось загрузить карту. Обновите страницу";
 
 $_['shipping_apiship_map_title']                    = 'Пункты самовывоза';
+// Скрипт карты эти строки больше не читает: оставлены для сторонних модов шаблонов, которые их выводят
 $_['shipping_apiship_map_cost']                     = 'Стоимость';
 $_['shipping_apiship_map_take_here']                = 'Забрать отсюда';
 $_['shipping_apiship_map_point_type']               = 'Тип точки';
@@ -47,6 +48,7 @@ $_['shipping_apiship_map_type_4']                   = 'Терминал';
 // Карточка пункта выдачи и фильтры на карте
 $_['shipping_apiship_map_block']                    = 'корп.';
 $_['shipping_apiship_map_office']                   = 'офис';
+$_['shipping_apiship_map_area']                     = 'р-н';
 $_['shipping_apiship_map_badge_card']               = 'Картой';
 $_['shipping_apiship_map_badge_cash']               = 'Наличными';
 $_['shipping_apiship_map_fitting_room']             = 'Примерочная';

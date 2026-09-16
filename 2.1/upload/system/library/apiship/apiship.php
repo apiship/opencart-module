@@ -225,7 +225,9 @@ class Apiship {
 	 * Ключ шарда индекса для id точки
 	 */
 	public static function points_shard_key($id) {
-		return 'apiship_points_index.' . ((int)$id % self::POINTS_INDEX_SHARDS);
+		// В ключ входит отпечаток $point_fields: после добавления поля старые записи индекса не подходят
+		// (в них этого поля нет), а remember_points продлевает TTL шарда бесконечно
+		return 'apiship_points_index.' . substr(md5(implode(',', self::$point_fields)), 0, 6) . '.' . ((int)$id % self::POINTS_INDEX_SHARDS);
 	}
 
 	/**
@@ -1063,7 +1065,9 @@ class Apiship {
 
 	/**
 	 * Подписи скрипта карты ПВЗ одним массивом (config.texts): собираются одинаково во всех пакетах модуля,
-	 * поэтому живут в библиотеке, а не в модели витрины. Формы слов идут тройками «1, 2, 5»
+	 * поэтому живут в библиотеке, а не в модели витрины. Формы слов идут тройками «1, 2, 5».
+	 * Ключа recalculate здесь нет: его использует только чекаут OpenCart 4, где есть строка
+	 * shipping_apiship_error_recalculate
 	 *
 	 * @param object $language объект языка OpenCart (метод get)
 	 *
@@ -1135,19 +1139,29 @@ class Apiship {
 	public static function point_headline($point, $labels = array()) {
 		$block_label = isset($labels['block']) ? (string)$labels['block'] : 'корп.';
 		$office_label = isset($labels['office']) ? (string)$labels['office'] : 'офис';
+		$area_label = isset($labels['area']) ? (string)$labels['area'] : 'р-н';
 
 		$street_type = isset($point['streetType']) ? trim((string)$point['streetType']) : '';
 		$street_name = isset($point['street']) ? trim((string)$point['street']) : '';
 		$street = trim($street_type . ' ' . $street_name);
+		$community_type = isset($point['communityType']) ? trim((string)$point['communityType']) : '';
+		$community_name = isset($point['community']) ? trim((string)$point['community']) : '';
+		$community = trim($community_type . ' ' . $community_name);
 		$house = isset($point['house']) ? trim((string)$point['house']) : '';
 
 		$title_parts = array();
 
-		if ($street !== '') $title_parts[] = $street;
-		if ($house !== '') $title_parts[] = $house;
+		if ($street !== '') {
+			$title_parts[] = $street;
+		} elseif ($community !== '') {
+			// Сельский адрес без улицы: точку называет населённый пункт
+			$title_parts[] = $community;
+		}
 
-		// Без улицы и дома заголовка нет: корпус и офис сами по себе точку не называют
+		// Без улицы и населённого пункта заголовка нет: номер дома, корпус и офис сами по себе точку не называют
 		if (!$title_parts) return array('title' => '', 'subtitle' => '');
+
+		if ($house !== '') $title_parts[] = $house;
 
 		$block = isset($point['block']) ? trim((string)$point['block']) : '';
 		$office = isset($point['office']) ? trim((string)$point['office']) : '';
@@ -1159,16 +1173,22 @@ class Apiship {
 		$region_type = isset($point['regionType']) ? trim((string)$point['regionType']) : '';
 		$city = isset($point['city']) ? trim((string)$point['city']) : '';
 		$city_type = isset($point['cityType']) ? trim((string)$point['cityType']) : '';
+		$area = isset($point['area']) ? trim((string)$point['area']) : '';
 
 		// Тип города пишем, только если это не город: «пгт Октябрьский», но просто «Королёв»
 		$city_title = ($city !== '' && $city_type !== '' && $city_type != 'г') ? $city_type . ' ' . $city : $city;
 
 		$subtitle_parts = array();
 
+		// Населённый пункт мельче города и идёт первым; в заголовке он уже есть, только когда улицы нет
+		if ($street !== '' && $community !== '') $subtitle_parts[] = $community;
+
 		if ($city_title !== '') $subtitle_parts[] = $city_title;
 
-		// У городов федерального значения регион и есть город (regionType «г») — второй раз его не пишем
-		if ($region !== '' && $region != $city && !($region_type == 'г' && $city === '')) {
+		if ($area !== '') $subtitle_parts[] = trim($area . ' ' . $area_label);
+
+		// У городов федерального значения регион и есть название города — второй раз его не пишем
+		if ($region !== '' && $region != $city) {
 			$subtitle_parts[] = ($region_type != '' && $region_type != 'г') ? $region . ' ' . $region_type : $region;
 		}
 

@@ -702,9 +702,34 @@ $headline = Apiship::point_headline(array('cityType' => 'пгт', 'city' => 'О�
 
 check('headline: settlement type stays in the subtitle', $headline['subtitle'] === 'пгт Октябрьский, Московская обл', json_encode($headline, JSON_UNESCAPED_UNICODE));
 
-$headline = Apiship::point_headline(array('city' => 'Химки', 'cityType' => 'г', 'block' => '2', 'office' => '3'));
+$headline = Apiship::point_headline(array('city' => 'Химки', 'cityType' => 'г', 'house' => '35', 'block' => '2', 'office' => '3'));
 
-check('headline: without street and house there is no title (the card shows the full address)', $headline['title'] === '' && $headline['subtitle'] === '', json_encode($headline, JSON_UNESCAPED_UNICODE));
+check('headline: a bare house number is not a title (the card shows the full address)', $headline['title'] === '' && $headline['subtitle'] === '', json_encode($headline, JSON_UNESCAPED_UNICODE));
+
+$headline = Apiship::point_headline(array(
+	'streetType' => 'ул',
+	'street' => 'Центральная',
+	'house' => '1',
+	'communityType' => 'с',
+	'community' => 'Яковлевское',
+	'cityType' => 'г',
+	'city' => 'Домодедово',
+	'area' => 'Ленинский',
+	'regionType' => 'обл',
+	'region' => 'Московская'
+));
+
+check('headline: settlement and district stay in the subtitle, from the smallest up', $headline['subtitle'] === 'с Яковлевское, Домодедово, Ленинский р-н, Московская обл', json_encode($headline, JSON_UNESCAPED_UNICODE));
+
+$headline = Apiship::point_headline(array('communityType' => 'д', 'community' => 'Мисайлово', 'house' => '35', 'regionType' => 'обл', 'region' => 'Московская'));
+
+check('headline: a village address without a street is named by the settlement', $headline['title'] === 'д Мисайлово, 35' && $headline['subtitle'] === 'Московская обл', json_encode($headline, JSON_UNESCAPED_UNICODE));
+
+$headline = Apiship::point_headline(array('streetType' => 'наб', 'street' => 'реки Фонтанки', 'house' => '10', 'regionType' => 'г', 'region' => 'Санкт-Петербург', 'city' => '', 'postIndex' => '190000'));
+
+check('headline: a federal city with an empty city field still names the city', $headline['subtitle'] === 'Санкт-Петербург, 190000', json_encode($headline, JSON_UNESCAPED_UNICODE));
+
+check('points index key depends on the field set, so adding a field re-reads the index', strpos(Apiship::points_shard_key('7'), 'apiship_points_index.') === 0 && Apiship::points_shard_key('7') !== 'apiship_points_index.' . (7 % Apiship::POINTS_INDEX_SHARDS) && Apiship::points_shard_key('7') === Apiship::points_shard_key('71'), Apiship::points_shard_key('7'));
 
 echo "map: texts for the map script (OCM-138)\n";
 

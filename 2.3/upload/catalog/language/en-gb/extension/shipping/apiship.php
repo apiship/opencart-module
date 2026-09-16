@@ -34,6 +34,7 @@ $_['shipping_apiship_error_no_points']              = "No pickup points found";
 $_['shipping_apiship_error_map_load']               = "Failed to load the map. Reload the page";
 
 $_['shipping_apiship_map_title']                    = 'Pickup points';
+// The map script no longer reads these: kept for third-party template mods that print them
 $_['shipping_apiship_map_cost']                     = 'Cost';
 $_['shipping_apiship_map_take_here']                = 'Pick up here';
 $_['shipping_apiship_map_point_type']               = 'Point type';
@@ -47,6 +48,7 @@ $_['shipping_apiship_map_type_4']                   = 'Terminal';
 // Pickup point card and map filters
 $_['shipping_apiship_map_block']                    = 'bldg';
 $_['shipping_apiship_map_office']                   = 'office';
+$_['shipping_apiship_map_area']                     = 'district';
 $_['shipping_apiship_map_badge_card']               = 'Card';
 $_['shipping_apiship_map_badge_cash']               = 'Cash';
 $_['shipping_apiship_map_fitting_room']             = 'Fitting room';
