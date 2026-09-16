@@ -379,14 +379,24 @@ class ApishipMap {
 		});
 	}
 
-	// Координаты точки, смещённые по кругу: на предельном зуме совпадающие точки иначе не разделить
-	static spreadCoordinates(lon, lat, zoom, index, total, radius) {
-		if (total < 2) return {lon: Number(lon), lat: Number(lat)};
+	// Координаты пина на круге вокруг центра группы: на предельном зуме близкие точки иначе не разделить.
+	// Смещение считается от общего центра, а не от каждой точки, иначе соседние пины можно сдвинуть друг к другу.
+	// Радиус растёт с числом пинов, чтобы на круге хватило места широким ценникам
+	static spreadCoordinates(center_lon, center_lat, zoom, index, total, radius) {
+		if (total < 2) return {lon: Number(center_lon), lat: Number(center_lat)};
 
-		const pixels = ApishipMap.project(lon, lat, zoom);
+		const step = 80;
+		const spread = Math.max(radius, total * step / (2 * Math.PI));
+
+		const pixels = ApishipMap.project(center_lon, center_lat, zoom);
 		const angle = 2 * Math.PI * index / total;
 
-		return ApishipMap.unproject(pixels.x + Math.cos(angle) * radius, pixels.y + Math.sin(angle) * radius, zoom);
+		return ApishipMap.unproject(pixels.x + Math.cos(angle) * spread, pixels.y + Math.sin(angle) * spread, zoom);
+	}
+
+	// Подпись набора тарифов точки: по ней метка на карте понимает, что показывает уже другой набор
+	static tariffsKey(point_tariffs) {
+		return (point_tariffs || []).map((tariff) => tariff.code).join('|');
 	}
 
 	// Самый дешёвый тариф группы точек и признак разброса цен: подпись пина «от N ₽» или «N ₽»
@@ -676,10 +686,10 @@ class ApishipMap {
 			const single = cluster.items.length === 1 ? cluster.items[0] : null;
 			const active = single && this.selected_point && single.point.id === this.selected_point.id;
 
-			const logo = this.provider_filter.length ? ':' + price.tariff.provider_key : '';
-
+			// В ключ входит весь набор тарифов точки: обработчик клика замыкает его, и после смены
+			// фильтра метка с прежним ключом открыла бы карточку с уже отсечённой службой
 			const key = single
-				? 'point:' + single.point.id + ':' + price.tariff.cost + logo + (active ? ':active' : '')
+				? 'point:' + single.point.id + ':' + ApishipMap.tariffsKey(single.tariffs) + (active ? ':active' : '')
 				: 'cluster:' + zoom + ':' + cluster.key + ':' + cluster.items.length + ':' + price.tariff.cost;
 
 			wanted[key] = true;
@@ -715,14 +725,13 @@ class ApishipMap {
 			if (!price) continue;
 
 			const active = this.selected_point && item.point.id === this.selected_point.id;
-			const logo = this.provider_filter.length ? ':' + price.tariff.provider_key : '';
-			const key = 'spread:' + item.point.id + ':' + cluster.items.length + ':' + price.tariff.cost + logo + (active ? ':active' : '');
+			const key = 'spread:' + item.point.id + ':' + cluster.items.length + ':' + ApishipMap.tariffsKey(item.tariffs) + (active ? ':active' : '');
 
 			wanted[key] = true;
 
 			if (this.markers[key]) continue;
 
-			const spread = ApishipMap.spreadCoordinates(item.point.lon, item.point.lat, zoom, index, cluster.items.length, this.SPREAD_RADIUS);
+			const spread = ApishipMap.spreadCoordinates(cluster.lon, cluster.lat, zoom, index, cluster.items.length, this.SPREAD_RADIUS);
 			const coordinates = [spread.lon, spread.lat];
 			const element = this.buildPin(cluster, price, item, active, coordinates);
 
@@ -730,6 +739,14 @@ class ApishipMap {
 
 			this.markers[key] = marker;
 			this.map.addChild(marker);
+		}
+	}
+
+	clearMarkers() {
+		for (const key of Object.keys(this.markers)) {
+			if (this.map) this.map.removeChild(this.markers[key]);
+
+			delete this.markers[key];
 		}
 	}
 
@@ -1209,9 +1226,11 @@ class ApishipMap {
 		}
 	}
 
-	// Фильтр сменился: карточка прежней точки больше не отражает доступные тарифы, закрываем её
+	// Фильтр сменился: карточка прежней точки больше не отражает доступные тарифы, закрываем её,
+	// а метки пересобираем с нуля — их обработчики клика держат прежний набор тарифов
 	onFilterChange() {
 		this.closeCard();
+		this.clearMarkers();
 		this.renderMarkers();
 
 		if (this.ui.providers) this.ui.providers.redraw();

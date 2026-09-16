@@ -127,11 +127,28 @@ const clusters_far = ApishipMap.clusterItems(all, 12, 96);
 
 check('clustering: neighbours in one cell, a point in another city on its own', clusters_far.length === 2 && clusters_far[0].items.length === 2, JSON.stringify(clusters_far.map((c) => c.items.length)));
 
-const same_place = ApishipMap.spreadCoordinates(37.6, 55.75, 21, 0, 2, 46);
-const same_place_second = ApishipMap.spreadCoordinates(37.6, 55.75, 21, 1, 2, 46);
+// Разведение считается от общего центра, поэтому расстояние между пинами не зависит от того,
+// насколько близко стояли сами точки — иначе близкие пины можно сдвинуть друг к другу
+const spread_first = ApishipMap.spreadCoordinates(37.6, 55.75, 21, 0, 2, 46);
+const spread_second = ApishipMap.spreadCoordinates(37.6, 55.75, 21, 1, 2, 46);
 
-check('points that zoom can no longer separate are spread apart', same_place.lon !== same_place_second.lon && Math.abs(same_place.lon - 37.6) < 0.001 && Math.abs(same_place.lat - 55.75) < 0.001, JSON.stringify([same_place, same_place_second]));
+check('points that zoom can no longer separate are spread apart', spread_first.lon !== spread_second.lon && Math.abs(spread_first.lon - 37.6) < 0.001 && Math.abs(spread_first.lat - 55.75) < 0.001, JSON.stringify([spread_first, spread_second]));
+// Расстояние между соседними пинами круга в пикселях экрана
+function spreadGap(total) {
+	const first = ApishipMap.spreadCoordinates(37.6, 55.75, 21, 0, total, 46);
+	const second = ApishipMap.spreadCoordinates(37.6, 55.75, 21, 1, total, 46);
+
+	const a = ApishipMap.project(first.lon, first.lat, 21);
+	const b = ApishipMap.project(second.lon, second.lat, 21);
+
+	return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+}
+
+check('the circle grows with the number of pins, so eight pins do not overlap', spreadGap(8) >= 60, String(Math.round(spreadGap(8))));
+check('two spread pins stand at least a pin width apart', spreadGap(2) >= 80, String(Math.round(spreadGap(2))));
 check('a single point is not moved', ApishipMap.spreadCoordinates(37.6, 55.75, 21, 0, 1, 46).lon === 37.6);
+
+check('marker key changes when the filtered tariff set changes', ApishipMap.tariffsKey(all[0].tariffs) !== ApishipMap.tariffsKey(only_cdek[0].tariffs) && ApishipMap.tariffsKey([]) === '', ApishipMap.tariffsKey(only_cdek[0].tariffs));
 
 const clusters_close = ApishipMap.clusterItems(all, 19, 96);
 
