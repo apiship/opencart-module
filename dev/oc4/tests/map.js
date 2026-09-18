@@ -155,6 +155,62 @@ const clusters_close = ApishipMap.clusterItems(all, 19, 96);
 check('clustering: at a close zoom the neighbours split apart', clusters_close.length === 3, JSON.stringify(clusters_close.map((c) => c.items.length)));
 check('cluster centre is inside its points', clusters_far[0].lat > 55.749 && clusters_far[0].lat < 55.751, String(clusters_far[0].lat));
 
+// Точки у границы ячейки грида на предельном зуме: сетка разносит их по разным кластерам, хотя пины перекрываются.
+// Угол ячейки берётся рядом с настоящей точкой, координаты соседей считаются от него в пикселях экрана
+const corner = ApishipMap.project(37.6, 55.75, 21);
+
+corner.x = Math.ceil(corner.x / 96) * 96;
+corner.y = Math.ceil(corner.y / 96) * 96;
+
+function itemAt(id, dx, dy) {
+	const place = ApishipMap.unproject(corner.x + dx, corner.y + dy, 21);
+
+	return {point: {id: id, lon: place.lon, lat: place.lat}, tariffs: []};
+}
+
+function ids(cluster) {
+	return cluster.items.map((item) => item.point.id).join(',');
+}
+
+const across = [itemAt(1, -2, 10), itemAt(2, 2, 10)];
+const across_grid = ApishipMap.clusterItems(across, 21, 96);
+const across_merged = ApishipMap.mergeClose(across_grid, 21, 96);
+
+check('grid alone leaves points on both sides of a cell border as two single pins', across_grid.length === 2);
+check('close pins across a cell border merge into one group', across_merged.length === 1 && ids(across_merged[0]) === '1,2', JSON.stringify(across_merged.map(ids)));
+
+const across_center = ApishipMap.project(across_merged[0].lon, across_merged[0].lat, 21);
+
+check('merged group is centred between its points', Math.abs(across_center.x - corner.x) < 0.01 && Math.abs(across_center.y - (corner.y + 10)) < 0.01, JSON.stringify(across_center));
+
+const diagonal = ApishipMap.mergeClose(ApishipMap.clusterItems([itemAt(1, -2, -2), itemAt(2, 2, 2)], 21, 96), 21, 96);
+
+check('close pins across a cell corner merge too', diagonal.length === 1 && diagonal[0].items.length === 2);
+
+const vertical = ApishipMap.mergeClose(ApishipMap.clusterItems([itemAt(1, 10, -2), itemAt(2, 10, 2)], 21, 96), 21, 96);
+
+check('close pins across a horizontal cell border merge too', vertical.length === 1 && vertical[0].items.length === 2);
+
+// Цепочка: крайние точки дальше ширины пина друг от друга, но каждая перекрывается со средней. Первые две стоят
+// в одной ячейке, и центр их кластера от третьей дальше ширины пина — сравниваться должны точки, а не центры
+const chain = ApishipMap.mergeClose(ApishipMap.clusterItems([itemAt(1, -70, 10), itemAt(2, -5, 10), itemAt(3, 60, 10)], 21, 96), 21, 96);
+
+check('a chain of overlapping pins becomes one group', chain.length === 1 && chain[0].items.length === 3, JSON.stringify(chain.map(ids)));
+
+const apart_grid = ApishipMap.clusterItems([itemAt(1, -50, 10), itemAt(2, 50, 10), itemAt(3, 400, 300)], 21, 96);
+const apart = ApishipMap.mergeClose(apart_grid, 21, 96);
+
+check('pins a pin width apart or farther stay on their own, untouched', apart.length === 3 && apart[0] === apart_grid[0] && apart[2] === apart_grid[2], JSON.stringify(apart.map(ids)));
+
+// Кластер из двух точек одной ячейки и одиночная точка через границу: центр группы — среднее по точкам, а не по кластерам
+const weighted_grid = ApishipMap.clusterItems([itemAt(1, 30, 10), itemAt(2, 30, 10), itemAt(3, -30, 10)], 21, 96);
+const weighted = ApishipMap.mergeClose(weighted_grid, 21, 96);
+const weighted_center = ApishipMap.project(weighted[0].lon, weighted[0].lat, 21);
+
+check('merging keeps every point and weighs the centre by points', weighted_grid.length === 2 && weighted.length === 1 && ids(weighted[0]) === '1,2,3' && Math.abs(weighted_center.x - (corner.x + 10)) < 0.01, JSON.stringify(weighted_center));
+check('merged group has its own key, different from the keys of its parts', weighted[0].key !== weighted_grid[0].key && weighted[0].key !== weighted_grid[1].key);
+check('nothing to merge in an empty list', ApishipMap.mergeClose([], 21, 96).length === 0);
+
 for (const copy of COPIES) {
 	check('package script is identical to ' + MAIN + ': ' + copy, fs.readFileSync(path.join(root, copy), 'utf8') === source);
 }

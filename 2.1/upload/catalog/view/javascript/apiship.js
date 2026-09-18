@@ -379,6 +379,89 @@ class ApishipMap {
 		});
 	}
 
+	// Сетка не видит соседей через границу ячейки: две точки в паре пикселей по разные её стороны остаются
+	// одиночными кластерами, и на предельном зуме верхний пин закрывает нижний. Кластеры, у которых хотя бы
+	// пара точек ближе distance пикселей, сливаются в одну группу (по цепочке тоже) — дальше её разводит
+	// addSpreadMarkers. Сравниваются сами точки, а не центры кластеров: центр уезжает от точки у границы.
+	// Соседи ищутся по ячейкам со стороной distance, без перебора всех пар
+	static mergeClose(clusters, zoom, distance) {
+		const size = Math.max(1, Number(distance) || 1);
+		const parents = clusters.map((cluster, index) => index);
+		const sums = clusters.map(() => ({x: 0, y: 0}));
+		const cells = {};
+
+		const find = (index) => {
+			while (parents[index] !== index) {
+				parents[index] = parents[parents[index]];
+				index = parents[index];
+			}
+
+			return index;
+		};
+
+		clusters.forEach((cluster, index) => {
+			for (const item of cluster.items) {
+				const pixel = ApishipMap.project(item.point.lon, item.point.lat, zoom);
+				const cell_x = Math.floor(pixel.x / size);
+				const cell_y = Math.floor(pixel.y / size);
+
+				sums[index].x += pixel.x;
+				sums[index].y += pixel.y;
+
+				for (let dx = -1; dx <= 1; dx++) {
+					for (let dy = -1; dy <= 1; dy++) {
+						for (const other of cells[(cell_x + dx) + ':' + (cell_y + dy)] || []) {
+							if (find(other.cluster) === find(index)) continue;
+
+							const gap = Math.sqrt(Math.pow(pixel.x - other.x, 2) + Math.pow(pixel.y - other.y, 2));
+
+							if (gap < size) parents[find(index)] = find(other.cluster);
+						}
+					}
+				}
+
+				const key = cell_x + ':' + cell_y;
+
+				if (!cells[key]) cells[key] = [];
+
+				cells[key].push({cluster: index, x: pixel.x, y: pixel.y});
+			}
+		});
+
+		const groups = {};
+		const order = [];
+
+		clusters.forEach((cluster, index) => {
+			const root = find(index);
+
+			if (!groups[root]) {
+				groups[root] = [];
+				order.push(root);
+			}
+
+			groups[root].push(index);
+		});
+
+		return order.map((root) => {
+			const members = groups[root];
+
+			if (members.length === 1) return clusters[members[0]];
+
+			const merged = {key: '', items: [], x: 0, y: 0};
+
+			for (const index of members) {
+				merged.key += (merged.key ? '+' : '') + clusters[index].key;
+				merged.items = merged.items.concat(clusters[index].items);
+				merged.x += sums[index].x;
+				merged.y += sums[index].y;
+			}
+
+			const center = ApishipMap.unproject(merged.x / merged.items.length, merged.y / merged.items.length, zoom);
+
+			return {key: merged.key, items: merged.items, lon: center.lon, lat: center.lat};
+		});
+	}
+
 	// Координаты пина на круге вокруг центра группы: на предельном зуме близкие точки иначе не разделить.
 	// Смещение считается от общего центра, а не от каждой точки, иначе соседние пины можно сдвинуть друг к другу.
 	// Радиус растёт с числом пинов, чтобы на круге хватило места широким ценникам
@@ -668,7 +751,11 @@ class ApishipMap {
 
 		this.updateCounter(items.length);
 
-		const clusters = ApishipMap.clusterItems(this.inBounds(items), zoom, this.CLUSTER_GRID);
+		let clusters = ApishipMap.clusterItems(this.inBounds(items), zoom, this.CLUSTER_GRID);
+
+		// До предельного зума перекрывшиеся пины разделяет приближение, дальше — только разведение по кругу
+		if (zoom >= this.MAX_ZOOM) clusters = ApishipMap.mergeClose(clusters, zoom, this.CLUSTER_GRID);
+
 		const wanted = {};
 
 		for (const cluster of clusters) {
