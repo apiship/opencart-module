@@ -1,34 +1,81 @@
 /**
- * ApiShip: карта пунктов выдачи (Яндекс.Карты 2.1) в модальном окне Bootstrap 5.
+ * ApiShip: карта пунктов выдачи (Яндекс JS API 3.0) в модальном окне.
  * Использование: new ApishipMap(config).open(data, callback, code), data — ответ get_points ({points, tariffs}):
- * каждая точка один раз, тарифы (цена, название, код варианта по шаблону) отдельным словарём, точка ссылается на них ключами.
- * config.texts — подписи, config.image_path — путь к иконкам модуля.
+ * каждая точка один раз, тарифы (цена, название, срок, код варианта по шаблону) отдельным словарём, точка ссылается на них ключами.
+ * config.texts — подписи, config.yandex_api_key — ключ Яндекс API (нужен доступ к JavaScript API 3.0).
+ * Без config берётся глобальный apiship_config, а ключ — из глобальной get_yandex_api_key() (так работают моды шаблонов).
+ * Файл одинаков во всех пакетах модуля (2.1, 2.3, 3.x, 4.x), это проверяет dev/oc4/tests/map.js.
  */
 class ApishipMap {
 	constructor(config) {
 		this.ID_MODAL = 'apiship_yandex_map';
 		this.YANDEX_MAP_CONTAINER_ID = 'apiship_yandex_map_container';
 
+		// Сторона грида кластеризации в пикселях экрана: примерно ширина пина с ценой
+		this.CLUSTER_GRID = 96;
+		// Предельный зум карты и радиус, на который разводятся точки, которые дальше уже не разделить
+		this.MAX_ZOOM = 21;
+		this.SPREAD_RADIUS = 46;
+		this.PROVIDER_ICONS = 'https://storage.apiship.ru/icons/providers/svg/';
+
 		this.config = config || (typeof apiship_config !== 'undefined' ? apiship_config : {});
 		this.texts = Object.assign({
 			from: 'от',
 			map_title: 'Пункты самовывоза',
-			map_cost: 'Стоимость',
 			map_take_here: 'Забрать отсюда',
 			map_type: 'Тип точки',
 			map_provider: 'СД',
-			map_cash: 'Оплата наличными',
-			map_card: 'Оплата картой',
 			map_no_points: 'Пункты выдачи не найдены',
-			map_load: 'Не удалось загрузить карту. Обновите страницу'
+			map_load: 'Не удалось загрузить карту. Обновите страницу',
+			map_badge_card: 'Картой',
+			map_badge_cash: 'Наличными',
+			map_fitting_room: 'Примерочная',
+			map_how_to_get: 'Как пройти',
+			map_delivery_here: 'Доставка в этот пункт',
+			map_cheapest: 'дешевле всех',
+			map_faster: 'Быстрее — {days} за {price}',
+			map_more_ways: 'Ещё {n} {ways}',
+			map_ways: ['способ доставки', 'способа доставки', 'способов доставки'],
+			map_days: ['день', 'дня', 'дней'],
+			map_points: ['пункт', 'пункта', 'пунктов'],
+			map_providers_all: 'Все службы',
+			map_providers_title: 'Службы доставки',
+			map_types_all: 'Все типы',
+			map_filter_reset: 'Сбросить',
+			map_filter_apply: 'Показать {n} {points}',
+			map_filter_counter: '{n} {points} из {total}',
+			map_search: 'Город, улица',
+			map_search_empty: 'Ничего не найдено',
+			map_zoom_in: 'Приблизить',
+			map_zoom_out: 'Отдалить',
+			map_geolocation: 'Моё местоположение',
+			map_close: 'Закрыть'
 		}, this.config.texts || {});
-		this.image_path = this.config.image_path || 'extension/apiship/catalog/view/image/';
 
 		this.callback_function = null;
 		this.callback_code = null;
-		this.Mymap = null;
-		this.checkYmaps = null;
+
+		this.points = [];
+		this.tariffs = {};
+
+		// Выбранные службы и типы точек: пустой набор — фильтр не применён, показываем всё
+		this.provider_filter = [];
+		this.type_filter = [];
+
+		this.map = null;
+		this.markers = {};
+		this.ui = {};
+		this.card = null;
+		this.selected_point = null;
+		this.selected_tariffs = [];
+		this.selected_index = 0;
+		this.selected_coordinates = null;
+		this.selected_code = null;
+		this.expanded = false;
+		this.location = null;
+
 		this.loadFailed = false;
+		this.checkYmaps = null;
 
 		this.modal = {
 			initLayout: {
@@ -37,8 +84,10 @@ class ApishipMap {
 						<div class="modal-dialog apiship_modal-dialog" role="document">
 							<div class="modal-content apiship_modal-content">
 								<div class="modal-header apiship_modal-header">
-									<h4>${this.texts.map_title}</h4>
-									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+									<h4>${ApishipMap.escapeHtml(this.texts.map_title)}</h4>
+									<button type="button" class="close btn-close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="${ApishipMap.escapeHtml(this.texts.map_close)}">
+										<span class="apiship_modal-close-x" aria-hidden="true">&times;</span>
+									</button>
 								</div>
 								<div class="modal-body apiship_modal-body"></div>
 							</div>
@@ -65,290 +114,53 @@ class ApishipMap {
 
 			close: () => {
 				$('#' + this.ID_MODAL).modal('hide');
-			},
-
-			destroy: () => {
-				const modal = document.getElementById(this.ID_MODAL);
-				if (modal) modal.remove();
 			}
 		};
+	}
 
-		this.yandexMaps = {
-			points: [],
-			tariffs: {},
-			initApi: () => {
-				let yandex_api_key = this.getApiKey();
-				let script_src;
+	/* ------------------------------------------------------------------ *
+	 * Чистые хелперы: считают данные карты без DOM и Яндекс.Карт,
+	 * поэтому проверяются юнит-тестами (dev/oc4/tests/map.js)
+	 * ------------------------------------------------------------------ */
 
-				if (yandex_api_key === '') {
-					script_src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU';
-				} else {
-					script_src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=' + yandex_api_key;
-				}
+	// Экранирование строки для вставки в html (данные точек приходят из API)
+	static escapeHtml(value) {
+		return String(value == null ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	}
 
-				if (typeof ymaps !== 'undefined') return;
-				if (document.querySelector('script[data-apiship-ymaps]')) return;
+	// Подстановка {name} в строку подписи: значения подставляются как есть, экранирует вызывающий код
+	static format(template, values) {
+		let result = String(template == null ? '' : template);
 
-				let script = document.createElement('script');
-				script.setAttribute('src', script_src);
-				script.setAttribute('defer', '');
-				script.setAttribute('data-apiship-ymaps', '1');
-				script.onerror = () => {
-					this.loadFailed = true;
-					script.remove();
-				};
-				document.head.appendChild(script);
-			},
-			createContainer: () => {
-				let container = document.createElement('div');
-				let modalBody = document.getElementById(this.ID_MODAL).querySelector('.modal-body');
-				container.setAttribute('id', this.YANDEX_MAP_CONTAINER_ID);
-				modalBody.appendChild(container);
-			},
-			initMap: () => {
-				let apishipSearchControl = new ymaps.control.SearchControl({
-					options: {
-						provider: 'yandex#search',
-						noPopup: 'true'
-					}
-				});
+		for (const key of Object.keys(values || {})) {
+			result = result.split('{' + key + '}').join(String(values[key]));
+		}
 
-				this.Mymap = new ymaps.Map(this.YANDEX_MAP_CONTAINER_ID, {
-					center: [this.yandexMaps.points[0]['lat'], this.yandexMaps.points[0]['lon']],
-					zoom: 10,
-					controls: (this.getApiKey() === '') ?
-						['zoomControl'] :
-						['zoomControl', 'geolocationControl', apishipSearchControl]
-				}, {
-					suppressMapOpenBlock: true
-				});
+		return result;
+	}
 
-				this.yandexMaps.createPlacemarks(this.yandexMaps.points, this.yandexMaps.tariffs, this.Mymap);
-			},
-			createPlacemarks: (points, tariffs, map) => {
-				const texts = this.texts;
+	// Форма слова для числа: [1 пункт, 2 пункта, 5 пунктов]
+	static plural(count, forms) {
+		const list = Array.isArray(forms) ? forms : [forms, forms, forms];
+		const value = Math.abs(Math.floor(Number(count) || 0));
 
-				let objectManager = new ymaps.ObjectManager({
-					clusterize: true,
-					gridSize: 128,
-					clusterIconLayout: ymaps.templateLayoutFactory.createClass(
-						'<span class="apiship_cluster"></span>',
-						{
-							build: function () {
-								this.constructor.superclass.build.call(this);
-								let cost_min = 0;
-								let text_min = '';
-								let changeProviderKey = false;
-								let providerKey = '';
+		// В языках без склонения вторая и третья формы одинаковы (point/points/points):
+		// там единственное число только у единицы, иначе английское «21 point»
+		if (list[1] === list[2]) return value === 1 ? list[0] : list[2];
 
-								this.getData().properties.geoObjects.forEach((geoObject) => {
-									if (providerKey === '') {
-										providerKey = geoObject.properties.providerKey;
-									} else if (providerKey !== geoObject.properties.providerKey) {
-										changeProviderKey = true;
-									}
+		const n = value % 100;
+		const n1 = n % 10;
 
-									if (cost_min === 0) {
-										cost_min = geoObject.properties.cost;
-										text_min = geoObject.properties.text;
-									} else if (geoObject.properties.cost < cost_min) {
-										cost_min = geoObject.properties.cost;
-										text_min = geoObject.properties.text;
-									}
-								});
+		if (n > 10 && n < 20) return list[2];
+		if (n1 > 1 && n1 < 5) return list[1];
+		if (n1 === 1) return list[0];
 
-								let el = this.getParentElement().getElementsByClassName('apiship_cluster')[0];
-								if (changeProviderKey) {
-									el.innerHTML = ' ' + ApishipMap.escapeHtml(texts.from) + ' ' + ApishipMap.escapeHtml(text_min);
-								} else {
-									el.innerHTML = '<img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + encodeURIComponent(providerKey) + '.svg">' + ' ' + ApishipMap.escapeHtml(texts.from) + ' ' + ApishipMap.escapeHtml(text_min);
-								}
-							}
-						}
-					),
-					clusterIconShape: {
-						type: 'Rectangle',
-						coordinates: [[0, 0], [140, 40]]
-					}
-				});
-
-				let iteration = 0;
-				let point_types = [];
-				let providers = [];
-
-				const esc = ApishipMap.escapeHtml;
-
-				for (const point of points) {
-					// Тарифы точки по возрастанию цены; точка без тарифов на карту не попадает
-					const point_tariffs = ApishipMap.pointTariffs(point, tariffs);
-
-					if (point_tariffs.length === 0) continue;
-
-					const cheapest = point_tariffs[0];
-					const point_providers = [];
-
-					for (const tariff of point_tariffs) {
-						if (!point_providers.includes(tariff.provider)) point_providers.push(tariff.provider);
-						if (!providers.includes(tariff.provider)) providers.push(tariff.provider);
-					}
-
-					if (!point_types.includes(point.type)) point_types.push(point.type);
-
-					// Подпись метки: точная цена при одном тарифе, «от минимальной» — если цены тарифов различаются
-					const has_price_range = point_tariffs.some((tariff) => tariff.cost !== cheapest.cost);
-					const icon_text = (has_price_range ? esc(texts.from) + ' ' : '') + esc(cheapest.text);
-
-					// Адрес, тарифы, стоимость приходят из API — в html только экранированными
-					let balloonContentBody =
-						'<h3 style="font-size: 1.3em;font-weight: bold;margin-bottom: 0.5em;">' + esc(point.address) + '</h3>' +
-						(point.paymentCash == 1 ? '<img title="' + esc(texts.map_cash) + '" src="' + esc(this.image_path) + 'apiship_cash.png">' : '') + ' ' +
-						(point.paymentCard == 1 ? '<img title="' + esc(texts.map_card) + '" src="' + esc(this.image_path) + 'apiship_card.png">' : '');
-
-					// Все тарифы точки в одном балуне, у каждого своя кнопка с кодом варианта
-					for (const tariff of point_tariffs) {
-						balloonContentBody +=
-							'<div class="apiship_balloon_tariff" style="margin-top: 0.7em;">' +
-							'<b>' + esc(tariff.tariff) + '</b><br>' +
-							esc(texts.map_cost) + ': ' + esc(tariff.text) + ' ' +
-							'<a href=# data-placemarkid="' + esc(tariff.code) + '" class="list_item btn btn-success btn-sm">' + esc(texts.map_take_here) + '</a>' +
-							'</div>';
-					}
-
-					objectManager.add({
-						type: 'Feature',
-						id: iteration,
-						geometry: {
-							type: 'Point',
-							coordinates: [point.lat, point.lon]
-						},
-						properties: {
-							type: point.type,
-							providers: point_providers,
-							providerKey: cheapest.provider_key,
-							cost: cheapest.cost,
-							text: cheapest.text,
-							balloonContentHeader: esc(point_providers.join(', ')),
-							balloonContentBody: balloonContentBody
-						},
-						options: {
-							iconLayout: 'default#imageWithContent',
-							iconImageHref: '',
-							iconContentLayout: ymaps.templateLayoutFactory.createClass(
-								'<span class="apiship_cluster"><img style="width:64px;vertical-align: middle;" src="https://storage.apiship.ru/icons/providers/svg/' + encodeURIComponent(cheapest.provider_key) + '.svg"> ' + icon_text + '</span>'
-							),
-							iconImageSize: [140, 40],
-							iconImageOffset: [0, 0],
-							hideIconOnBalloonOpen: false
-						}
-					});
-
-					iteration++;
-				}
-
-				map.geoObjects.add(objectManager);
-
-				// Типы точек
-				let pointTypesItems = point_types.map(function (title) {
-					return new ymaps.control.ListBoxItem({
-						data: {
-							content: title
-						},
-						state: {
-							selected: true
-						}
-					});
-				});
-
-				let listBoxControlTypes = new ymaps.control.ListBox({
-					data: {
-						content: texts.map_type,
-						title: texts.map_type
-					},
-					items: pointTypesItems,
-					state: {
-						filters: pointTypesItems.reduce((filters, filter) => {
-							filters[filter.data.get('content')] = filter.isSelected();
-							return filters;
-						}, {})
-					}
-				});
-
-				map.controls.add(listBoxControlTypes);
-
-				// Службы доставки
-				let pointProvidersItems = providers.map(function (title) {
-					return new ymaps.control.ListBoxItem({
-						data: {
-							content: title
-						},
-						state: {
-							selected: true
-						}
-					});
-				});
-
-				let listBoxControlProviders = new ymaps.control.ListBox({
-					data: {
-						content: texts.map_provider,
-						title: texts.map_provider
-					},
-					items: pointProvidersItems,
-					state: {
-						filters: pointProvidersItems.reduce((filters, filter) => {
-							filters[filter.data.get('content')] = filter.isSelected();
-							return filters;
-						}, {})
-					}
-				});
-
-				map.controls.add(listBoxControlProviders);
-
-				// Обработчики событий для фильтров
-				listBoxControlTypes.events.add(['select', 'deselect'], (e) => {
-					let listBoxItem = e.get('target');
-					let filters = ymaps.util.extend({}, listBoxControlTypes.state.get('filters'));
-					filters[listBoxItem.data.get('content')] = listBoxItem.isSelected();
-					listBoxControlTypes.state.set('filters', filters);
-				});
-
-				listBoxControlProviders.events.add(['select', 'deselect'], (e) => {
-					let listBoxItem = e.get('target');
-					let filters = ymaps.util.extend({}, listBoxControlProviders.state.get('filters'));
-					filters[listBoxItem.data.get('content')] = listBoxItem.isSelected();
-					listBoxControlProviders.state.set('filters', filters);
-				});
-
-				// Мониторинг фильтров: у ObjectManager одна функция фильтра, поэтому оба условия применяются вместе
-				const applyFilters = () => {
-					const types = listBoxControlTypes.state.get('filters');
-					const providerFilters = listBoxControlProviders.state.get('filters');
-
-					objectManager.setFilter((obj) => {
-						return types[obj.properties.type] && obj.properties.providers.some((provider) => providerFilters[provider]);
-					});
-				};
-
-				let filterMonitorTypes = new ymaps.Monitor(listBoxControlTypes.state);
-				filterMonitorTypes.add('filters', applyFilters);
-
-				let filterMonitorProviders = new ymaps.Monitor(listBoxControlProviders.state);
-				filterMonitorProviders.add('filters', applyFilters);
-
-				// Обработчик клика по кнопке выбора
-				$(document).off('click', 'a.list_item');
-				$(document).on('click', 'a.list_item', (event) => {
-					$(document).off('click', 'a.list_item');
-					event.preventDefault();
-					this.callback_function($(event.currentTarget).data().placemarkid, this.callback_code);
-					this.onCloseModal();
-					this.modal.close();
-				});
-			},
-			destroyMap: () => {
-				let el = document.getElementById(this.YANDEX_MAP_CONTAINER_ID);
-				if (el !== null) el.remove();
-			}
-		};
+		return list[2];
 	}
 
 	// Тарифы точки из словаря ответа сервера: с кодом варианта для этой точки, по возрастанию цены.
@@ -373,15 +185,356 @@ class ApishipMap {
 		return result;
 	}
 
-	// Экранирование строки для вставки в html (данные точек приходят из API)
-	static escapeHtml(value) {
-		return String(value == null ? '' : value)
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#39;');
+	// Срок тарифа в днях числом: больший из daysMin и daysMax, null — если срока нет
+	static tariffDays(tariff) {
+		const min = parseInt(tariff && tariff.days_min, 10);
+		const max = parseInt(tariff && tariff.days_max, 10);
+		const days = [];
+
+		if (!isNaN(min) && min > 0) days.push(min);
+		if (!isNaN(max) && max > 0) days.push(max);
+
+		return days.length ? Math.max.apply(null, days) : null;
 	}
+
+	// Срок тарифа подписью: «2–3 дня», «1 день», пустая строка — если срока нет
+	static tariffDaysText(tariff, texts) {
+		const min = parseInt(tariff && tariff.days_min, 10);
+		const max = parseInt(tariff && tariff.days_max, 10);
+		const forms = (texts && texts.map_days) || ['день', 'дня', 'дней'];
+
+		const has_min = !isNaN(min) && min > 0;
+		const has_max = !isNaN(max) && max > 0;
+
+		if (has_min && has_max && min !== max) {
+			return min + '–' + max + ' ' + ApishipMap.plural(max, forms);
+		}
+
+		const days = has_min ? min : (has_max ? max : null);
+
+		return days === null ? '' : days + ' ' + ApishipMap.plural(days, forms);
+	}
+
+	// Службы точки по её тарифам, в порядке возрастания цены тарифа
+	static pointProviders(point_tariffs) {
+		const providers = [];
+
+		for (const tariff of point_tariffs) {
+			if (!providers.some((provider) => provider.key === tariff.provider_key)) {
+				providers.push({key: tariff.provider_key, name: tariff.provider});
+			}
+		}
+
+		return providers;
+	}
+
+	// Строка раскрытия «Ещё N способов доставки» и подсказка о самом быстром из скрытых.
+	// Скрыты все тарифы точки, кроме показанного отдельно (selected_index), — от него же считается подсказка.
+	// null — скрывать нечего
+	static moreWays(point_tariffs, texts, selected_index) {
+		const selected = parseInt(selected_index, 10) || 0;
+		const rest = point_tariffs.filter((tariff, index) => index !== selected);
+
+		if (!rest.length) return null;
+
+		const title = ApishipMap.format(texts.map_more_ways, {
+			n: rest.length,
+			ways: ApishipMap.plural(rest.length, texts.map_ways)
+		});
+
+		// Службы и логотипы — только скрытых тарифов: показанный уже виден строкой выше
+		const providers_list = ApishipMap.pointProviders(rest);
+
+		// Подсказка нужна, только когда среди скрытых есть более быстрый тариф, чем показанный
+		const selected_days = ApishipMap.tariffDays(point_tariffs[selected]);
+		let fastest = null;
+
+		for (const tariff of rest) {
+			const days = ApishipMap.tariffDays(tariff);
+
+			if (days === null) continue;
+			if (selected_days !== null && days >= selected_days) continue;
+			if (fastest === null || days < ApishipMap.tariffDays(fastest)) fastest = tariff;
+		}
+
+		const hint = fastest ? ApishipMap.format(texts.map_faster, {
+			days: ApishipMap.tariffDaysText(fastest, texts),
+			price: fastest.text
+		}) : '';
+
+		return {
+			title: title,
+			providers: providers_list.map((provider) => provider.name).join(', '),
+			providers_list: providers_list,
+			hint: hint
+		};
+	}
+
+	// Службы всех точек со счётчиком точек, по алфавиту: строки фильтра служб
+	static providerCounts(points, tariffs) {
+		const counts = {};
+
+		for (const point of points) {
+			const point_providers = ApishipMap.pointProviders(ApishipMap.pointTariffs(point, tariffs));
+
+			for (const provider of point_providers) {
+				if (!counts[provider.key]) counts[provider.key] = {key: provider.key, name: provider.name, count: 0};
+
+				counts[provider.key].count++;
+			}
+		}
+
+		return Object.keys(counts)
+			.map((key) => counts[key])
+			.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+	}
+
+	// Типы точек со счётчиком точек, по алфавиту: строки фильтра типов
+	static typeCounts(points) {
+		const counts = {};
+
+		for (const point of points) {
+			const type = String(point.type == null ? '' : point.type);
+
+			if (!counts[type]) counts[type] = {key: type, name: type, count: 0, logo: false};
+
+			counts[type].count++;
+		}
+
+		return Object.keys(counts)
+			.map((key) => counts[key])
+			.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+	}
+
+	// Точки, подходящие под выбранные службы и типы: пустой фильтр — ограничения нет.
+	// У каждой точки остаются только тарифы выбранных служб — по ним считается цена на пине
+	static filterPoints(points, tariffs, provider_filter, type_filter) {
+		const providers = Array.isArray(provider_filter) ? provider_filter : [];
+		const types = Array.isArray(type_filter) ? type_filter : [];
+		const result = [];
+
+		for (const point of points) {
+			if (types.length && types.indexOf(String(point.type == null ? '' : point.type)) === -1) continue;
+
+			const point_tariffs = ApishipMap.pointTariffs(point, tariffs)
+				.filter((tariff) => !providers.length || providers.indexOf(tariff.provider_key) !== -1);
+
+			if (!point_tariffs.length) continue;
+
+			result.push({point: point, tariffs: point_tariffs});
+		}
+
+		return result;
+	}
+
+	// Точка в пиксели сферического Меркатора для зума: кластеризация группирует точки по экранной сетке
+	static project(lon, lat, zoom) {
+		const size = 256 * Math.pow(2, zoom);
+		const limited = Math.max(-85.05112878, Math.min(85.05112878, Number(lat)));
+		const sin = Math.sin(limited * Math.PI / 180);
+
+		return {
+			x: (Number(lon) + 180) / 360 * size,
+			y: (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * size
+		};
+	}
+
+	// Обратное преобразование project()
+	static unproject(x, y, zoom) {
+		const size = 256 * Math.pow(2, zoom);
+		const n = Math.PI - 2 * Math.PI * y / size;
+
+		return {
+			lon: x / size * 360 - 180,
+			lat: 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)))
+		};
+	}
+
+	// Группировка точек по экранной сетке: список кластеров, у каждого — свои точки и координаты центра.
+	// Кластер из одной точки рисуется обычным пином, поэтому отдельного случая для него нет
+	static clusterItems(items, zoom, grid) {
+		const size = Math.max(1, Number(grid) || 1);
+		const buckets = {};
+		const order = [];
+
+		for (const item of items) {
+			const pixels = ApishipMap.project(item.point.lon, item.point.lat, zoom);
+			const key = Math.floor(pixels.x / size) + ':' + Math.floor(pixels.y / size);
+
+			if (!buckets[key]) {
+				buckets[key] = {key: key, items: [], x: 0, y: 0};
+				order.push(key);
+			}
+
+			buckets[key].items.push(item);
+			buckets[key].x += pixels.x;
+			buckets[key].y += pixels.y;
+		}
+
+		return order.map((key) => {
+			const bucket = buckets[key];
+			const center = ApishipMap.unproject(bucket.x / bucket.items.length, bucket.y / bucket.items.length, zoom);
+
+			return {key: key, items: bucket.items, lon: center.lon, lat: center.lat};
+		});
+	}
+
+	// Сетка не видит соседей через границу ячейки: две точки в паре пикселей по разные её стороны остаются
+	// одиночными кластерами, и на предельном зуме верхний пин закрывает нижний. Кластеры, у которых хотя бы
+	// пара точек ближе distance пикселей, сливаются в одну группу (по цепочке тоже) — дальше её разводит
+	// addSpreadMarkers. Сравниваются сами точки, а не центры кластеров: центр уезжает от точки у границы.
+	// Соседи ищутся по ячейкам со стороной distance, без перебора всех пар
+	static mergeClose(clusters, zoom, distance) {
+		const size = Math.max(1, Number(distance) || 1);
+		const parents = clusters.map((cluster, index) => index);
+		const sums = clusters.map(() => ({x: 0, y: 0}));
+		const cells = {};
+
+		const find = (index) => {
+			while (parents[index] !== index) {
+				parents[index] = parents[parents[index]];
+				index = parents[index];
+			}
+
+			return index;
+		};
+
+		clusters.forEach((cluster, index) => {
+			for (const item of cluster.items) {
+				const pixel = ApishipMap.project(item.point.lon, item.point.lat, zoom);
+				const cell_x = Math.floor(pixel.x / size);
+				const cell_y = Math.floor(pixel.y / size);
+
+				sums[index].x += pixel.x;
+				sums[index].y += pixel.y;
+
+				for (let dx = -1; dx <= 1; dx++) {
+					for (let dy = -1; dy <= 1; dy++) {
+						for (const other of cells[(cell_x + dx) + ':' + (cell_y + dy)] || []) {
+							if (find(other.cluster) === find(index)) continue;
+
+							const gap = Math.sqrt(Math.pow(pixel.x - other.x, 2) + Math.pow(pixel.y - other.y, 2));
+
+							if (gap < size) parents[find(index)] = find(other.cluster);
+						}
+					}
+				}
+
+				const key = cell_x + ':' + cell_y;
+
+				if (!cells[key]) cells[key] = [];
+
+				cells[key].push({cluster: index, x: pixel.x, y: pixel.y});
+			}
+		});
+
+		const groups = {};
+		const order = [];
+
+		clusters.forEach((cluster, index) => {
+			const root = find(index);
+
+			if (!groups[root]) {
+				groups[root] = [];
+				order.push(root);
+			}
+
+			groups[root].push(index);
+		});
+
+		return order.map((root) => {
+			const members = groups[root];
+
+			if (members.length === 1) return clusters[members[0]];
+
+			const merged = {key: '', items: [], x: 0, y: 0};
+
+			for (const index of members) {
+				merged.key += (merged.key ? '+' : '') + clusters[index].key;
+				merged.items = merged.items.concat(clusters[index].items);
+				merged.x += sums[index].x;
+				merged.y += sums[index].y;
+			}
+
+			const center = ApishipMap.unproject(merged.x / merged.items.length, merged.y / merged.items.length, zoom);
+
+			return {key: merged.key, items: merged.items, lon: center.lon, lat: center.lat};
+		});
+	}
+
+	// Координаты пина на круге вокруг центра группы: на предельном зуме близкие точки иначе не разделить.
+	// Смещение считается от общего центра, а не от каждой точки, иначе соседние пины можно сдвинуть друг к другу.
+	// Радиус растёт с числом пинов, чтобы на круге хватило места широким ценникам
+	static spreadCoordinates(center_lon, center_lat, zoom, index, total, radius) {
+		if (total < 2) return {lon: Number(center_lon), lat: Number(center_lat)};
+
+		const step = 80;
+		const spread = Math.max(radius, total * step / (2 * Math.PI));
+
+		const pixels = ApishipMap.project(center_lon, center_lat, zoom);
+		const angle = 2 * Math.PI * index / total;
+
+		return ApishipMap.unproject(pixels.x + Math.cos(angle) * spread, pixels.y + Math.sin(angle) * spread, zoom);
+	}
+
+	// Подпись набора тарифов точки: по ней метка на карте понимает, что показывает уже другой набор
+	static tariffsKey(point_tariffs) {
+		return (point_tariffs || []).map((tariff) => tariff.code).join('|');
+	}
+
+	// Самый дешёвый тариф группы точек и признак разброса цен: подпись пина «от N ₽» или «N ₽»
+	static groupPrice(items) {
+		let cheapest = null;
+		let range = false;
+
+		for (const item of items) {
+			for (const tariff of item.tariffs) {
+				if (cheapest === null) {
+					cheapest = tariff;
+				} else if (tariff.cost < cheapest.cost) {
+					cheapest = tariff;
+					range = true;
+				} else if (tariff.cost !== cheapest.cost) {
+					range = true;
+				}
+			}
+		}
+
+		return cheapest === null ? null : {tariff: cheapest, range: range};
+	}
+
+	// Иконки карточки и панелей: svg внутри скрипта, чтобы карта не зависела от картинок темы магазина
+	static icon(name) {
+		const paths = {
+			box: '<path d="M12 2 3 6.5v11L12 22l9-4.5v-11L12 2Zm0 2.2 6.6 3.3L12 10.8 5.4 7.5 12 4.2ZM5 9.2l6 3v7.3l-6-3V9.2Zm8 10.3v-7.3l6-3v7.3l-6 3Z"/>',
+			clock: '<path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm-1 2v5.4l4 2.4.9-1.5-3.3-2V7h-1.6Z"/>',
+			card: '<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-11ZM5 9v8h14V9H5Zm0-2h14V7H5Zm2 7h5v2H7v-2Z"/>',
+			cash: '<path d="M3 6h18v12H3V6Zm2 2v8h14V8H5Zm7 1.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z"/>',
+			shirt: '<path d="M9 3 4 5.5 5.5 10 8 9.2V21h8V9.2l2.5.8L20 5.5 15 3a3 3 0 0 1-6 0Z"/>',
+			route: '<path d="M6 3a3 3 0 0 0-1 5.8V11h6a2 2 0 0 1 0 4H9.8A3 3 0 1 0 8 18.9V17h4a4 4 0 0 0 0-8H7V8.8A3 3 0 0 0 6 3Z"/>',
+			search: '<path d="M10.5 3a7.5 7.5 0 1 0 4.6 13.4l4.2 4.3 1.5-1.5-4.3-4.2A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/>',
+			truck: '<path d="M3 6h11v9H3V6Zm12 3h3.5L21 12v3h-6V9ZM7 16.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/>',
+			filter: '<path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/>',
+			plus: '<path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/>',
+			minus: '<path d="M5 11h14v2H5v-2Z"/>',
+			target: '<path d="M11 2h2v3.1a7 7 0 0 1 5.9 5.9H22v2h-3.1a7 7 0 0 1-5.9 5.9V22h-2v-3.1A7 7 0 0 1 5.1 13H2v-2h3.1A7 7 0 0 1 11 5.1V2Zm1 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/>',
+			chevron: '<path d="M7.4 9.6 12 14.2l4.6-4.6L18 11l-6 6-6-6 1.4-1.4Z"/>',
+			close: '<path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z"/>',
+			check: '<path d="M9.6 16.2 5.4 12l-1.4 1.4 5.6 5.6L20.4 8.2 19 6.8l-9.4 9.4Z"/>'
+		};
+
+		return '<svg class="apiship_icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (paths[name] || '') + '</svg>';
+	}
+
+	// Логотип службы доставки из справочника ApiShip
+	providerLogo(provider_key, provider_name) {
+		return '<img class="apiship_logo" alt="' + ApishipMap.escapeHtml(provider_name) + '" src="' +
+			ApishipMap.escapeHtml(this.PROVIDER_ICONS + encodeURIComponent(String(provider_key)) + '.svg') + '">';
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * Загрузка API и жизненный цикл модалки
+	 * ------------------------------------------------------------------ */
 
 	// Ключ Яндекс API из конфига; глобальная get_yandex_api_key() — для сторонних скриптов, определяющих её сами
 	getApiKey() {
@@ -392,21 +545,28 @@ class ApishipMap {
 		return (typeof get_yandex_api_key === 'function') ? String(get_yandex_api_key()) : '';
 	}
 
-	onCloseModal() {
-		this.stopWaiting();
-		this.yandexMaps.destroyMap();
-	}
+	// JS API 3.0 без ключа не работает: при пустом ключе скрипт всё равно грузится, карта покажет ошибку загрузки
+	initApi() {
+		if (typeof ymaps3 !== 'undefined') return;
+		if (document.querySelector('script[data-apiship-ymaps]')) return;
 
-	stopWaiting() {
-		if (this.checkYmaps !== null) {
-			clearInterval(this.checkYmaps);
-			this.checkYmaps = null;
-		}
+		const key = this.getApiKey();
+
+		const script = document.createElement('script');
+		script.setAttribute('src', 'https://api-maps.yandex.ru/v3/?lang=ru_RU&apikey=' + encodeURIComponent(key));
+		script.setAttribute('defer', '');
+		script.setAttribute('data-apiship-ymaps', '1');
+		script.onerror = () => {
+			this.loadFailed = true;
+			script.remove();
+		};
+
+		document.head.appendChild(script);
 	}
 
 	init() {
 		this.modal.createModalBootstrap();
-		this.yandexMaps.initApi();
+		this.initApi();
 		$('#' + this.ID_MODAL).on('hide.bs.modal', () => this.onCloseModal());
 		// Bootstrap 5 не поддерживает вложенные модалки: возвращаем состояние страницы, если осталась открытая модалка
 		$('#' + this.ID_MODAL).on('hidden.bs.modal', () => {
@@ -427,7 +587,7 @@ class ApishipMap {
 		}
 
 		// Удаляем предыдущую модалку если есть
-		let existingModal = document.getElementById(this.ID_MODAL);
+		const existingModal = document.getElementById(this.ID_MODAL);
 		if (existingModal) {
 			existingModal.remove();
 		}
@@ -437,22 +597,25 @@ class ApishipMap {
 		this.callback_function = callback;
 		this.callback_code = code;
 
-		this.yandexMaps.createContainer();
-		this.yandexMaps.points = points;
-		this.yandexMaps.tariffs = tariffs;
+		this.points = points;
+		this.tariffs = tariffs;
+		this.provider_filter = [];
+		this.type_filter = [];
+
+		this.createContainer();
 
 		// Ожидаем загрузку Яндекс.Карт: не дольше 15 секунд, иначе закрываем модалку с сообщением
-		if (typeof ymaps !== 'undefined') {
-			ymaps.ready(() => this.yandexMaps.initMap());
+		if (typeof ymaps3 !== 'undefined') {
+			this.initMap();
 		} else {
 			let attempts = 0;
 
 			this.checkYmaps = setInterval(() => {
 				attempts++;
 
-				if (typeof ymaps !== 'undefined') {
+				if (typeof ymaps3 !== 'undefined') {
 					this.stopWaiting();
-					ymaps.ready(() => this.yandexMaps.initMap());
+					this.initMap();
 				} else if (this.loadFailed || attempts >= 150) {
 					this.stopWaiting();
 					this.modal.close();
@@ -462,5 +625,793 @@ class ApishipMap {
 		}
 
 		this.modal.open();
+	}
+
+	createContainer() {
+		const container = document.createElement('div');
+		const modalBody = document.getElementById(this.ID_MODAL).querySelector('.modal-body');
+
+		container.setAttribute('id', this.YANDEX_MAP_CONTAINER_ID);
+		modalBody.appendChild(container);
+	}
+
+	onCloseModal() {
+		this.stopWaiting();
+		this.closeCard();
+
+		if (this.map) {
+			this.map.destroy();
+			this.map = null;
+		}
+
+		this.markers = {};
+
+		const el = document.getElementById(this.YANDEX_MAP_CONTAINER_ID);
+		if (el !== null) el.remove();
+	}
+
+	stopWaiting() {
+		if (this.checkYmaps !== null) {
+			clearInterval(this.checkYmaps);
+			this.checkYmaps = null;
+		}
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * Карта
+	 * ------------------------------------------------------------------ */
+
+	initMap() {
+		const container = document.getElementById(this.YANDEX_MAP_CONTAINER_ID);
+
+		if (!container) return;
+
+		ymaps3.ready.then(() => {
+			// Модалку успели закрыть, пока грузился API
+			if (!document.getElementById(this.YANDEX_MAP_CONTAINER_ID)) return;
+
+			const first = this.points[0];
+
+			this.location = {center: [Number(first.lon), Number(first.lat)], zoom: 12, bounds: null};
+
+			this.map = new ymaps3.YMap(container, {
+				location: {center: this.location.center, zoom: this.location.zoom},
+				behaviors: ['drag', 'scrollZoom', 'pinchZoom', 'dblClick']
+			}, [
+				new ymaps3.YMapDefaultSchemeLayer({}),
+				new ymaps3.YMapDefaultFeaturesLayer({})
+			]);
+
+			this.map.addChild(new ymaps3.YMapListener({
+				layer: 'any',
+				onUpdate: (event) => this.onMapUpdate(event)
+			}));
+
+			// Ключ поиска — тот же, что у карты: подключение Search API к ключу проверяется первым запросом
+			try {
+				ymaps3.getDefaultConfig().setApikeys({search: this.getApiKey()});
+			} catch (e) {
+				// Поиск по адресу недоступен — строка поиска ищет по адресам точек
+			}
+
+			this.buildControls(container);
+			this.renderMarkers();
+		}).catch(() => {
+			this.modal.close();
+			alert(this.texts.map_load);
+		});
+	}
+
+	onMapUpdate(event) {
+		const location = event && event.location;
+
+		if (!location) return;
+
+		const zoom_changed = !this.location || this.location.zoom !== location.zoom;
+
+		this.location = {
+			center: location.center || (this.location && this.location.center),
+			zoom: location.zoom,
+			bounds: location.bounds || null
+		};
+
+		// Во время жеста метки едут вместе с картой; пересобираем их, когда карта остановилась
+		if (!event.mapInAction || zoom_changed) {
+			this.renderMarkers();
+		}
+	}
+
+	// Точки в видимой области с запасом: bounds приходят от API, без них показываем всё
+	inBounds(items) {
+		const bounds = this.location && this.location.bounds;
+
+		if (!bounds || !bounds[0] || !bounds[1]) return items;
+
+		const west = Math.min(bounds[0][0], bounds[1][0]);
+		const east = Math.max(bounds[0][0], bounds[1][0]);
+		const south = Math.min(bounds[0][1], bounds[1][1]);
+		const north = Math.max(bounds[0][1], bounds[1][1]);
+
+		const pad_lon = (east - west) * 0.3;
+		const pad_lat = (north - south) * 0.3;
+
+		return items.filter((item) => {
+			const lon = Number(item.point.lon);
+			const lat = Number(item.point.lat);
+
+			return lon >= west - pad_lon && lon <= east + pad_lon && lat >= south - pad_lat && lat <= north + pad_lat;
+		});
+	}
+
+	renderMarkers() {
+		if (!this.map) return;
+
+		const zoom = this.location ? this.location.zoom : 12;
+		const items = ApishipMap.filterPoints(this.points, this.tariffs, this.provider_filter, this.type_filter);
+
+		this.updateCounter(items.length);
+
+		let clusters = ApishipMap.clusterItems(this.inBounds(items), zoom, this.CLUSTER_GRID);
+
+		// До предельного зума перекрывшиеся пины разделяет приближение, дальше — только разведение по кругу
+		if (zoom >= this.MAX_ZOOM) clusters = ApishipMap.mergeClose(clusters, zoom, this.CLUSTER_GRID);
+
+		const wanted = {};
+
+		for (const cluster of clusters) {
+			const price = ApishipMap.groupPrice(cluster.items);
+
+			if (!price) continue;
+
+			// Дальше приближать некуда: разводим точки кластера по кругу, иначе к ним не добраться кликом
+			if (cluster.items.length > 1 && zoom >= this.MAX_ZOOM) {
+				this.addSpreadMarkers(cluster, zoom, wanted);
+
+				continue;
+			}
+
+			const single = cluster.items.length === 1 ? cluster.items[0] : null;
+			const active = single && this.selected_point && single.point.id === this.selected_point.id;
+
+			// В ключ входит весь набор тарифов точки: обработчик клика замыкает его, и после смены
+			// фильтра метка с прежним ключом открыла бы карточку с уже отсечённой службой
+			const key = single
+				? 'point:' + single.point.id + ':' + ApishipMap.tariffsKey(single.tariffs) + (active ? ':active' : '')
+				: 'cluster:' + zoom + ':' + cluster.key + ':' + cluster.items.length + ':' + price.tariff.cost;
+
+			wanted[key] = true;
+
+			if (this.markers[key]) continue;
+
+			const element = this.buildPin(cluster, price, single, active);
+
+			const marker = new ymaps3.YMapMarker({
+				coordinates: single ? [Number(single.point.lon), Number(single.point.lat)] : [cluster.lon, cluster.lat],
+				zIndex: active ? 900 : 700
+			}, element);
+
+			this.markers[key] = marker;
+			this.map.addChild(marker);
+		}
+
+		for (const key of Object.keys(this.markers)) {
+			if (wanted[key]) continue;
+
+			this.map.removeChild(this.markers[key]);
+
+			delete this.markers[key];
+		}
+	}
+
+	// Точки кластера, который зум уже не разделит: каждая получает свой пин, смещённый по кругу
+	addSpreadMarkers(cluster, zoom, wanted) {
+		for (let index = 0; index < cluster.items.length; index++) {
+			const item = cluster.items[index];
+			const price = ApishipMap.groupPrice([item]);
+
+			if (!price) continue;
+
+			const active = this.selected_point && item.point.id === this.selected_point.id;
+			const key = 'spread:' + item.point.id + ':' + cluster.items.length + ':' + ApishipMap.tariffsKey(item.tariffs) + (active ? ':active' : '');
+
+			wanted[key] = true;
+
+			if (this.markers[key]) continue;
+
+			const spread = ApishipMap.spreadCoordinates(cluster.lon, cluster.lat, zoom, index, cluster.items.length, this.SPREAD_RADIUS);
+			const coordinates = [spread.lon, spread.lat];
+			const element = this.buildPin(cluster, price, item, active, coordinates);
+
+			const marker = new ymaps3.YMapMarker({coordinates: coordinates, zIndex: active ? 900 : 700}, element);
+
+			this.markers[key] = marker;
+			this.map.addChild(marker);
+		}
+	}
+
+	clearMarkers() {
+		for (const key of Object.keys(this.markers)) {
+			if (this.map) this.map.removeChild(this.markers[key]);
+
+			delete this.markers[key];
+		}
+	}
+
+	// Пин: иконка, цена «от N ₽» и логотип службы, когда фильтр служб включён. Кликается вся площадь (OCM-76)
+	buildPin(cluster, price, single, active, coordinates) {
+		const element = document.createElement('div');
+		const prefix = price.range ? ApishipMap.escapeHtml(this.texts.from) + ' ' : '';
+
+		element.className = 'apiship_pin' + (active ? ' apiship_pin-active' : '') + (single ? '' : ' apiship_pin-cluster');
+
+		const logo = (single && this.provider_filter.length)
+			? this.providerLogo(price.tariff.provider_key, price.tariff.provider)
+			: ApishipMap.icon('box');
+
+		element.innerHTML = logo +
+			'<span class="apiship_pin_price">' + prefix + ApishipMap.escapeHtml(price.tariff.text) + '</span>' +
+			(single ? '' : '<span class="apiship_pin_count">' + cluster.items.length + '</span>') +
+			'<span class="apiship_pin_tail"></span>';
+
+		element.addEventListener('click', (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+
+			if (single) {
+				this.openCard(single, coordinates);
+
+				return;
+			}
+
+			const zoom = this.location.zoom || 12;
+			const closer = Math.min(this.MAX_ZOOM, zoom + 2);
+
+			// Ближе карта не станет — открываем первую точку кластера, чтобы клик не оставался без ответа
+			if (closer <= zoom) {
+				this.openCard(cluster.items[0], [cluster.lon, cluster.lat]);
+
+				return;
+			}
+
+			this.map.setLocation({center: [cluster.lon, cluster.lat], zoom: closer, duration: 250});
+		});
+
+		return element;
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * Карточка пункта выдачи
+	 * ------------------------------------------------------------------ */
+
+	openCard(item, coordinates) {
+		this.selected_point = item.point;
+		this.selected_tariffs = item.tariffs;
+		this.selected_index = 0;
+		this.expanded = false;
+		// Разведённый пин стоит не на координатах точки: карточка держится за пин, иначе хвостик уйдёт в сторону
+		this.selected_coordinates = (coordinates && coordinates.length === 2) ? coordinates : [Number(item.point.lon), Number(item.point.lat)];
+
+		this.showCard();
+		this.moveToCard();
+		this.renderMarkers();
+	}
+
+	closeCard() {
+		if (this.card && this.map) {
+			this.map.removeChild(this.card);
+		}
+
+		this.card = null;
+		this.selected_point = null;
+		this.selected_tariffs = [];
+		this.selected_coordinates = null;
+	}
+
+	// Карточка привязана к точке отдельной меткой: при перетаскивании карты она едет вместе с пином
+	showCard() {
+		if (this.card && this.map) {
+			this.map.removeChild(this.card);
+			this.card = null;
+		}
+
+		const point = this.selected_point;
+
+		if (!point || !this.map) return;
+
+		const element = document.createElement('div');
+
+		element.className = 'apiship_card' + (this.cardBelow() ? ' apiship_card-below' : '');
+		element.innerHTML = this.cardHtml();
+
+		element.addEventListener('click', (event) => this.onCardClick(event));
+
+		this.card = new ymaps3.YMapMarker({
+			coordinates: this.selected_coordinates,
+			zIndex: 1000
+		}, element);
+
+		this.map.addChild(this.card);
+	}
+
+	// Точка в верхней половине экрана — места над ней нет, карточка раскрывается под пином
+	cardBelow() {
+		const center = this.location && this.location.center;
+
+		if (!this.selected_point || !center) return false;
+
+		return this.selected_coordinates[1] > Number(center[1]);
+	}
+
+	// Сдвигаем карту, а не карточку: точка уходит ниже или выше центра, чтобы карточка целиком попала в окно
+	moveToCard() {
+		if (!this.selected_point || !this.map || !this.location) return;
+
+		const bounds = this.location.bounds;
+		const span = (bounds && bounds[0] && bounds[1]) ? Math.abs(bounds[0][1] - bounds[1][1]) : 0;
+		const shift = this.cardBelow() ? -span * 0.22 : span * 0.22;
+
+		this.map.setLocation({
+			center: [this.selected_coordinates[0], this.selected_coordinates[1] + shift],
+			zoom: this.location.zoom,
+			duration: 250
+		});
+	}
+
+	cardHtml() {
+		const point = this.selected_point;
+		const texts = this.texts;
+		const esc = ApishipMap.escapeHtml;
+
+		const badges = [];
+
+		if (Number(point.paymentCard) === 1) badges.push(ApishipMap.icon('card') + esc(texts.map_badge_card));
+		if (Number(point.paymentCash) === 1) badges.push(ApishipMap.icon('cash') + esc(texts.map_badge_cash));
+		if (Number(point.fittingRoom) === 1) badges.push(ApishipMap.icon('shirt') + esc(texts.map_fitting_room));
+
+		let html =
+			'<div class="apiship_card_head">' +
+				'<div class="apiship_card_kicker">' + esc(point.type) + '</div>' +
+				'<button type="button" class="apiship_card_close" data-apiship-close="1" aria-label="' + esc(texts.map_close) + '">' + ApishipMap.icon('close') + '</button>' +
+				'<div class="apiship_card_title">' + esc(point.title || point.address) + '</div>' +
+				(point.subtitle ? '<div class="apiship_card_subtitle">' + esc(point.subtitle) + '</div>' : '') +
+				(point.timetable ? '<div class="apiship_card_line">' + ApishipMap.icon('clock') + esc(point.timetable) + '</div>' : '') +
+				(badges.length ? '<div class="apiship_card_badges"><span class="apiship_badge">' + badges.join('</span><span class="apiship_badge">') + '</span></div>' : '') +
+			'</div>';
+
+		if (point.description) {
+			html +=
+				'<div class="apiship_card_section">' +
+					'<div class="apiship_card_section_title">' + ApishipMap.icon('route') + esc(texts.map_how_to_get) + '</div>' +
+					'<div class="apiship_card_note">' + esc(point.description) + '</div>' +
+				'</div>';
+		}
+
+		html += '<div class="apiship_card_section">' +
+			'<div class="apiship_card_section_title">' + esc(texts.map_delivery_here) + '</div>' +
+			this.tariffRowHtml(this.selected_tariffs[this.selected_index], this.selected_index);
+
+		const more = ApishipMap.moreWays(this.selected_tariffs, texts, this.selected_index);
+
+		if (more) {
+			const logos = more.providers_list
+				.map((provider) => this.providerLogo(provider.key, provider.name)).join('');
+
+			html +=
+				'<button type="button" class="apiship_card_more' + (this.expanded ? ' apiship_card_more-open' : '') + '" data-apiship-expand="1">' +
+					'<span class="apiship_card_more_logos">' + logos + '</span>' +
+					'<span class="apiship_card_more_text">' +
+						'<span class="apiship_card_more_title">' + esc(more.title) + (more.providers ? ' — ' + esc(more.providers) : '') + '</span>' +
+						(more.hint ? '<span class="apiship_card_more_hint">' + esc(more.hint) + '</span>' : '') +
+					'</span>' +
+					'<span class="apiship_card_more_chevron">' + ApishipMap.icon('chevron') + '</span>' +
+				'</button>';
+
+			if (this.expanded) {
+				html += '<div class="apiship_card_rest">';
+
+				for (let index = 0; index < this.selected_tariffs.length; index++) {
+					if (index === this.selected_index) continue;
+
+					html += this.tariffRowHtml(this.selected_tariffs[index], index);
+				}
+
+				html += '</div>';
+			}
+		}
+
+		const selected = this.selected_tariffs[this.selected_index];
+
+		html +=
+				'<button type="button" class="apiship_card_submit" data-apiship-take="1">' +
+					esc(texts.map_take_here) + ' — ' + esc(selected.text) +
+				'</button>' +
+			'</div>';
+
+		return html;
+	}
+
+	// Строка тарифа: переключатель, логотип службы, название тарифа, служба со сроком и цена
+	tariffRowHtml(tariff, index) {
+		const esc = ApishipMap.escapeHtml;
+		const checked = index === this.selected_index;
+		const days = ApishipMap.tariffDaysText(tariff, this.texts);
+		const cheapest = index === 0 && this.selected_tariffs.length > 1 && this.selected_tariffs[this.selected_tariffs.length - 1].cost > tariff.cost;
+
+		return '<label class="apiship_tariff' + (checked ? ' apiship_tariff-checked' : '') + '" data-apiship-tariff="' + index + '">' +
+			'<span class="apiship_tariff_radio">' + (checked ? ApishipMap.icon('check') : '') + '</span>' +
+			this.providerLogo(tariff.provider_key, tariff.provider) +
+			'<span class="apiship_tariff_text">' +
+				'<span class="apiship_tariff_name">' + esc(tariff.tariff) + '</span>' +
+				'<span class="apiship_tariff_note">' + esc(tariff.provider) + (days ? ' — ' + esc(days) : '') + '</span>' +
+			'</span>' +
+			'<span class="apiship_tariff_price">' + esc(tariff.text) +
+				(cheapest ? '<span class="apiship_tariff_cheapest">' + esc(this.texts.map_cheapest) + '</span>' : '') +
+			'</span>' +
+		'</label>';
+	}
+
+	onCardClick(event) {
+		const target = event.target;
+
+		if (!target || !target.closest) return;
+
+		if (target.closest('[data-apiship-close]')) {
+			event.preventDefault();
+			this.closeCard();
+			this.renderMarkers();
+
+			return;
+		}
+
+		if (target.closest('[data-apiship-expand]')) {
+			event.preventDefault();
+			this.expanded = !this.expanded;
+			this.showCard();
+
+			return;
+		}
+
+		const row = target.closest('[data-apiship-tariff]');
+
+		if (row) {
+			event.preventDefault();
+			this.selected_index = parseInt(row.getAttribute('data-apiship-tariff'), 10) || 0;
+			this.showCard();
+
+			return;
+		}
+
+		if (target.closest('[data-apiship-take]')) {
+			event.preventDefault();
+			this.choose(this.selected_tariffs[this.selected_index]);
+		}
+	}
+
+	// Выбор точки и тарифа уходит в чекаут тем же кодом варианта, что и раньше
+	choose(tariff) {
+		if (!tariff || typeof this.callback_function !== 'function') return;
+
+		this.callback_function(tariff.code, this.callback_code);
+		this.modal.close();
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * Поиск, фильтры, зум и счётчик поверх карты
+	 * ------------------------------------------------------------------ */
+
+	buildControls(container) {
+		const esc = ApishipMap.escapeHtml;
+
+		this.ui = {menus: []};
+
+		const panel = document.createElement('div');
+
+		panel.className = 'apiship_panel';
+		panel.innerHTML =
+			'<div class="apiship_search">' + ApishipMap.icon('search') +
+				'<input type="text" class="apiship_search_input" placeholder="' + esc(this.texts.map_search) + '">' +
+			'</div>';
+
+		this.ui.search = panel.querySelector('.apiship_search_input');
+		this.ui.search.addEventListener('keydown', (event) => {
+			if (event.key === 'Enter' || event.keyCode === 13) {
+				event.preventDefault();
+				this.search(this.ui.search.value);
+			}
+		});
+
+		this.ui.providers = this.buildFilter(
+			panel,
+			ApishipMap.providerCounts(this.points, this.tariffs),
+			this.texts.map_providers_all,
+			this.texts.map_providers_title,
+			'truck',
+			(selected) => {
+				this.provider_filter = selected;
+				this.onFilterChange();
+			}
+		);
+
+		const types = ApishipMap.typeCounts(this.points);
+
+		// Фильтр типов нужен, только когда типов больше одного (OCM-5)
+		if (types.length > 1) {
+			this.ui.types = this.buildFilter(
+				panel,
+				types,
+				this.texts.map_types_all,
+				this.texts.map_type,
+				'filter',
+				(selected) => {
+					this.type_filter = selected;
+					this.onFilterChange();
+				}
+			);
+		}
+
+		// Клик мимо панели закрывает открытый фильтр, по самой панели — нет
+		panel.addEventListener('click', (event) => event.stopPropagation());
+		container.addEventListener('click', () => this.closeMenus());
+
+		container.appendChild(panel);
+
+		const zoom = document.createElement('div');
+
+		zoom.className = 'apiship_zoom';
+		zoom.innerHTML =
+			'<button type="button" class="apiship_zoom_button" data-apiship-zoom="1" title="' + esc(this.texts.map_zoom_in) + '">' + ApishipMap.icon('plus') + '</button>' +
+			'<button type="button" class="apiship_zoom_button" data-apiship-zoom="-1" title="' + esc(this.texts.map_zoom_out) + '">' + ApishipMap.icon('minus') + '</button>' +
+			'<button type="button" class="apiship_zoom_button" data-apiship-geolocation="1" title="' + esc(this.texts.map_geolocation) + '">' + ApishipMap.icon('target') + '</button>';
+
+		zoom.addEventListener('click', (event) => {
+			const step = event.target.closest ? event.target.closest('[data-apiship-zoom]') : null;
+
+			if (step) {
+				const delta = parseInt(step.getAttribute('data-apiship-zoom'), 10);
+
+				this.map.setLocation({zoom: Math.max(2, Math.min(this.MAX_ZOOM, (this.location.zoom || 12) + delta)), duration: 200});
+
+				return;
+			}
+
+			if (event.target.closest && event.target.closest('[data-apiship-geolocation]')) {
+				this.geolocate();
+			}
+		});
+
+		container.appendChild(zoom);
+
+		const counter = document.createElement('div');
+
+		counter.className = 'apiship_counter';
+		counter.style.display = 'none';
+
+		this.ui.counter = counter;
+
+		container.appendChild(counter);
+	}
+
+	// Общий выпадающий фильтр: строки с логотипом (у служб), названием и числом пунктов
+	buildFilter(panel, options, all_text, title_text, icon, onChange) {
+		const esc = ApishipMap.escapeHtml;
+
+		const filter = {selected: [], options: options};
+
+		const wrapper = document.createElement('div');
+
+		wrapper.className = 'apiship_filter';
+		wrapper.innerHTML =
+			'<button type="button" class="apiship_filter_button">' + ApishipMap.icon(icon) +
+				'<span class="apiship_filter_label"></span>' +
+				'<span class="apiship_filter_count"></span>' +
+				'<span class="apiship_filter_chevron">' + ApishipMap.icon('chevron') + '</span>' +
+			'</button>' +
+			'<div class="apiship_filter_menu" style="display:none">' +
+				'<div class="apiship_filter_head">' + esc(title_text) +
+					'<button type="button" class="apiship_filter_reset">' + esc(this.texts.map_filter_reset) + '</button>' +
+				'</div>' +
+				'<div class="apiship_filter_list"></div>' +
+				'<button type="button" class="apiship_filter_apply"></button>' +
+			'</div>';
+
+		const button = wrapper.querySelector('.apiship_filter_button');
+		const label = wrapper.querySelector('.apiship_filter_label');
+		const count = wrapper.querySelector('.apiship_filter_count');
+		const menu = wrapper.querySelector('.apiship_filter_menu');
+		const list = wrapper.querySelector('.apiship_filter_list');
+		const apply = wrapper.querySelector('.apiship_filter_apply');
+
+		const redraw = () => {
+			const names = options.filter((option) => filter.selected.indexOf(option.key) !== -1).map((option) => option.name);
+
+			button.className = 'apiship_filter_button' + (names.length ? ' apiship_filter_button-active' : '');
+			label.textContent = names.length ? names.join(', ') : all_text;
+			count.textContent = names.length ? String(names.length) : '';
+
+			let rows = '';
+
+			for (const option of options) {
+				const checked = filter.selected.indexOf(option.key) !== -1;
+
+				rows +=
+					'<label class="apiship_filter_row" data-apiship-option="' + esc(option.key) + '">' +
+						'<span class="apiship_filter_check' + (checked ? ' apiship_filter_check-on' : '') + '">' + (checked ? ApishipMap.icon('check') : '') + '</span>' +
+						(option.logo === false ? '' : this.providerLogo(option.key, option.name)) +
+						'<span class="apiship_filter_row_text">' +
+							'<span class="apiship_filter_row_name">' + esc(option.name) + '</span>' +
+							'<span class="apiship_filter_row_count">' + option.count + ' ' + esc(ApishipMap.plural(option.count, this.texts.map_points)) + '</span>' +
+						'</span>' +
+					'</label>';
+			}
+
+			list.innerHTML = rows;
+
+			const visible = ApishipMap.filterPoints(this.points, this.tariffs, this.provider_filter, this.type_filter).length;
+
+			apply.textContent = ApishipMap.format(this.texts.map_filter_apply, {
+				n: visible,
+				points: ApishipMap.plural(visible, this.texts.map_points)
+			});
+		};
+
+		this.ui.menus.push(menu);
+
+		button.addEventListener('click', (event) => {
+			event.preventDefault();
+
+			const open = menu.style.display === 'none';
+
+			this.closeMenus();
+
+			menu.style.display = open ? 'block' : 'none';
+		});
+
+		list.addEventListener('click', (event) => {
+			const row = event.target.closest ? event.target.closest('[data-apiship-option]') : null;
+
+			if (!row) return;
+
+			event.preventDefault();
+
+			const key = row.getAttribute('data-apiship-option');
+			const index = filter.selected.indexOf(key);
+
+			if (index === -1) {
+				filter.selected.push(key);
+			} else {
+				filter.selected.splice(index, 1);
+			}
+
+			onChange(filter.selected.slice());
+			redraw();
+		});
+
+		wrapper.querySelector('.apiship_filter_reset').addEventListener('click', (event) => {
+			event.preventDefault();
+			filter.selected = [];
+			onChange([]);
+			redraw();
+		});
+
+		apply.addEventListener('click', (event) => {
+			event.preventDefault();
+			menu.style.display = 'none';
+		});
+
+		panel.appendChild(wrapper);
+
+		filter.redraw = redraw;
+
+		redraw();
+
+		return filter;
+	}
+
+	closeMenus() {
+		for (const menu of (this.ui.menus || [])) {
+			menu.style.display = 'none';
+		}
+	}
+
+	// Фильтр сменился: карточка прежней точки больше не отражает доступные тарифы, закрываем её,
+	// а метки пересобираем с нуля — их обработчики клика держат прежний набор тарифов
+	onFilterChange() {
+		this.closeCard();
+		this.clearMarkers();
+		this.renderMarkers();
+
+		if (this.ui.providers) this.ui.providers.redraw();
+		if (this.ui.types) this.ui.types.redraw();
+	}
+
+	updateCounter(visible) {
+		if (!this.ui || !this.ui.counter) return;
+
+		const filtered = this.provider_filter.length || this.type_filter.length;
+
+		this.ui.counter.style.display = filtered ? 'flex' : 'none';
+
+		if (!filtered) return;
+
+		this.ui.counter.innerHTML = ApishipMap.icon('filter') + ApishipMap.escapeHtml(ApishipMap.format(this.texts.map_filter_counter, {
+			n: visible,
+			points: ApishipMap.plural(visible, this.texts.map_points),
+			total: this.points.length
+		}));
+	}
+
+	geolocate() {
+		if (!navigator.geolocation) return;
+
+		navigator.geolocation.getCurrentPosition((position) => {
+			if (!this.map) return;
+
+			this.map.setLocation({
+				center: [position.coords.longitude, position.coords.latitude],
+				zoom: Math.max(this.location.zoom || 12, 13),
+				duration: 300
+			});
+		}, () => {
+			// Покупатель запретил доступ к геопозиции, вышел таймаут или страница открыта по http:
+			// кнопка просто ничего не делает, карта остаётся там же, где была
+		});
+	}
+
+	// Поиск по адресу через Search API; если он не подключён к ключу, ищем среди адресов точек
+	search(text) {
+		const query = String(text || '').trim();
+
+		if (query === '' || !this.map) return;
+
+		const local = () => this.searchPoints(query);
+
+		if (!ymaps3.search) {
+			local();
+
+			return;
+		}
+
+		ymaps3.search({text: query, bounds: this.location ? this.location.bounds : null}).then((result) => {
+			const found = (result || []).filter((feature) => feature && feature.geometry && Array.isArray(feature.geometry.coordinates))[0];
+
+			if (!found) {
+				local();
+
+				return;
+			}
+
+			this.map.setLocation({center: found.geometry.coordinates, zoom: Math.max(this.location.zoom || 12, 13), duration: 300});
+		}).catch(() => local());
+	}
+
+	searchPoints(query) {
+		const needle = query.toLowerCase();
+
+		const found = this.points.filter((point) => {
+			return String(point.title || point.address || '').toLowerCase().indexOf(needle) !== -1 ||
+				String(point.subtitle || '').toLowerCase().indexOf(needle) !== -1;
+		})[0];
+
+		if (!found) {
+			this.showSearchEmpty();
+
+			return;
+		}
+
+		this.map.setLocation({center: [Number(found.lon), Number(found.lat)], zoom: Math.max(this.location.zoom || 12, 14), duration: 300});
+	}
+
+	showSearchEmpty() {
+		if (!this.ui || !this.ui.search) return;
+
+		const input = this.ui.search;
+		const previous = input.placeholder;
+
+		input.value = '';
+		input.placeholder = this.texts.map_search_empty;
+
+		setTimeout(() => {
+			input.placeholder = previous;
+		}, 2000);
 	}
 }

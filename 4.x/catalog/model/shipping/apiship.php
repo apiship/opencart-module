@@ -878,14 +878,29 @@ class Apiship extends \Opencart\System\Engine\Model {
 				return $map_tariffs[$a]['cost'] <=> $map_tariffs[$b]['cost'];
 			});
 
+			$address = $this->apiship->get_address($point);
+
+			// Карточка точки на карте: заголовок — улица с домом, подстрока — город с индексом.
+			// Без улицы и дома в данных заголовком становится весь адрес
+			$headline = \Opencart\System\Library\Extension\Apiship\Apiship::point_headline($point, [
+				'block'  => $this->language->get('shipping_apiship_map_block'),
+				'office' => $this->language->get('shipping_apiship_map_office'),
+				'area'   => $this->language->get('shipping_apiship_map_area')
+			]);
+
 			$map_points[] = [
 				'id'          => (string)$point_id,
 				'lon'         => $point['lng'],
 				'lat'         => $point['lat'],
-				'address'     => $this->apiship->get_address($point),
+				'address'     => $address,
+				'title'       => $headline['title'] !== '' ? $headline['title'] : $address,
+				'subtitle'    => $headline['subtitle'],
 				'type'        => $apiship_point_types[(int)$point['type']] ?? (string)$point['type'],
+				'timetable'   => (string)($point['timetable'] ?? ''),
+				'description' => (string)($point['description'] ?? ''),
 				'paymentCash' => (int)($point['paymentCash'] ?? 0),
 				'paymentCard' => (int)($point['paymentCard'] ?? 0),
+				'fittingRoom' => (int)($point['fittingRoom'] ?? 0),
 				'tariffs'     => $tariff_keys,
 				'_title'      => [
 					'sub_type'  => $point['type'],
@@ -1003,7 +1018,8 @@ class Apiship extends \Opencart\System\Engine\Model {
 				continue;
 			}
 
-			unset($point['_title']);
+			// Полный адрес нужен только заголовку списка ПВЗ в админке (point_title), карта показывает title и subtitle
+			unset($point['_title'], $point['address']);
 
 			$points[] = $point;
 		}

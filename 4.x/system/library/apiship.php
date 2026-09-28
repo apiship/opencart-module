@@ -308,6 +308,12 @@ class Apiship {
 	}
 
 	/**
+	 * Версия модуля: подставляется в адрес скрипта и стилей карты, чтобы после обновления
+	 * браузер покупателя не взял из кеша скрипт прошлой версии
+	 */
+	public const VERSION = '1.5';
+
+	/**
 	 * TTL кеша: справочники (точки, службы, статусы, подключения) меняются редко — 6 часов;
 	 * расчёт стоимости зависит от корзины и адреса — 10 минут
 	 */
@@ -323,7 +329,7 @@ class Apiship {
 		'id', 'code', 'providerKey', 'name', 'type', 'lat', 'lng',
 		'regionType', 'region', 'area', 'cityType', 'city', 'communityType', 'community',
 		'streetType', 'street', 'house', 'block', 'office', 'postIndex',
-		'phone', 'timetable', 'description', 'paymentCash', 'paymentCard'
+		'phone', 'timetable', 'description', 'paymentCash', 'paymentCard', 'fittingRoom'
 	];
 
 	/**
@@ -336,14 +342,16 @@ class Apiship {
 	public const POINTS_INDEX_SHARD_LIMIT = 1500;
 
 	/**
-	 * Ключ шарда индекса для id точки
+	 * Ключ шарда индекса для id точки. В ключ входит отпечаток POINT_FIELDS: после добавления поля
+	 * старые записи индекса не подходят (в них этого поля нет), а remember_points продлевает TTL шарда
+	 * бесконечно — без отпечатка новое поле у давно закешированных точек не появилось бы никогда
 	 *
 	 * @param string $id
 	 *
 	 * @return string
 	 */
 	public static function points_shard_key(string $id): string {
-		return 'apiship_points_index.' . ((int)$id % self::POINTS_INDEX_SHARDS);
+		return 'apiship_points_index.' . substr(md5(implode(',', self::POINT_FIELDS)), 0, 6) . '.' . ((int)$id % self::POINTS_INDEX_SHARDS);
 	}
 
 	/**
@@ -1214,6 +1222,148 @@ class Apiship {
 		}
 
 		return $address;
+	}
+
+	/**
+	 * Подписи скрипта карты ПВЗ одним массивом (config.texts): собираются одинаково во всех пакетах модуля,
+	 * поэтому живут в библиотеке, а не в контроллере витрины. Формы слов идут тройками «1, 2, 5».
+	 * Набор общий, кроме ключа recalculate: его использует только чекаут OpenCart 4, и строки
+	 * shipping_apiship_error_recalculate в языковых файлах пакетов 2.1, 2.3 и 3.x нет
+	 *
+	 * @param object $language объект языка OpenCart (метод get)
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function map_texts($language): array {
+		$get = function(string $name) use ($language): string {
+			return (string)$language->get('shipping_apiship_' . $name);
+		};
+
+		return [
+			'from'                => $get('title_from'),
+			'select_point'        => $get('select_point'),
+			'change_point'        => $get('change_point'),
+			'recalculate'         => $get('error_recalculate'),
+			'map_title'           => $get('map_title'),
+			'map_take_here'       => $get('map_take_here'),
+			'map_type'            => $get('map_point_type'),
+			'map_provider'        => $get('map_provider'),
+			'map_no_points'       => $get('error_no_points'),
+			'map_load'            => $get('error_map_load'),
+			'map_badge_card'      => $get('map_badge_card'),
+			'map_badge_cash'      => $get('map_badge_cash'),
+			'map_fitting_room'    => $get('map_fitting_room'),
+			'map_how_to_get'      => $get('map_how_to_get'),
+			'map_delivery_here'   => $get('map_delivery_here'),
+			'map_cheapest'        => $get('map_cheapest'),
+			'map_faster'          => $get('map_faster'),
+			'map_more_ways'       => $get('map_more_ways'),
+			'map_ways'            => [$get('map_ways_1'), $get('map_ways_2'), $get('map_ways_5')],
+			'map_days'            => [$get('map_days_1'), $get('map_days_2'), $get('map_days_5')],
+			'map_points'          => [$get('map_points_1'), $get('map_points_2'), $get('map_points_5')],
+			'map_providers_all'   => $get('map_providers_all'),
+			'map_providers_title' => $get('map_providers_title'),
+			'map_types_all'       => $get('map_types_all'),
+			'map_filter_reset'    => $get('map_filter_reset'),
+			'map_filter_apply'    => $get('map_filter_apply'),
+			'map_filter_counter'  => $get('map_filter_counter'),
+			'map_search'          => $get('map_search'),
+			'map_search_empty'    => $get('map_search_empty'),
+			'map_zoom_in'         => $get('map_zoom_in'),
+			'map_zoom_out'        => $get('map_zoom_out'),
+			'map_geolocation'     => $get('map_geolocation'),
+			'map_close'           => $get('map_close')
+		];
+	}
+
+	/**
+	 * Заголовок и подстрока карточки ПВЗ на карте: заголовок — улица с домом (по нему точки отличаются друг от друга),
+	 * подстрока — город, регион и индекс. Поле name у точек разношёрстное (код точки, имя арендатора, «ПВЗ BOXBERRY»),
+	 * поэтому заголовок собирается из структурированного адреса. Если улицы и дома в данных нет, заголовок пустой —
+	 * карточка показывает вместо него полный адрес из get_address()
+	 *
+	 * @param array<string, mixed> $point  строка точки lists/points
+	 * @param array<string, string> $labels подписи block и office (i18n); по умолчанию русские, как в get_address()
+	 *
+	 * @return array{title: string, subtitle: string}
+	 */
+	public static function point_headline(array $point, array $labels = []): array {
+		$block_label = (string)($labels['block'] ?? 'корп.');
+		$office_label = (string)($labels['office'] ?? 'офис');
+		$area_label = (string)($labels['area'] ?? 'р-н');
+
+		$street = trim(trim((string)($point['streetType'] ?? '')) . ' ' . trim((string)($point['street'] ?? '')));
+		$community = trim(trim((string)($point['communityType'] ?? '')) . ' ' . trim((string)($point['community'] ?? '')));
+		$house = trim((string)($point['house'] ?? ''));
+
+		$title_parts = [];
+
+		if ($street !== '') {
+			$title_parts[] = $street;
+		} elseif ($community !== '') {
+			// Сельский адрес без улицы: точку называет населённый пункт
+			$title_parts[] = $community;
+		}
+
+		// Без улицы и населённого пункта заголовка нет: номер дома, корпус и офис сами по себе точку не называют
+		if (!$title_parts) {
+			return ['title' => '', 'subtitle' => ''];
+		}
+
+		if ($house !== '') {
+			$title_parts[] = $house;
+		}
+
+		$block = trim((string)($point['block'] ?? ''));
+		$office = trim((string)($point['office'] ?? ''));
+
+		if ($block !== '') {
+			$title_parts[] = trim($block_label . ' ' . $block);
+		}
+
+		if ($office !== '') {
+			$title_parts[] = trim($office_label . ' ' . $office);
+		}
+
+		$region = trim((string)($point['region'] ?? ''));
+		$region_type = trim((string)($point['regionType'] ?? ''));
+		$city = trim((string)($point['city'] ?? ''));
+		$city_type = trim((string)($point['cityType'] ?? ''));
+		$area = trim((string)($point['area'] ?? ''));
+
+		// Тип города пишем, только если это не город: «пгт Октябрьский», но просто «Королёв»
+		$city_title = ($city !== '' && $city_type !== '' && $city_type != 'г') ? $city_type . ' ' . $city : $city;
+
+		$subtitle_parts = [];
+
+		// Населённый пункт мельче города и идёт первым; в заголовке он уже есть, только когда улицы нет
+		if ($street !== '' && $community !== '') {
+			$subtitle_parts[] = $community;
+		}
+
+		if ($city_title !== '') {
+			$subtitle_parts[] = $city_title;
+		}
+
+		if ($area !== '') {
+			$subtitle_parts[] = trim($area . ' ' . $area_label);
+		}
+
+		// У городов федерального значения регион и есть название города — второй раз его не пишем
+		if ($region !== '' && $region != $city) {
+			$subtitle_parts[] = ($region_type != '' && $region_type != 'г') ? $region . ' ' . $region_type : $region;
+		}
+
+		$post_index = trim((string)($point['postIndex'] ?? ''));
+
+		if ($post_index !== '') {
+			$subtitle_parts[] = $post_index;
+		}
+
+		return [
+			'title'    => implode(', ', $title_parts),
+			'subtitle' => implode(', ', $subtitle_parts)
+		];
 	}
 
 	/**

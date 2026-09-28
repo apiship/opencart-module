@@ -16,20 +16,14 @@
 }
 
 #apiship_yandex_map_container {
+	position: relative;
 	width: 100%;
 	height: 100%;
 	border: 1px solid #ccc;
-	padding: 5px;
-}
-
-.apiship_cluster {
-	border: solid 2px #1e98ff;
-	border-radius: 2em;
-	box-shadow: black 0.5em 0.5em 0.3em;
-	padding: 5px 20px 5px 20px;
-	background: #FFFFFF;
-	white-space: nowrap;
-	display: inline-block;
+	overflow: hidden;
+	font-size: 14px;
+	line-height: 1.35;
+	color: #1c1f23;
 }
 
 /* Модалка карты поверх модалки выбора доставки (Bootstrap 5: modal 1055, backdrop 1050) */
@@ -60,6 +54,11 @@
 	margin: 0;
 }
 
+.apiship_modal-close-x {
+	font-size: 24px;
+	line-height: 1;
+}
+
 .apiship_modal-content {
 	position: absolute;
 	top: 0;
@@ -76,7 +75,7 @@
 	top: 50px;
 	bottom: 0;
 	font-size: 15px;
-	overflow: auto;
+	overflow: hidden;
 	margin-bottom: 15px;
 	padding: 0 15px 0;
 	width: 100%;
@@ -88,4 +87,554 @@
 	min-height: 100%;
 	padding: 0;
 	margin: 0;
+}
+
+/* Общие элементы карты */
+.apiship_icon {
+	width: 16px;
+	height: 16px;
+	fill: currentColor;
+	flex: none;
+	vertical-align: middle;
+}
+
+.apiship_logo {
+	width: 28px;
+	height: 28px;
+	flex: none;
+	object-fit: contain;
+	background: #fff;
+	border: 1px solid #e7e9ee;
+	border-radius: 7px;
+	padding: 2px;
+}
+
+/* Пин с ценой: кликается вся площадь, включая логотип службы (OCM-76) */
+.apiship_pin {
+	position: absolute;
+	transform: translate(-50%, -100%);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	max-width: 240px;
+	padding: 6px 10px;
+	background: #fff;
+	color: #1c1f23;
+	border-radius: 999px;
+	box-shadow: 0 2px 8px rgba(16, 24, 40, 0.22);
+	white-space: nowrap;
+	cursor: pointer;
+	user-select: none;
+}
+
+.apiship_pin .apiship_logo {
+	width: 20px;
+	height: 20px;
+	padding: 1px;
+	border-radius: 5px;
+}
+
+.apiship_pin_price {
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.apiship_pin_count {
+	background: #eef2f7;
+	border-radius: 999px;
+	padding: 1px 7px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.apiship_pin_tail {
+	position: absolute;
+	left: 50%;
+	bottom: -5px;
+	width: 10px;
+	height: 10px;
+	margin-left: -5px;
+	background: inherit;
+	transform: rotate(45deg);
+	box-shadow: 2px 2px 4px rgba(16, 24, 40, 0.14);
+}
+
+.apiship_pin-active {
+	background: #1a73ff;
+	color: #fff;
+	z-index: 2;
+}
+
+.apiship_pin-active .apiship_pin_count {
+	background: rgba(255, 255, 255, 0.24);
+}
+
+.apiship_pin-cluster .apiship_pin_price {
+	font-weight: 600;
+}
+
+/* Карточка пункта выдачи: висит на той же координате, что и пин */
+.apiship_card {
+	position: absolute;
+	transform: translate(-50%, calc(-100% - 52px));
+	width: 380px;
+	max-width: calc(100vw - 32px);
+	max-height: 70vh;
+	overflow: auto;
+	background: #fff;
+	border-radius: 14px;
+	box-shadow: 0 12px 32px rgba(16, 24, 40, 0.24);
+	cursor: default;
+	z-index: 3;
+}
+
+.apiship_card-below {
+	transform: translate(-50%, 18px);
+}
+
+.apiship_card:after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	bottom: -6px;
+	width: 12px;
+	height: 12px;
+	margin-left: -6px;
+	background: #fff;
+	transform: rotate(45deg);
+}
+
+.apiship_card-below:after {
+	bottom: auto;
+	top: -6px;
+}
+
+.apiship_card_head {
+	position: relative;
+	padding: 14px 16px 12px;
+}
+
+.apiship_card_kicker {
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #8b93a1;
+	padding-right: 28px;
+}
+
+.apiship_card_title {
+	font-size: 18px;
+	font-weight: 700;
+	margin-top: 2px;
+}
+
+.apiship_card_subtitle,
+.apiship_card_line {
+	color: #6b7280;
+	margin-top: 4px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.apiship_card_close {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: #8b93a1;
+	cursor: pointer;
+}
+
+.apiship_card_badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+.apiship_badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 4px 9px;
+	border: 1px solid #e7e9ee;
+	border-radius: 8px;
+	color: #3c4350;
+	font-size: 13px;
+}
+
+.apiship_card_section {
+	padding: 12px 16px 14px;
+	border-top: 1px solid #eef0f4;
+}
+
+.apiship_card_section_title {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: 600;
+}
+
+.apiship_card_note {
+	color: #6b7280;
+	margin-top: 4px;
+}
+
+/* Строка тарифа: переключатель, логотип службы, срок и цена */
+.apiship_tariff {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 8px;
+	padding: 10px 12px;
+	border: 1px solid #e7e9ee;
+	border-radius: 12px;
+	cursor: pointer;
+	font-weight: 400;
+}
+
+.apiship_tariff-checked {
+	border-color: #1a73ff;
+	background: #f2f7ff;
+}
+
+.apiship_tariff_radio {
+	width: 20px;
+	height: 20px;
+	flex: none;
+	border: 1px solid #c8cedb;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+}
+
+.apiship_tariff-checked .apiship_tariff_radio {
+	background: #1a73ff;
+	border-color: #1a73ff;
+}
+
+.apiship_tariff_radio .apiship_icon {
+	width: 13px;
+	height: 13px;
+}
+
+.apiship_tariff_text {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.apiship_tariff_name {
+	display: block;
+	font-weight: 600;
+}
+
+.apiship_tariff_note {
+	display: block;
+	color: #6b7280;
+	font-size: 13px;
+}
+
+.apiship_tariff_price {
+	text-align: right;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.apiship_tariff_cheapest {
+	display: block;
+	font-size: 12px;
+	font-weight: 400;
+	color: #d97706;
+}
+
+.apiship_card_more {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	margin-top: 8px;
+	padding: 10px 12px;
+	background: #f7f8fa;
+	border: 1px solid #eef0f4;
+	border-radius: 12px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.apiship_card_more_logos {
+	display: flex;
+	gap: 4px;
+	flex: none;
+}
+
+.apiship_card_more_logos .apiship_logo {
+	width: 24px;
+	height: 24px;
+}
+
+.apiship_card_more_text {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.apiship_card_more_title {
+	display: block;
+	font-weight: 600;
+}
+
+.apiship_card_more_hint {
+	display: block;
+	color: #6b7280;
+	font-size: 13px;
+}
+
+.apiship_card_more_chevron {
+	color: #8b93a1;
+	transition: transform 0.15s;
+}
+
+.apiship_card_more-open .apiship_card_more_chevron {
+	transform: rotate(180deg);
+}
+
+.apiship_card_submit {
+	display: block;
+	width: 100%;
+	margin-top: 12px;
+	padding: 12px 16px;
+	background: #1a73ff;
+	color: #fff;
+	border: none;
+	border-radius: 12px;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.apiship_card_submit:hover {
+	background: #145fd6;
+}
+
+/* Панель поиска и фильтров, зум и счётчик поверх карты */
+.apiship_panel {
+	position: absolute;
+	top: 12px;
+	left: 12px;
+	right: 64px;
+	z-index: 5;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.apiship_search {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1 1 220px;
+	max-width: 420px;
+	padding: 9px 12px;
+	background: #fff;
+	border-radius: 10px;
+	box-shadow: 0 2px 8px rgba(16, 24, 40, 0.16);
+	color: #8b93a1;
+}
+
+.apiship_search_input {
+	flex: 1 1 auto;
+	min-width: 0;
+	border: none;
+	outline: none;
+	background: transparent;
+	color: #1c1f23;
+	font-size: 14px;
+}
+
+.apiship_filter {
+	position: relative;
+}
+
+.apiship_filter_button {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 260px;
+	padding: 9px 12px;
+	background: #fff;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	box-shadow: 0 2px 8px rgba(16, 24, 40, 0.16);
+	color: #1c1f23;
+	cursor: pointer;
+}
+
+.apiship_filter_button-active {
+	border-color: #1a73ff;
+	color: #1a73ff;
+}
+
+.apiship_filter_label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.apiship_filter_count:not(:empty) {
+	background: #1a73ff;
+	color: #fff;
+	border-radius: 999px;
+	padding: 0 7px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.apiship_filter_menu {
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 0;
+	width: 300px;
+	max-width: calc(100vw - 32px);
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 12px 32px rgba(16, 24, 40, 0.24);
+	overflow: hidden;
+}
+
+.apiship_filter_head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 14px;
+	font-weight: 600;
+	border-bottom: 1px solid #eef0f4;
+}
+
+.apiship_filter_reset {
+	border: none;
+	background: transparent;
+	color: #1a73ff;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.apiship_filter_list {
+	max-height: 260px;
+	overflow: auto;
+	padding: 6px 0;
+}
+
+.apiship_filter_row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+	padding: 8px 14px;
+	cursor: pointer;
+	font-weight: 400;
+}
+
+.apiship_filter_row:hover {
+	background: #f7f8fa;
+}
+
+.apiship_filter_check {
+	width: 20px;
+	height: 20px;
+	flex: none;
+	border: 1px solid #c8cedb;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+}
+
+.apiship_filter_check-on {
+	background: #1a73ff;
+	border-color: #1a73ff;
+}
+
+.apiship_filter_check .apiship_icon {
+	width: 13px;
+	height: 13px;
+}
+
+.apiship_filter_row_name {
+	display: block;
+}
+
+.apiship_filter_row_count {
+	display: block;
+	color: #8b93a1;
+	font-size: 13px;
+}
+
+.apiship_filter_apply {
+	display: block;
+	width: calc(100% - 28px);
+	margin: 8px 14px 14px;
+	padding: 10px 12px;
+	background: #1a73ff;
+	color: #fff;
+	border: none;
+	border-radius: 10px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.apiship_zoom {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	z-index: 5;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.apiship_zoom_button {
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #fff;
+	border: none;
+	border-radius: 10px;
+	box-shadow: 0 2px 8px rgba(16, 24, 40, 0.16);
+	color: #3c4350;
+	cursor: pointer;
+}
+
+.apiship_counter {
+	position: absolute;
+	left: 12px;
+	bottom: 16px;
+	z-index: 5;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	background: #fff;
+	border-radius: 999px;
+	box-shadow: 0 2px 8px rgba(16, 24, 40, 0.16);
+	color: #3c4350;
+}
+
+@media (max-width: 640px) {
+	.apiship_card {
+		width: calc(100vw - 24px);
+	}
+
+	.apiship_panel {
+		right: 60px;
+	}
 }

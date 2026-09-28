@@ -78,6 +78,7 @@ $_['entry_shipping_apiship_package_weight']                       = 'Package Wei
 
 $_['entry_shipping_apiship_sort_order']                           = 'Sort order';
 $_['entry_shipping_apiship_yandex_api_key']                       = 'Yandex Api Key';
+$_['help_shipping_apiship_yandex_api_key']                        = 'Yandex Maps key with access to JavaScript API 3.0: without it the pickup point map will not open. Address search on the map also needs the Search API — without it the search box looks through pickup point addresses.';
 $_['entry_shipping_apiship_status']                               = 'Status';
 $_['entry_shipping_apiship_export_status']                        = 'Status after export';
 $_['entry_shipping_apiship_cancel_export_status']                 = 'Status after canceling export';

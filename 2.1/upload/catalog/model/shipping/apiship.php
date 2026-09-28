@@ -732,22 +732,13 @@ class ModelShippingApiship extends Model {
 		$shipping_apiship_providers_keys = json_encode(array_keys($providers));
 		
 			
-		$shipping_apiship_version_js_mod = ($this->config->get('shipping_apiship_version_js_mod') !== null)?$this->config->get('shipping_apiship_version_js_mod'):'0.5';
+		// Адрес скрипта и стилей меняется и при обновлении модуля, и при пересохранении настроек
+		$shipping_apiship_version_js_mod = Apiship::VERSION . '-' . (($this->config->get('shipping_apiship_version_js_mod') !== null) ? $this->config->get('shipping_apiship_version_js_mod') : '0');
 		$shipping_apiship_map_config = json_encode([
 			'yandex_api_key' => (string)$this->config->get('shipping_apiship_yandex_api_key'),
 			'image_path' => HTTP_SERVER . 'catalog/view/theme/default/image/shipping/',
-			'texts' => [
-				'from' => $this->language->get('shipping_apiship_title_from'),
-				'map_title' => $this->language->get('shipping_apiship_map_title'),
-				'map_cost' => $this->language->get('shipping_apiship_map_cost'),
-				'map_take_here' => $this->language->get('shipping_apiship_map_take_here'),
-				'map_type' => $this->language->get('shipping_apiship_map_point_type'),
-				'map_provider' => $this->language->get('shipping_apiship_map_provider'),
-				'map_cash' => $this->language->get('shipping_apiship_map_payment_cash'),
-				'map_card' => $this->language->get('shipping_apiship_map_payment_card'),
-				'map_no_points' => $this->language->get('shipping_apiship_error_no_points'),
-				'map_load' => $this->language->get('shipping_apiship_error_map_load')
-			]
+			// Подписи карты собираются в библиотеке: набор общий для всех пакетов модуля
+			'texts' => Apiship::map_texts($this->language)
 		], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 		$shipping_apiship_get_last_tracing_id_url = $this->url->link('shipping/apiship/get_last_tracing_id', '', 'SSL');
 		$shipping_apiship_get_points_url = $this->url->link('shipping/apiship/get_points', '', 'SSL');
@@ -1056,14 +1047,29 @@ EOT;
 				return ($map_tariffs[$a]['cost'] < $map_tariffs[$b]['cost']) ? -1 : 1;
 			});
 
+			$address = $this->apiship->get_address($point);
+
+			// Карточка точки на карте: заголовок — улица с домом, подстрока — город с индексом.
+			// Без улицы и дома в данных заголовком становится весь адрес
+			$headline = Apiship::point_headline($point, [
+				'block' => $this->language->get('shipping_apiship_map_block'),
+				'office' => $this->language->get('shipping_apiship_map_office'),
+				'area' => $this->language->get('shipping_apiship_map_area')
+			]);
+
 			$map_points[] = [
 				'id' => (string)$point_id,
 				'lon' => $point['lng'],
 				'lat' => $point['lat'],
-				'address' => $this->apiship->get_address($point),
+				'address' => $address,
+				'title' => ($headline['title'] !== '') ? $headline['title'] : $address,
+				'subtitle' => $headline['subtitle'],
 				'type' => isset($apiship_point_types[(int)$point['type']]) ? $apiship_point_types[(int)$point['type']] : (string)$point['type'],
+				'timetable' => isset($point['timetable']) ? (string)$point['timetable'] : '',
+				'description' => isset($point['description']) ? (string)$point['description'] : '',
 				'paymentCash' => isset($point['paymentCash']) ? (int)$point['paymentCash'] : 0,
 				'paymentCard' => isset($point['paymentCard']) ? (int)$point['paymentCard'] : 0,
+				'fittingRoom' => isset($point['fittingRoom']) ? (int)$point['fittingRoom'] : 0,
 				'tariffs' => $tariff_keys,
 				'_title' => [
 					'sub_type' => $point['type'],
@@ -1186,7 +1192,8 @@ EOT;
 
 			if (!$point['tariffs']) continue;
 
-			unset($point['_title']);
+			// Полный адрес нужен только заголовку списка ПВЗ в админке (point_title), карта показывает title и subtitle
+			unset($point['_title'], $point['address']);
 			$points[] = $point;
 		}
 
