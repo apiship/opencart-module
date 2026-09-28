@@ -1577,15 +1577,35 @@ EOT;
 			return array('success' => $text);
 		} else {
 
-			if (isset($output_data['message'])) {
-				$text = $output_data['message'] . PHP_EOL;
-				if (isset($output_data['errors'])) $errors = $output_data['errors']; else $errors = [];
-				foreach($errors as $error) {
-					$text = $text . $error['message'] . PHP_EOL;
+			$text_parts = array();
+
+			if (!empty($output_data['message'])) {
+				$text_parts[] = $output_data['message'];
+			}
+
+			if (!empty($output_data['description'])) {
+				$text_parts[] = $output_data['description'];
+			}
+
+			if (!empty($output_data['errors']) && is_array($output_data['errors'])) {
+				foreach ($output_data['errors'] as $error) {
+					if (!empty($error['message'])) {
+						$text_parts[] = $error['message'];
+					} elseif (!empty($error['description'])) {
+						$text_parts[] = $error['description'];
+					}
 				}
-			}				
-			else
+			}
+
+			if (!empty($output_data['moreInfo'])) {
+				$text_parts[] = $output_data['moreInfo'];
+			}
+
+			if (!empty($text_parts)) {
+				$text = implode(PHP_EOL, array_unique($text_parts));
+			} else {
 				$text = $this->apiship_params['shipping_apiship_error_timeout'];
+			}
 
 			$this->log->write('shipping_apiship export error ' . print_r($output_data,1));
 
